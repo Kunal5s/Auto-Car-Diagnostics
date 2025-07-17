@@ -25,12 +25,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+  // Read credentials from environment variables
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
   const handleSignIn = () => {
     setIsSigningIn(true);
 
     // Simulate network delay for a better user experience
     setTimeout(() => {
-      if (email === "kunalsonpitre555@gmail.com" && password === "Kunal@#&555KL") {
+      if (email === adminEmail && password === adminPassword) {
         router.push('/admin');
       } else {
         toast({
