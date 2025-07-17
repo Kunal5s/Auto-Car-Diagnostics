@@ -36,8 +36,8 @@ export function Footer() {
         </div>
       </div>
       <div className="container py-12 text-foreground">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="space-y-4 lg:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div className="space-y-4 md:col-span-3 lg:col-span-2">
                 <div className="flex items-center">
                     <Car className="h-8 w-8 mr-2 text-accent" />
                     <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
