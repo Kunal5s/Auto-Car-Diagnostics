@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Plus, Trash2 } from 'lucide-react';
@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
+import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 
 function EditArticleSkeleton() {
     return (
@@ -79,6 +80,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [isLoading, setIsLoading] = useState(true);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const contentRef = useRef<HTMLTextAreaElement>(null);
 
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
@@ -281,8 +284,10 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                     <div className="space-y-2">
                         <Label>Content</Label>
+                        <RichTextToolbar textareaRef={contentRef} />
                         <Textarea 
-                            className="min-h-96" 
+                            ref={contentRef}
+                            className="min-h-96 rounded-t-none" 
                             placeholder="Write the full content of your article here. You can use multiple paragraphs."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}

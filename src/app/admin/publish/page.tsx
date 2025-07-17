@@ -16,6 +16,7 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
+import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 
 
 export default function PublishArticlePage() {
@@ -34,6 +35,7 @@ export default function PublishArticlePage() {
     const [slug, setSlug] = useState('');
     
     const { toast } = useToast();
+    const contentRef = useRef<HTMLTextAreaElement>(null);
     
     const canPreview = (slug: string, status: Article['status']) => {
         return !!slug && status === 'draft';
@@ -204,8 +206,10 @@ export default function PublishArticlePage() {
 
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <Textarea 
-                            className="min-h-96" 
+                        <RichTextToolbar textareaRef={contentRef} />
+                        <Textarea
+                            ref={contentRef}
+                            className="min-h-96 rounded-t-none" 
                             placeholder="Write the full content of your article here. You can use multiple paragraphs."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}

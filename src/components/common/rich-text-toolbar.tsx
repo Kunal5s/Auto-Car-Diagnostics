@@ -55,8 +55,13 @@ export function RichTextToolbar({ textareaRef }: RichTextToolbarProps) {
                 break;
         }
         
-        textarea.setRangeText(replacement, start, end, 'end');
+        const currentText = textarea.value;
+        const newText = currentText.substring(0, start) + replacement + currentText.substring(end);
+        
+        textarea.value = newText;
         textarea.focus();
+        textarea.selectionStart = start + replacement.length;
+        textarea.selectionEnd = start + replacement.length;
 
         // This is a bit of a hack to trigger the onChange event for the parent form
         const event = new Event('input', { bubbles: true });
@@ -64,7 +69,7 @@ export function RichTextToolbar({ textareaRef }: RichTextToolbarProps) {
     };
 
     return (
-        <div className="flex items-center gap-1 p-1 bg-muted border-b rounded-t-md">
+        <div className="flex items-center gap-1 p-1 bg-muted border border-b-0 rounded-t-md">
             <ToggleGroup type="multiple">
                 <ToggleGroupItem value="bold" aria-label="Toggle bold" onClick={() => applyFormat('bold')}>
                     <Bold className="h-4 w-4" />

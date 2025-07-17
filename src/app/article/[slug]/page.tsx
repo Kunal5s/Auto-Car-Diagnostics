@@ -1,3 +1,4 @@
+
 import { getArticleBySlug, getAuthor } from "@/lib/data";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -111,11 +112,7 @@ export default async function ArticlePage({
 
             <ArticleSummarizer articleContent={article.content} />
 
-            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-                {article.content.split('\n\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                ))}
-            </div>
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline" dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }} />
             
             <AuthorInfo author={author} />
           </div>
