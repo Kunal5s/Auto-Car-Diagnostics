@@ -45,10 +45,10 @@ export function Header() {
       <div className="w-full border-t">
         <div className="container px-0">
           <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex w-max space-x-4 p-4 lg:justify-center lg:space-x-8 lg:w-full">
+            <div className="flex w-max space-x-2 p-4 lg:justify-center lg:space-x-4 lg:w-full">
               {categories.map((category) => (
-                <Button key={category.name} variant="ghost" className="h-auto p-1 text-muted-foreground hover:text-primary">
-                  {category.name}
+                <Button key={category.name} variant="outline" size="sm" asChild>
+                  <Link href="#">{category.name}</Link>
                 </Button>
               ))}
             </div>
