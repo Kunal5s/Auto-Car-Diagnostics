@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Star } from "lucide-react";
@@ -27,7 +28,7 @@ export function Testimonials() {
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
               What Our Readers Say
             </h2>
-            <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+            <p className="max-w-[900px] text-primary-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
               Real feedback from people we've helped.
             </p>
           </div>
