@@ -166,7 +166,6 @@ export default function AuthorProfilePage() {
                             placeholder="Write a short bio about the author..."
                             className="min-h-48"
                         />
-                         <p className="text-xs text-muted-foreground">You can use basic HTML tags like &lt;p&gt;, &lt;strong&gt;, and &lt;a&gt; for formatting.</p>
                     </div>
 
                     <Button onClick={handleSaveChanges} disabled={isSaving}>
