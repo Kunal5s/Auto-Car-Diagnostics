@@ -21,9 +21,9 @@ const GenerateImageOutputSchema = z.object({
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageOutput> {
-    // Reverted to use Pollinations.ai as requested by the user.
     const encodedPrompt = encodeURIComponent(input.prompt);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+    // Add width, height, and nologo parameters to the URL
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true`;
     
     if (!imageUrl) {
         throw new Error('Image generation failed to produce a URL.');

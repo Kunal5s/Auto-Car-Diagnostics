@@ -101,29 +101,18 @@ export default function PublishArticlePage() {
         }
     };
     
-    const convertMarkdownToHtml = (markdown: string) => {
-        return markdown
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/\n/g, '<br />');
-    };
-
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         event.preventDefault();
         const clipboardData = event.clipboardData;
         let pastedData;
 
-        // Check for HTML content on the clipboard
         if (clipboardData.types.includes('text/html')) {
             pastedData = clipboardData.getData('text/html');
         } else {
-            // Fallback to plain text and convert markdown
             const text = clipboardData.getData('text/plain');
-            pastedData = convertMarkdownToHtml(text);
+            pastedData = text.replace(/\n/g, '<br />');
         }
         
-        // Sanitize and insert the HTML
         document.execCommand('insertHTML', false, pastedData);
         
         const editor = document.getElementById('content-editor');
@@ -222,19 +211,36 @@ export default function PublishArticlePage() {
                 imageCount: bodyImageCount 
             });
 
-            const { imageUrls } = result;
-            if (!imageUrls || imageUrls.length === 0) {
-                throw new Error("No images were generated.");
+            if (!result.placements || result.placements.length === 0) {
+                throw new Error("AI could not determine where to place images.");
             }
 
-            let newContent = editorState.content;
-            for (const generatedImageUrl of imageUrls) {
-                const imageAlt = `${editorState.title} - illustration`;
-                 newContent += `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${generatedImageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" /></div>`;
-            }
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(editorState.content, 'text/html');
 
-            handleStateChange('content', newContent.trim());
-            toast({ title: "Images Appended!", description: `${imageUrls.length} images have been generated and added to the end of the article.` });
+            for (const placement of result.placements) {
+                const { prompt, subheading } = placement;
+                const h2s = Array.from(doc.querySelectorAll('h2'));
+                const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
+
+                if (targetH2) {
+                    const fullPrompt = `${prompt}, related to ${editorState.title}, professional automotive photography, high detail, photorealistic`;
+                    const encodedPrompt = encodeURIComponent(fullPrompt);
+                    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true`;
+                    
+                    const imageAlt = `${editorState.title} - ${subheading}`;
+                    const imageDiv = doc.createElement('div');
+                    imageDiv.style.display = 'flex';
+                    imageDiv.style.justifyContent = 'center';
+                    imageDiv.style.margin = '1rem 0';
+                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" />`;
+                    
+                    targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
+                }
+            }
+            
+            handleStateChange('content', doc.body.innerHTML);
+            toast({ title: "Images Inserted!", description: `${result.placements.length} images have been generated and placed in the article.` });
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
@@ -498,7 +504,7 @@ export default function PublishArticlePage() {
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Reset Body Images
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">Generates images and adds them to the end of your content. You can then drag and drop them to reorder.</p>
+                                    <p className="text-xs text-muted-foreground">Generates images and places them under relevant subheadings in your article.</p>
                                 </div>
                             </div>
 
