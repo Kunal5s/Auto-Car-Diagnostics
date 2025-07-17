@@ -19,8 +19,10 @@ import { AirFilterChecker } from "@/components/tools/air-filter-checker";
 import { EngineNoiseAnalyzer } from "@/components/tools/engine-noise-analyzer";
 import { BeltConditionEstimator } from "@/components/tools/belt-condition-estimator";
 import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker";
+import { VinDecoder } from "@/components/tools/vin-decoder";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
+  "vin-decoder": VinDecoder,
   "obd-code-scanner": ObdCodeScanner,
   "battery-health-check": BatteryHealthCheck,
   "tire-pressure-guide": TirePressureGuide,
