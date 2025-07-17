@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { ApifyClient } from 'apify-client';
 
 const LiveSearchInputSchema = z.object({
   query: z.string().describe('The search query from the user.'),
@@ -55,45 +56,42 @@ const getSearchResultsTool = ai.defineTool(
         };
     }
     
-    // Using Apify's synchronous run endpoint for the Google Search scraper
+    const client = new ApifyClient({ token: apiToken });
     const actorId = "apify/google-search-scraper";
-    const url = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${apiToken}`;
-    
+
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ queries: input.query }),
+      // Run the actor and wait for it to finish
+      const run = await client.actor(actorId).call({
+        queries: input.query,
+        resultsPerPage: 10,
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error('Apify API request failed:', response.status, errorBody);
-        throw new Error(`Apify API request failed with status ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Apify's Google Search Scraper can return multiple result sets if multiple queries are sent.
-      // We are sending one, so we take the first result set.
-      const searchResult = data?.[0];
+      // Fetch actor results from the run's dataset
+      const { items } = await client.dataset(run.defaultDatasetId).listItems();
+
+      const searchResult = items?.[0] as any;
 
       if (!searchResult || !Array.isArray(searchResult.organicResults)) {
-        console.warn("No organicResults found in Apify response:", data);
+        console.warn("No organicResults found in Apify response:", items);
         return { organic_results: [] };
       }
-
+      
       // Ensure we only return the fields defined in our schema and filter out any invalid entries
       const validatedResults = searchResult.organicResults
         .map((res: any, index: number) => ({
           position: res.position || index + 1, // Use provided position or fallback to index
           title: res.title || "Untitled",
-          link: res.link || "#",
-          snippet: res.snippet || "No snippet available."
+          link: res.url || "#", // Apify uses 'url', not 'link'
+          snippet: res.description || "No snippet available." // Apify uses 'description', not 'snippet'
         }))
-        .filter((res: any) => OrganicResultSchema.safeParse(res).success);
+        .filter((res: any) => {
+          // Add a safe parse check to ensure data conforms to our schema
+          const parsed = OrganicResultSchema.safeParse(res);
+          if (!parsed.success) {
+            console.warn("Invalid search result item filtered out:", res, parsed.error);
+          }
+          return parsed.success;
+        });
         
       return { organic_results: validatedResults };
 
