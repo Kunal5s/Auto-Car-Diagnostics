@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { addArticle, getArticleBySlug } from '@/lib/data';
+import { addArticle } from '@/lib/data';
 import { categories } from '@/lib/config';
 import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +29,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useDebounce } from '@/hooks/use-debounce';
 
 type EditorState = {
     title: string;
@@ -65,8 +64,6 @@ export default function PublishArticlePage() {
     const { toast } = useToast();
 
     const DRAFT_STORAGE_KEY = 'article_draft';
-
-    const debouncedTitle = useDebounce(editorState.title, 1000);
 
     const resetArticle = () => {
         setEditorState(initialEditorState);
@@ -128,13 +125,6 @@ export default function PublishArticlePage() {
             setIsGeneratingFeaturedImage(false);
         }
     }, [editorState.category, isGeneratingFeaturedImage]);
-    
-    useEffect(() => {
-        if (debouncedTitle) {
-            handleGenerateFeaturedImage(debouncedTitle);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedTitle]);
 
 
     const handleContentChange = (newContent: string) => {
@@ -297,15 +287,6 @@ export default function PublishArticlePage() {
         }
 
         const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const existingArticle = await getArticleBySlug(newSlug, { includeDrafts: true });
-        if (existingArticle) {
-            toast({
-                variant: "destructive",
-                title: "Slug Conflict",
-                description: "An article with this title (and slug) already exists. Please choose a unique title.",
-            });
-            return null;
-        }
         setSlug(newSlug);
 
         if (status === 'published') setIsPublishing(true);
@@ -498,7 +479,7 @@ export default function PublishArticlePage() {
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">An image will be generated automatically when you type a title.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image based on the title.</p>
                                         </>
                                     )}
                                 </div>
