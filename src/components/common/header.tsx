@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Car } from "lucide-react";
+import { User, Car, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
@@ -18,9 +18,9 @@ export function Header() {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <Button asChild variant="ghost">
-            <Link href="/login">
-              <User className="mr-2 h-4 w-4" />
-              Admin Login
+            <Link href="/admin">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Admin
             </Link>
           </Button>
         </div>

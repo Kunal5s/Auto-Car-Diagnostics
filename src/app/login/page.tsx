@@ -12,8 +12,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const handleSignIn = () => {
+    // In a real app, you'd have authentication logic here.
+    // For this prototype, we'll just redirect to the admin dashboard.
+    router.push('/admin');
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm">
@@ -34,7 +43,7 @@ export default function LoginPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
-          <Button className="w-full">Sign in</Button>
+          <Button className="w-full" onClick={handleSignIn}>Sign in</Button>
           <p className="mt-4 text-xs text-center text-muted-foreground">
             <Link
               href="/"
