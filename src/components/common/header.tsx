@@ -1,16 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface HeaderProps {
-  searchQuery: string;
-  setSearchQuery: Dispatch<SetStateAction<string>>;
-}
-
-export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
+export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
@@ -34,16 +28,12 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search articles..."
-              className="pl-10 h-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <Button asChild variant="ghost">
+            <Link href="/login">
+              <User className="mr-2 h-4 w-4" />
+              Admin Login
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

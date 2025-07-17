@@ -5,16 +5,9 @@ import { ArticleCard } from "@/components/article/article-card";
 
 interface RecentArticlesProps {
   articles: Article[];
-  searchQuery: string;
 }
 
-export function RecentArticles({ articles, searchQuery }: RecentArticlesProps) {
-  const filteredArticles = articles.filter(
-    (article) =>
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+export function RecentArticles({ articles }: RecentArticlesProps) {
 
   return (
     <section id="articles" className="py-12">
@@ -27,16 +20,15 @@ export function RecentArticles({ articles, searchQuery }: RecentArticlesProps) {
         </p>
       </div>
 
-      {filteredArticles.length > 0 ? (
+      {articles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredArticles.map((article) => (
+          {articles.map((article) => (
             <ArticleCard key={article.slug} article={article} />
           ))}
         </div>
       ) : (
         <div className="text-center text-muted-foreground py-16">
-          <p>No articles found for your search.</p>
-          <p className="text-sm">Try a different keyword.</p>
+          <p>No articles found.</p>
         </div>
       )}
     </section>

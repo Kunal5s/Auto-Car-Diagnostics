@@ -30,7 +30,6 @@ function ArticlesSkeleton() {
 }
 
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,12 +49,12 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <Header />
       <main className="flex-grow">
         <Hero />
         <div className="container mx-auto px-4">
           <ArticleCategories />
-          {loading ? <ArticlesSkeleton /> : <RecentArticles articles={articles} searchQuery={searchQuery} />}
+          {loading ? <ArticlesSkeleton /> : <RecentArticles articles={articles} />}
           <QuestionSubmission />
         </div>
         <Testimonials />
