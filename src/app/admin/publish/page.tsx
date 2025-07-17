@@ -4,7 +4,7 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -134,6 +134,13 @@ export default function PublishArticlePage() {
             setIsGeneratingBodyImages(false);
         }
     }
+
+    const handleResetBodyImages = () => {
+        // This regex finds all <img> tags and removes them.
+        const newContent = content.replace(/<img[^>]*>\n\n?/g, '');
+        setContent(newContent);
+        toast({ title: "Images Reset", description: "All body images have been removed from the content." });
+    };
 
     const handleSave = async (status: 'published' | 'draft') => {
         if (!title || !summary || !content || !category || !imageUrl) {
@@ -314,18 +321,29 @@ export default function PublishArticlePage() {
 
                              <div className="space-y-4 pt-4 border-t">
                                 <Label>Generate Body Images</Label>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        type="number"
-                                        min="1"
-                                        max="10"
-                                        value={bodyImageCount}
-                                        onChange={(e) => setBodyImageCount(Math.max(1, Math.min(10, Number(e.target.value))))}
-                                        className="w-20"
-                                    />
-                                    <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !content || !title}>
-                                        {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                        Generate & Insert
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Select
+                                            onValueChange={(value) => setBodyImageCount(Number(value))}
+                                            defaultValue={String(bodyImageCount)}
+                                        >
+                                            <SelectTrigger className="w-24">
+                                                <SelectValue placeholder="Count" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                                                    <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !content || !title}>
+                                            {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                            Generate & Insert
+                                        </Button>
+                                    </div>
+                                    <Button variant="secondary" size="sm" className="w-full" onClick={handleResetBodyImages}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Reset Body Images
                                     </Button>
                                 </div>
                             </div>
