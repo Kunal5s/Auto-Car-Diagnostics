@@ -48,7 +48,7 @@ export function Header() {
             <div className="flex w-max space-x-2 p-4 lg:justify-center lg:space-x-4 lg:w-full">
               {categories.map((category) => (
                 <Button key={category.name} variant="outline" size="sm" asChild>
-                  <Link href="#">{category.name}</Link>
+                  <Link href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>{category.name}</Link>
                 </Button>
               ))}
             </div>

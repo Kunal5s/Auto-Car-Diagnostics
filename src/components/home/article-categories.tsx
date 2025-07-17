@@ -1,4 +1,5 @@
 
+import Link from 'next/link';
 import { categories } from "@/lib/config";
 import { Card } from "@/components/ui/card";
 
@@ -13,13 +14,14 @@ export function ArticleCategories() {
       </p>
       <div className="grid grid-cols-3 gap-4">
         {categories.map((category) => (
-          <Card
-            key={category.name}
-            className="group flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:-translate-y-1 cursor-pointer"
-          >
-            <category.icon className="h-8 w-8 mb-2 text-primary group-hover:text-primary-foreground" />
-            <span className="text-sm font-medium">{category.name}</span>
-          </Card>
+          <Link key={category.name} href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
+            <Card
+              className="group flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:-translate-y-1 cursor-pointer h-full"
+            >
+              <category.icon className="h-8 w-8 mb-2 text-primary group-hover:text-primary-foreground" />
+              <span className="text-sm font-medium">{category.name}</span>
+            </Card>
+          </Link>
         ))}
       </div>
     </section>

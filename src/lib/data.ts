@@ -86,6 +86,15 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
   return sortedArticles.filter(a => a.status === 'published');
 }
 
+export async function getArticlesByCategory(categoryName: string): Promise<Article[]> {
+  const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
+  const filePath = path.join(dataPath, `${categorySlug}.json`);
+  const articles = await readJsonFile<Article[]>(filePath);
+
+  const publishedArticles = articles.filter(a => a.status === 'published');
+  
+  return publishedArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}
 
 export async function getArticleBySlug(slug: string, options: { includeDrafts?: boolean } = {}): Promise<Article | undefined> {
   const allArticles = await getArticles({ includeDrafts: true }); // Always get all articles first
