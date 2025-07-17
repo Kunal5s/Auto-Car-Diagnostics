@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/common/header";
 import { Footer } from "@/components/common/footer";
-import { FeaturedGuides } from "@/components/home/featured-guides";
+import { Hero } from "@/components/home/hero";
 import { ArticleCategories } from "@/components/home/article-categories";
 import { RecentArticles } from "@/components/home/recent-articles";
 import { QuestionSubmission } from "@/components/home/question-submission";
@@ -52,8 +52,8 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <main className="flex-grow">
+        <Hero />
         <div className="container mx-auto px-4">
-          <FeaturedGuides />
           <ArticleCategories />
           {loading ? <ArticlesSkeleton /> : <RecentArticles articles={articles} searchQuery={searchQuery} />}
           <QuestionSubmission />
