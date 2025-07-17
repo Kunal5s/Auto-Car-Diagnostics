@@ -15,7 +15,7 @@ function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
 export function Footer() {
   return (
     <footer className="bg-background border-t">
-      <div className="bg-primary py-12 text-center text-primary-foreground">
+      <div className="bg-foreground py-12 text-center text-background">
         <div className="container">
           <h2 className="text-3xl font-bold tracking-tight font-headline">
             Get Our Best Content Weekly
