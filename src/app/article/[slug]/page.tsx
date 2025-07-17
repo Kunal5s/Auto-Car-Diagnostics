@@ -1,11 +1,10 @@
 import { getArticleBySlug } from "@/lib/data";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/common/header";
 import { Footer } from "@/components/common/footer";
 import { ArticleSummarizer } from "@/components/article/article-summarizer";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Car } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -18,18 +17,7 @@ function StaticHeader() {
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6 text-accent"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+            <Car className="h-6 w-6 text-accent" />
             <span className="font-bold font-headline sm:inline-block">
               Car Diagnostics BrainAi
             </span>
