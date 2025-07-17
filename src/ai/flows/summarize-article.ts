@@ -16,12 +16,12 @@ import {z} from 'genkit';
 const SummarizeArticleInputSchema = z.object({
   articleText: z.string().describe('The text content of the car repair article to summarize.'),
 });
-export type SummarizeArticleInput = z.infer<typeof SummarizeArticleInputSchema>;
+type SummarizeArticleInput = z.infer<typeof SummarizeArticleInputSchema>;
 
 const SummarizeArticleOutputSchema = z.object({
   summary: z.string().describe('A summarized version of the car repair article.'),
 });
-export type SummarizeArticleOutput = z.infer<typeof SummarizeArticleOutputSchema>;
+type SummarizeArticleOutput = z.infer<typeof SummarizeArticleOutputSchema>;
 
 export async function summarizeArticle(input: SummarizeArticleInput): Promise<SummarizeArticleOutput> {
   return summarizeArticleFlow(input);
