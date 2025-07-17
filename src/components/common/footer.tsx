@@ -14,7 +14,7 @@ function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
 export function Footer() {
   return (
     <footer className="bg-background">
-      <div className="bg-[hsl(250_10%_8%)] py-12 text-center text-foreground">
+      <div className="bg-[hsl(250_10%_8%)] py-12 text-center text-primary-foreground">
         <div className="container">
           <h2 className="text-3xl font-bold tracking-tight font-headline">
             Get Our Best Content Weekly
@@ -26,7 +26,7 @@ export function Footer() {
             <Input
               type="email"
               placeholder="Enter your email"
-              className="flex-1 rounded-r-none focus:ring-accent"
+              className="flex-1 rounded-r-none focus:ring-accent text-foreground"
               aria-label="Email for newsletter"
             />
             <Button type="submit" className="rounded-l-none bg-accent text-accent-foreground hover:bg-accent/90">
