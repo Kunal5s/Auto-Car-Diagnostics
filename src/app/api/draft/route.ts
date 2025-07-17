@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const slug = searchParams.get('slug');
 
   // This secret should be stored in environment variables
-  if (secret !== process.env.DRAFT_MODE_SECRET) {
+  if (secret !== process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET) {
     return new Response('Invalid token', { status: 401 });
   }
 
