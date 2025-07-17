@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview A flow that performs live web searches using a SERP API.
+ * @fileOverview A flow that performs live web searches using the Apify API.
  *
  * - liveSearch - A function that handles the search process.
  * - LiveSearchInput - The input type for the liveSearch function.
@@ -28,53 +28,72 @@ const LiveSearchOutputSchema = z.object({
 });
 export type LiveSearchOutput = z.infer<typeof LiveSearchOutputSchema>;
 
-// This tool will call the SERP API to get live search results.
+// This tool will call the Apify API to get live search results.
 const getSearchResultsTool = ai.defineTool(
   {
     name: 'getSearchResults',
-    description: 'Fetches live search results from a SERP API for a given query.',
+    description: 'Fetches live search results from the Apify API for a given query.',
     inputSchema: LiveSearchInputSchema,
     outputSchema: LiveSearchOutputSchema,
   },
   async (input) => {
-    // IMPORTANT: Make sure to add your SERP_API_KEY to the .env file
-    const apiKey = process.env.SERP_API_KEY;
-    if (!apiKey || apiKey === "your_serp_api_key_here") {
-        console.error("SERP API key is not set in .env file.");
+    // IMPORTANT: Make sure to add your APIFY_API_TOKEN to the .env file
+    const apiToken = process.env.APIFY_API_TOKEN;
+    if (!apiToken || apiToken === "your_apify_api_token_here") {
+        console.error("Apify API token is not set in .env file.");
         // Return dummy data if API key is not set
         return { 
             organic_results: [
                 {
                     position: 1,
-                    title: "SERP API Key not configured",
+                    title: "Apify API Token not configured",
                     link: "#",
-                    snippet: "Please add your SERP_API_KEY to the .env file to enable live search."
+                    snippet: "Please add your APIFY_API_TOKEN to the .env file to enable live search."
                 }
             ]
         };
     }
-
-    const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
-      input.query
-    )}&api_key=${apiKey}`;
+    
+    // Using Apify's synchronous run endpoint for the Google Search scraper
+    const actorId = "apify/google-search-scraper";
+    const url = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${apiToken}`;
     
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ queries: input.query }),
+      });
+
       if (!response.ok) {
-        throw new Error(`SERP API request failed with status ${response.status}`);
+        throw new Error(`Apify API request failed with status ${response.status}`);
       }
+      
       const data = await response.json();
+      
+      // Apify's Google Search Scraper can return multiple result sets if multiple queries are sent.
+      // We are sending one, so we take the first result set.
+      const searchResult = data[0];
+      if (!searchResult || !searchResult.organicResults) {
+        return { organic_results: [] };
+      }
+
       // Ensure we only return the fields defined in our schema
-      const validatedResults = data.organic_results.map((res: any) => ({
-          position: res.position,
+      const validatedResults = searchResult.organicResults
+        .filter((res: any) => res.title && res.link && res.snippet) // Ensure essential fields exist
+        .map((res: any, index: number) => ({
+          position: res.position || index + 1, // Use provided position or fallback to index
           title: res.title,
           link: res.link,
           snippet: res.snippet
       }));
+
       return { organic_results: validatedResults };
     } catch (error) {
-      console.error('Error fetching SERP API:', error);
-      throw new Error('Failed to fetch search results from SERP API.');
+      console.error('Error fetching from Apify API:', error);
+      throw new Error('Failed to fetch search results from Apify API.');
     }
   }
 );

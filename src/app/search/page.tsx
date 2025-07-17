@@ -31,7 +31,7 @@ export default function SearchPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch search results. Please check your SERP API key and try again.",
+        description: "Failed to fetch search results. Please check your API token and try again.",
       });
     } finally {
       setIsLoading(false);
@@ -82,15 +82,19 @@ export default function SearchPage() {
                         <CardTitle className="font-headline text-2xl">Search Results</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {results.organic_results.map((item, index) => (
-                            <div key={index} className="space-y-1">
-                                <Link href={item.link} target="_blank" rel="noopener noreferrer" className="text-lg font-semibold text-accent hover:underline">
-                                    {item.title}
-                                </Link>
-                                <p className="text-sm text-muted-foreground">{item.link}</p>
-                                <p className="text-foreground/90">{item.snippet}</p>
-                            </div>
-                        ))}
+                        {results.organic_results.length > 0 ? (
+                            results.organic_results.map((item, index) => (
+                                <div key={index} className="space-y-1">
+                                    <Link href={item.link} target="_blank" rel="noopener noreferrer" className="text-lg font-semibold text-accent hover:underline">
+                                        {item.title}
+                                    </Link>
+                                    <p className="text-sm text-muted-foreground">{item.link}</p>
+                                    <p className="text-foreground/90">{item.snippet}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-center text-muted-foreground">No results found.</p>
+                        )}
                     </CardContent>
                  </Card>
               )}
