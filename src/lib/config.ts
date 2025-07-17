@@ -1,4 +1,4 @@
-import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert, Wind } from "lucide-react";
+import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert, Wind, Camera } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import type { Category, Tool } from "./types";
 
@@ -34,6 +34,12 @@ export const tools: Tool[] = [
         icon: Wind,
     },
     {
+        name: 'Spark Plug Checker',
+        slug: 'spark-plug-checker',
+        description: 'Use your camera to get an AI-powered visual diagnosis of your spark plug.',
+        icon: Camera,
+    },
+    {
         name: 'OBD Code Scanner',
         slug: 'obd-code-scanner',
         description: 'Lookup OBD2 trouble codes to understand what your check engine light means.',
@@ -62,12 +68,6 @@ export const tools: Tool[] = [
         slug: 'engine-temp-monitor',
         description: 'Check if your engine temperature is within the normal operating range.',
         icon: Thermometer,
-    },
-    {
-        name: 'Spark Plug Checker',
-        slug: 'spark-plug-checker',
-        description: 'Estimate if your spark plugs need replacement based on mileage.',
-        icon: Wrench,
     },
     {
         name: 'Air Filter Checker',

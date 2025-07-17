@@ -9,3 +9,4 @@ import '@/ai/flows/generate-article-images.ts';
 import '@/ai/flows/vin-decoder.ts';
 import '@/ai/flows/warning-light-guide.ts';
 import '@/ai/flows/smoke-diagnosis.ts';
+import '@/ai/flows/spark-plug-diagnosis.ts';
