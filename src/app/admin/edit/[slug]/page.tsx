@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,12 +16,11 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateAltText } from '@/ai/flows/generate-alt-text';
-import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
+import { generateArticleImages } from '@/ai/flows/generate-article-images';
 
 function EditArticleSkeleton() {
     return (
@@ -180,7 +179,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     };
 
     const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
-        if (!titleToGenerate || isGeneratingFeaturedImage || imageUrl) {
+        if (!titleToGenerate || isGeneratingFeaturedImage) {
             return;
         }
         
@@ -192,25 +191,52 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             const result = await generateImage({ prompt });
             setImageUrl(result.imageUrl);
             setImageHint(titleToGenerate);
-            toast({ title: "Image generated!", description: "Now generating SEO-friendly alt text..." });
-            
-            const altTextResponse = await generateAltText({ articleTitle: titleToGenerate });
-            setAltText(altTextResponse.altText);
-            toast({ title: "Alt text generated!", description: "The alt text has been automatically created." });
+            toast({ title: "Featured image generated!" });
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-            toast({ variant: "destructive", title: "Image Generation Failed", description: `Could not generate image or alt text. ${errorMessage}` });
+            toast({ variant: "destructive", title: "Image Generation Failed", description: `Could not generate image. ${errorMessage}` });
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
-    }, [category, isGeneratingFeaturedImage, imageUrl, toast]);
+    }, [category, isGeneratingFeaturedImage, toast]);
     
     useEffect(() => {
         if (debouncedTitle && article && debouncedTitle !== article.title) {
+             // Clear old image to allow regeneration only if title changes
+            setImageUrl('');
             handleGenerateFeaturedImage(debouncedTitle);
         }
     }, [debouncedTitle, article, handleGenerateFeaturedImage]);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                toast({ variant: "destructive", title: "File too large", description: "Please upload an image smaller than 2MB." });
+                return;
+            }
+            if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                toast({ variant: "destructive", title: "Invalid file type", description: "Please upload a PNG, JPG, or WEBP file." });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const dataUrl = reader.result as string;
+                if (isFeatured) {
+                    setImageUrl(dataUrl);
+                    toast({ title: "Featured image updated." });
+                } else {
+                    const img = `<img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" />`;
+                    document.execCommand('insertHTML', false, img);
+                    const editor = document.getElementById('content-editor');
+                    if (editor) handleContentChange(editor.innerHTML);
+                    toast({ title: "Image inserted into content." });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
 
     const handleGenerateBodyImages = async () => {
@@ -349,13 +375,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             id="article-title" 
                             placeholder="Your engaging article title..." 
                             value={title}
-                            onChange={(e) => {
-                                setTitle(e.target.value);
-                                // If title is changed, clear old image to allow regeneration
-                                if(e.target.value !== (article?.title || '')) {
-                                    setImageUrl('');
-                                }
-                            }}
+                            onChange={(e) => setTitle(e.target.value)}
                         />
                     </div>
 
@@ -396,7 +416,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar onExecCommand={handleExecCommand} />
+                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
                         <div
                             id="content-editor"
                             contentEditable
@@ -439,7 +459,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                     {isGeneratingFeaturedImage ? (
                                         <div className="flex flex-col items-center text-center p-4">
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-                                            <p className="text-sm text-muted-foreground mt-2">Generating image... <br/> Alt text will be generated next.</p>
+                                            <p className="text-sm text-muted-foreground mt-2">Generating image...</p>
                                         </div>
                                     ) : imageUrl ? (
                                         <Image src={imageUrl} alt={altText || title} width={300} height={169} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
@@ -450,8 +470,21 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         </>
                                     )}
                                 </div>
+                                <div className="flex gap-2">
+                                    <Button asChild variant="outline" className="flex-1">
+                                        <label htmlFor="featured-image-upload">
+                                            <Upload />
+                                            Upload
+                                            <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
+                                        </label>
+                                    </Button>
+                                    <Button onClick={() => handleGenerateFeaturedImage(title)} disabled={isGeneratingFeaturedImage || !title} className="flex-1">
+                                        <Sparkles />
+                                        Generate
+                                    </Button>
+                                </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="alt-text">Alt Text</Label>
+                                    <Label htmlFor="alt-text">Alt Text (for SEO)</Label>
                                     <Input
                                         id="alt-text"
                                         placeholder="Descriptive alt text for the image..."

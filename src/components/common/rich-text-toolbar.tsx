@@ -1,16 +1,18 @@
 
 "use client";
 import React, { useRef } from 'react';
-import { Bold, Italic, Underline, Link, List, Heading1, Heading2, Heading3, Pilcrow, Type } from 'lucide-react';
+import { Bold, Italic, Underline, Link, List, Heading1, Heading2, Heading3, Pilcrow, Type, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 
 interface RichTextToolbarProps {
     onExecCommand: (command: string, value?: string) => void;
+    onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function RichTextToolbar({ onExecCommand }: RichTextToolbarProps) {
+export function RichTextToolbar({ onExecCommand, onImageUpload }: RichTextToolbarProps) {
+    const imageInputRef = useRef<HTMLInputElement>(null);
     
     const applyFormat = (command: string, value?: string) => {
         if (command === 'createLink') {
@@ -23,8 +25,12 @@ export function RichTextToolbar({ onExecCommand }: RichTextToolbarProps) {
         }
     };
 
+    const handleImageButtonClick = () => {
+        imageInputRef.current?.click();
+    };
+
     return (
-        <div className="flex items-center gap-1 p-1 bg-muted border border-b-0 rounded-t-md">
+        <div className="flex items-center gap-1 p-1 bg-muted border border-b-0 rounded-t-md flex-wrap">
              <ToggleGroup type="multiple">
                 <ToggleGroupItem value="bold" aria-label="Toggle bold" onMouseDown={(e) => {e.preventDefault(); applyFormat('bold')}}>
                     <Bold className="h-4 w-4" />
@@ -59,8 +65,19 @@ export function RichTextToolbar({ onExecCommand }: RichTextToolbarProps) {
              <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => {e.preventDefault(); applyFormat('insertUnorderedList')}}>
                 <List className="h-4 w-4" />
             </Button>
-             <Separator orientation="vertical" className="h-6 mx-1" />
-             <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => {e.preventDefault(); applyFormat('removeFormat')}} title="Clear Formatting">
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={handleImageButtonClick} title="Upload Image">
+                <ImageIcon className="h-4 w-4" />
+                <input
+                    type="file"
+                    ref={imageInputRef}
+                    accept="image/png, image/jpeg, image/webp"
+                    className="sr-only"
+                    onChange={onImageUpload}
+                />
+            </Button>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => {e.preventDefault(); applyFormat('removeFormat')}} title="Clear Formatting">
                 <Type className="h-4 w-4" />
             </Button>
         </div>
