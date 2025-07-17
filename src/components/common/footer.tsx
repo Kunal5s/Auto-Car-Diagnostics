@@ -54,11 +54,11 @@ export function Footer() {
             <div>
                 <h4 className="font-bold tracking-wide text-muted-foreground mb-4">QUICK LINKS</h4>
                 <ul className="space-y-2">
-                    <li><Link href="#" className="text-muted-foreground hover:text-accent hover:underline">About Us</Link></li>
-                    <li><Link href="#" className="text-muted-foreground hover:text-accent hover:underline">Contact Us</Link></li>
-                    <li><Link href="#" className="text-muted-foreground hover:text-accent hover:underline">Privacy Policy</Link></li>
-                    <li><Link href="#" className="text-muted-foreground hover:text-accent hover:underline">Terms of Service</Link></li>
-                    <li><Link href="#" className="text-muted-foreground hover:text-accent hover:underline">Disclaimer</Link></li>
+                    <li><Link href="/about-us" className="text-muted-foreground hover:text-accent hover:underline">About Us</Link></li>
+                    <li><Link href="/contact-us" className="text-muted-foreground hover:text-accent hover:underline">Contact Us</Link></li>
+                    <li><Link href="/privacy-policy" className="text-muted-foreground hover:text-accent hover:underline">Privacy Policy</Link></li>
+                    <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-accent hover:underline">Terms of Service</Link></li>
+                    <li><Link href="/disclaimer" className="text-muted-foreground hover:text-accent hover:underline">Disclaimer</Link></li>
                 </ul>
             </div>
             <div>
