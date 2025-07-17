@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A flow for generating multiple, contextually relevant images for an article using Pollinations.ai and determining their optimal placement.
+ * @fileOverview A flow for generating multiple, contextually relevant images for an article and determining their optimal placement.
  *
  * - generateArticleImages - A function that analyzes article content and generates images with placement instructions.
  * - GenerateArticleImagesInput - The input type for the function.
