@@ -67,10 +67,10 @@ export async function updateAuthor(authorData: Author): Promise<Author> {
 
 // --- Article Data Functions ---
 export async function getArticles(options: { includeDrafts?: boolean } = {}): Promise<Article[]> {
-  const allCategories = [ "Engine", "Sensors", "OBD2", "Alerts", "Apps", "Maintenance", "Fuel", "EVs", "Trends" ];
+  const allCategoryNames = [ "Engine", "Sensors", "OBD2", "Alerts", "Apps", "Maintenance", "Fuel", "EVs", "Trends" ];
   let allArticles: Article[] = [];
   
-  for (const categoryName of allCategories) {
+  for (const categoryName of allCategoryNames) {
     const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
     const filePath = path.join(dataPath, `${categorySlug}.json`);
     const categoryArticles = await readJsonFile<Article[]>(filePath);
@@ -135,7 +135,8 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         throw new Error(`Article with slug "${slug}" not found.`);
     }
 
-    const updatedArticle = { ...originalArticle, ...articleData };
+    // Always update the publishedAt date to reflect the last update time.
+    const updatedArticle = { ...originalArticle, ...articleData, publishedAt: new Date().toISOString() };
 
     // Handle category change
     if (articleData.category && articleData.category !== originalArticle.category) {

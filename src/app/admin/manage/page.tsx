@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { ArrowLeft, MoreHorizontal, Edit, Trash, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, Edit, Trash, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -98,7 +98,7 @@ export default function ManageArticlesPage() {
     startTransition(async () => {
       try {
         const newStatus = article.status === 'published' ? 'draft' : 'published';
-        const newPublishedAt = newStatus === 'published' ? new Date().toISOString() : article.publishedAt;
+        const newPublishedAt = new Date().toISOString(); // Always update to current time on status change
 
         await updateArticle(article.slug, { status: newStatus, publishedAt: newPublishedAt });
         
@@ -141,7 +141,7 @@ export default function ManageArticlesPage() {
                     <TableHead>Title</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Published Date</TableHead>
+                    <TableHead>Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -157,7 +157,7 @@ export default function ManageArticlesPage() {
                       <TableCell>
                         <Badge variant="outline">{article.category}</Badge>
                       </TableCell>
-                      <TableCell>{format(new Date(article.publishedAt), 'MMM d, yyyy')}</TableCell>
+                      <TableCell>{format(new Date(article.publishedAt), "MMM d, yyyy 'at' h:mm a")}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -222,7 +222,7 @@ export default function ManageArticlesPage() {
               onClick={handleConfirmDelete}
               disabled={isPending}
             >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
