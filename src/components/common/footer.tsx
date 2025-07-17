@@ -37,15 +37,15 @@ export function Footer() {
       </div>
       <div className="container py-12 text-foreground">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-2">
-                <div className="flex items-center mb-4">
+            <div className="space-y-4 lg:col-span-2">
+                <div className="flex items-center">
                     <Car className="h-8 w-8 mr-2 text-accent" />
                     <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
                 </div>
                 <p className="text-muted-foreground max-w-sm">
                 Your ultimate destination for AI-powered car diagnostics, maintenance tips, and automotive technology insights. Stay ahead with expert-curated content and cutting-edge diagnostic solutions.
                 </p>
-                <div className="flex space-x-4 mt-4">
+                <div className="flex space-x-4">
                     <Link href="#" className="text-muted-foreground hover:text-accent"><Twitter /></Link>
                     <Link href="#" className="text-muted-foreground hover:text-accent"><PinterestIcon /></Link>
                     <Link href="#" className="text-muted-foreground hover:text-accent"><Linkedin /></Link>
