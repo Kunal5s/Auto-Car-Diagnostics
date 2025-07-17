@@ -129,7 +129,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
         } catch (err) {
             console.error("Image Generation Failed:", err);
-            // Silently fail as requested, so no toast here
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
@@ -152,13 +151,10 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         const clipboardData = event.clipboardData;
         let pastedData;
 
-        // Prefer HTML content if available (for pasting from docs, etc.)
         if (clipboardData.types.includes('text/html')) {
             pastedData = clipboardData.getData('text/html');
         } else {
-            // Fallback to plain text
             let text = clipboardData.getData('text/plain');
-            // Basic markdown to HTML conversion for headings
             text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -391,7 +387,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             dangerouslySetInnerHTML={{ __html: summary }}
                              className={cn(
                                 'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold'
+                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
                             )}
                         />
                     </div>
@@ -429,7 +425,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             dangerouslySetInnerHTML={{ __html: content }}
                             className={cn(
                                 'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold'
+                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
                             )}
                         />
                     </div>
@@ -548,3 +544,5 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
+
+    

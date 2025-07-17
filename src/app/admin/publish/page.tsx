@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,16 @@ import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type EditorState = {
     title: string;
@@ -28,15 +38,17 @@ type EditorState = {
     keyTakeaways: string[];
 }
 
+const initialEditorState: EditorState = {
+    title: '',
+    summary: '',
+    content: '',
+    category: '',
+    keyTakeaways: [''],
+};
+
 export default function PublishArticlePage() {
     const router = useRouter();
-    const [editorState, setEditorState] = useState<EditorState>({
-        title: '',
-        summary: '',
-        content: '',
-        category: '',
-        keyTakeaways: [''],
-    });
+    const [editorState, setEditorState] = useState<EditorState>(initialEditorState);
     
     const [isGeneratingFeaturedImage, setIsGeneratingFeaturedImage] = useState(false);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
@@ -47,10 +59,21 @@ export default function PublishArticlePage() {
     const [imageHint, setImageHint] = useState('');
     const [slug, setSlug] = useState('');
     const [bodyImageCount, setBodyImageCount] = useState(3);
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     
     const { toast } = useToast();
 
     const DRAFT_STORAGE_KEY = 'article_draft';
+
+    const resetArticle = () => {
+        setEditorState(initialEditorState);
+        setImageUrl('');
+        setAltText('');
+        setImageHint('');
+        setSlug('');
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        toast({ title: "Form Cleared", description: "You can now start a new article." });
+    }
 
     // Load draft from local storage on mount
     useEffect(() => {
@@ -98,7 +121,6 @@ export default function PublishArticlePage() {
 
         } catch (err) {
              console.error("Image Generation Failed:", err);
-             // Silently fail as requested, so no toast here. The UI will show a loader.
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
@@ -121,13 +143,10 @@ export default function PublishArticlePage() {
         const clipboardData = event.clipboardData;
         let pastedData;
 
-        // Prefer HTML content if available (for pasting from docs, etc.)
         if (clipboardData.types.includes('text/html')) {
             pastedData = clipboardData.getData('text/html');
         } else {
-            // Fallback to plain text
             let text = clipboardData.getData('text/plain');
-            // Basic markdown to HTML conversion for headings
             text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -331,12 +350,31 @@ export default function PublishArticlePage() {
 
     return (
         <div className="container mx-auto py-8">
-            <div className="mb-6">
+             <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to reset?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear all content, including the title, summary, and featured image. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { resetArticle(); setIsResetDialogOpen(false); }} className="bg-destructive hover:bg-destructive/90">Reset</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <div className="flex justify-between items-center mb-6">
                 <Button variant="ghost" asChild>
                     <Link href="/admin">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Dashboard
                     </Link>
+                </Button>
+                 <Button variant="destructive" size="sm" onClick={() => setIsResetDialogOpen(true)}>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset Article
                 </Button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -367,7 +405,7 @@ export default function PublishArticlePage() {
                             dangerouslySetInnerHTML={{ __html: editorState.summary }}
                             className={cn(
                                 'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold'
+                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
                             )}
                         />
                     </div>
@@ -406,7 +444,7 @@ export default function PublishArticlePage() {
                             dangerouslySetInnerHTML={{ __html: editorState.content }}
                             className={cn(
                                 'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold'
+                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
                             )}
                         />
                     </div>
@@ -529,3 +567,5 @@ export default function PublishArticlePage() {
         </div>
     );
 }
+
+    
