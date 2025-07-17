@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getWarningLightExplanation, type WarningLightOutput } from "@/ai/flows/warning-light-guide";
-import { AlertTriangle, Droplet, Thermometer, BatteryWarning, CircleDot, Windshield, Lightbulb } from "lucide-react";
+import { AlertTriangle, Droplet, Thermometer, BatteryWarning, CircleDot, Wind, Lightbulb } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ const lights = [
   { name: "Battery", icon: BatteryWarning, lightName: "Battery or Charging System Light" },
   { name: "Brake System", icon: AlertTriangle, lightName: "Brake System Warning Light" },
   { name: "Tire Pressure (TPMS)", icon: CircleDot, lightName: "Tire Pressure Monitoring System (TPMS) Light" },
-  { name: "Washer Fluid", icon: Windshield, lightName: "Washer Fluid Low Light" },
+  { name: "Washer Fluid", icon: Wind, lightName: "Washer Fluid Low Light" },
   { name: "Exterior Light", icon: Lightbulb, lightName: "Exterior Light Fault" },
 ];
 
