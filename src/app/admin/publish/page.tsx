@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useDebounce } from '@/hooks/use-debounce';
 
 type EditorState = {
     title: string;
@@ -64,6 +65,8 @@ export default function PublishArticlePage() {
     const { toast } = useToast();
 
     const DRAFT_STORAGE_KEY = 'article_draft';
+
+    const debouncedTitle = useDebounce(editorState.title, 1000);
 
     const resetArticle = () => {
         setEditorState(initialEditorState);
@@ -125,6 +128,14 @@ export default function PublishArticlePage() {
             setIsGeneratingFeaturedImage(false);
         }
     }, [editorState.category, isGeneratingFeaturedImage]);
+    
+    useEffect(() => {
+        if (debouncedTitle) {
+            handleGenerateFeaturedImage(debouncedTitle);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedTitle]);
+
 
     const handleContentChange = (newContent: string) => {
         handleStateChange('content', newContent);
@@ -397,14 +408,15 @@ export default function PublishArticlePage() {
 
                     <div className="space-y-2">
                         <Label>Summary</Label>
+                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
                         <div
                             id="summary-editor"
                             contentEditable
-                            onInput={(e) => handleStateChange('summary', e.currentTarget.innerText)}
+                            onInput={(e) => handleStateChange('summary', e.currentTarget.innerHTML)}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: editorState.summary }}
-                            className={cn(
-                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                             className={cn(
+                                'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
                                 '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
                             )}
                         />
@@ -486,7 +498,7 @@ export default function PublishArticlePage() {
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image based on the title.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">An image will be generated automatically when you type a title.</p>
                                         </>
                                     )}
                                 </div>
@@ -567,5 +579,3 @@ export default function PublishArticlePage() {
         </div>
     );
 }
-
-    
