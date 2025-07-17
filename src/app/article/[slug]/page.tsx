@@ -22,7 +22,7 @@ function StaticHeader() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Car className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
-              Auto Insights
+              Car Diagnostics BrainAi
             </span>
           </Link>
         </div>
