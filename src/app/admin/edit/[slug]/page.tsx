@@ -22,6 +22,7 @@ import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { useDebounce } from '@/hooks/use-debounce';
+import { cn } from '@/lib/utils';
 
 function EditArticleSkeleton() {
     return (
@@ -87,7 +88,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const contentRef = useRef<HTMLTextAreaElement>(null);
     const debouncedTitle = useDebounce(title, 1500);
 
     const loadArticle = useCallback(async () => {
@@ -121,6 +121,18 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             loadArticle();
         }
     }, [slug, loadArticle]);
+    
+    const handleContentChange = (newContent: string) => {
+        setContent(newContent);
+    };
+
+    const handleExecCommand = (command: string, value?: string) => {
+        document.execCommand(command, false, value);
+        const editor = document.getElementById('content-editor');
+        if (editor) {
+            handleContentChange(editor.innerHTML);
+        }
+    };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
         const newTakeaways = [...keyTakeaways];
@@ -194,7 +206,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             let newContent = content;
             for (const generatedImageUrl of imageUrls) {
                 const imageAlt = `${title} - illustration`;
-                newContent += `\n\n<img src="${generatedImageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${title} ${category}" />`;
+                newContent += `<p><img src="${generatedImageUrl}" alt="${imageAlt}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" data-ai-hint="${title} ${category}" /></p>`;
             }
 
             setContent(newContent.trim());
@@ -210,7 +222,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     }
     
     const handleResetBodyImages = () => {
-        const newContent = content.replace(/<img[^>]*>\n\n?/g, '');
+        const newContent = content.replace(/<p><img[^>]*><\/p>/g, '');
         setContent(newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
     };
@@ -344,13 +356,15 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar content={content} onContentChange={setContent} />
-                        <Textarea 
-                            ref={contentRef}
-                            className="min-h-96 rounded-t-none" 
-                            placeholder="Write the full content of your article here. You can use multiple paragraphs."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                        <RichTextToolbar onExecCommand={handleExecCommand} />
+                        <div
+                            id="content-editor"
+                            contentEditable
+                            onInput={(e) => handleContentChange(e.currentTarget.innerHTML)}
+                            dangerouslySetInnerHTML={{ __html: content }}
+                            className={cn(
+                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                            )}
                         />
                     </div>
                 </div>

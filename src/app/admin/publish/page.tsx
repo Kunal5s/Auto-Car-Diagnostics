@@ -21,6 +21,7 @@ import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { useDebounce } from '@/hooks/use-debounce';
+import { cn } from '@/lib/utils';
 
 type EditorState = {
     title: string;
@@ -87,7 +88,19 @@ export default function PublishArticlePage() {
 
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
         setEditorState(prev => ({ ...prev, [key]: value }));
-    }
+    };
+
+    const handleContentChange = (newContent: string) => {
+        handleStateChange('content', newContent);
+    };
+
+    const handleExecCommand = (command: string, value?: string) => {
+        document.execCommand(command, false, value);
+        const editor = document.getElementById('content-editor');
+        if (editor) {
+            handleContentChange(editor.innerHTML);
+        }
+    };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
         const newTakeaways = [...editorState.keyTakeaways];
@@ -162,7 +175,7 @@ export default function PublishArticlePage() {
             let newContent = editorState.content;
             for (const generatedImageUrl of imageUrls) {
                 const imageAlt = `${editorState.title} - illustration`;
-                newContent += `\n\n<img src="${generatedImageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${editorState.title} ${editorState.category}" />`;
+                newContent += `<p><img src="${generatedImageUrl}" alt="${imageAlt}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" /></p>`;
             }
 
             handleStateChange('content', newContent.trim());
@@ -178,7 +191,7 @@ export default function PublishArticlePage() {
     }
 
     const handleResetBodyImages = () => {
-        const newContent = editorState.content.replace(/<img[^>]*>\n\n?/g, '');
+        const newContent = editorState.content.replace(/<p><img[^>]*><\/p>/g, '');
         handleStateChange('content', newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
     };
@@ -316,12 +329,15 @@ export default function PublishArticlePage() {
 
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar content={editorState.content} onContentChange={(newContent) => handleStateChange('content', newContent)} />
-                        <Textarea
-                            className="min-h-96 rounded-t-none" 
-                            placeholder="Write the full content of your article here. You can use multiple paragraphs."
-                            value={editorState.content}
-                            onChange={(e) => handleStateChange('content', e.target.value)}
+                        <RichTextToolbar onExecCommand={handleExecCommand} />
+                        <div
+                            id="content-editor"
+                            contentEditable
+                            onInput={(e) => handleContentChange(e.currentTarget.innerHTML)}
+                            dangerouslySetInnerHTML={{ __html: editorState.content }}
+                            className={cn(
+                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                            )}
                         />
                     </div>
                 </div>
