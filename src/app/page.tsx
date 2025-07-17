@@ -11,6 +11,7 @@ import { getArticles } from "@/lib/data";
 import type { Article } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Testimonials } from "@/components/home/testimonials";
+import { Faq } from "@/components/home/faq";
 
 function ArticlesSkeleton() {
   return (
@@ -58,6 +59,7 @@ export default function Home() {
           <QuestionSubmission />
         </div>
         <Testimonials />
+        <Faq />
       </main>
       <Footer />
     </div>

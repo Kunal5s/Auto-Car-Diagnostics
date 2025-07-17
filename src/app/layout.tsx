@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Auto Insights",
-  description: "AI-powered car repair and maintenance guides",
+  title: "Car Diagnostics BrainAi",
+  description: "AI-powered car diagnostics and repair guides",
 };
 
 export default function RootLayout({
