@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload } from 'lucide-react';
@@ -19,6 +19,7 @@ import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
+import { useDebounce } from '@/hooks/use-debounce';
 
 
 type EditorState = {
@@ -51,6 +52,7 @@ export default function PublishArticlePage() {
     
     const { toast } = useToast();
 
+    const debouncedTitle = useDebounce(editorState.title, 1500);
     const DRAFT_STORAGE_KEY = 'article_draft';
 
     // Load draft from local storage on mount
@@ -87,6 +89,32 @@ export default function PublishArticlePage() {
         setEditorState(prev => ({ ...prev, [key]: value }));
     };
 
+    const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
+        if (!titleToGenerate || isGeneratingFeaturedImage) return;
+        
+        setIsGeneratingFeaturedImage(true);
+        try {
+            const prompt = `photorealistic image of ${titleToGenerate}, professional automotive photography, high detail, in the style of ${editorState.category || 'repair'}`;
+            const result = await generateImage({ prompt });
+            setImageUrl(result.imageUrl);
+            setImageHint(titleToGenerate);
+
+        } catch (err) {
+             console.error("Image Generation Failed:", err);
+             // Silently fail as requested, so no toast here. The UI will show a loader.
+        } finally {
+            setIsGeneratingFeaturedImage(false);
+        }
+    }, [editorState.category, isGeneratingFeaturedImage]);
+
+    useEffect(() => {
+        // Automatic featured image generation on title change (debounced)
+        if (debouncedTitle) {
+            handleGenerateFeaturedImage(debouncedTitle);
+        }
+    }, [debouncedTitle, handleGenerateFeaturedImage]);
+
+
     const handleContentChange = (newContent: string) => {
         handleStateChange('content', newContent);
     };
@@ -104,10 +132,16 @@ export default function PublishArticlePage() {
         const clipboardData = event.clipboardData;
         let pastedData;
 
+        // Prefer HTML content if available (for pasting from docs, etc.)
         if (clipboardData.types.includes('text/html')) {
             pastedData = clipboardData.getData('text/html');
         } else {
-            const text = clipboardData.getData('text/plain');
+            // Fallback to plain text
+            let text = clipboardData.getData('text/plain');
+            // Basic markdown to HTML conversion for headings
+            text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
             pastedData = text.replace(/\n/g, '<br />');
         }
         
@@ -134,29 +168,13 @@ export default function PublishArticlePage() {
         handleStateChange('keyTakeaways', newTakeaways);
     };
 
-    const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
-        if (!titleToGenerate || isGeneratingFeaturedImage) {
-            toast({ variant: "destructive", title: "Title Needed", description: "Please provide a title to generate an image." });
-            return;
+    const handleManualGenerateClick = () => {
+        if (!editorState.title) {
+             toast({ variant: "destructive", title: "Title Needed", description: "Please provide a title to generate an image." });
+             return;
         }
-        
-        setIsGeneratingFeaturedImage(true);
-        setImageUrl('');
-        setAltText('');
-
-        try {
-            const prompt = `photorealistic image of ${titleToGenerate}, professional automotive photography, high detail, in the style of ${editorState.category || 'repair'}`;
-            const result = await generateImage({ prompt });
-            setImageUrl(result.imageUrl);
-            setImageHint(titleToGenerate);
-
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-            toast({ variant: "destructive", title: "Image Generation Failed", description: `Could not generate image. ${errorMessage}` });
-        } finally {
-            setIsGeneratingFeaturedImage(false);
-        }
-    }, [editorState.category, isGeneratingFeaturedImage, toast]);
+        handleGenerateFeaturedImage(editorState.title);
+    };
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
         const file = e.target.files?.[0];
@@ -175,7 +193,7 @@ export default function PublishArticlePage() {
                 if (isFeatured) {
                     setImageUrl(dataUrl);
                 } else {
-                    const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                     const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
                     const editor = document.getElementById('content-editor');
                     if (editor) handleContentChange(editor.innerHTML);
@@ -292,10 +310,8 @@ export default function PublishArticlePage() {
                 description: `Your article has been successfully saved.`,
             });
             
-            // Clear the draft from local storage after successful save
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             
-            // Don't redirect immediately for published, allow preview
             if (status === 'published') {
                 router.push(`/admin/edit/${newSlug}`);
             }
@@ -358,6 +374,7 @@ export default function PublishArticlePage() {
                             id="summary-editor"
                             contentEditable
                             onInput={(e) => handleStateChange('summary', e.currentTarget.innerText)}
+                            onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: editorState.summary }}
                             className={cn(
                                 'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
@@ -440,7 +457,7 @@ export default function PublishArticlePage() {
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image from the title.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">An image will be generated automatically when you type a title.</p>
                                         </>
                                     )}
                                 </div>
@@ -452,7 +469,7 @@ export default function PublishArticlePage() {
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button onClick={() => handleGenerateFeaturedImage(editorState.title)} disabled={isGeneratingFeaturedImage || !editorState.title} className="flex-1">
+                                    <Button onClick={handleManualGenerateClick} disabled={isGeneratingFeaturedImage || !editorState.title} className="flex-1">
                                         <Sparkles className="mr-2 h-4 w-4" />
                                         Generate
                                     </Button>
@@ -521,3 +538,5 @@ export default function PublishArticlePage() {
         </div>
     );
 }
+
+    
