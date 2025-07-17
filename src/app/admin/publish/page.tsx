@@ -4,7 +4,7 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,6 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
-import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 
 
 export default function PublishArticlePage() {
@@ -33,7 +32,6 @@ export default function PublishArticlePage() {
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
     const [slug, setSlug] = useState('');
-    const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
     
     const { toast } = useToast();
     
@@ -49,11 +47,6 @@ export default function PublishArticlePage() {
 
     const addKeyTakeaway = () => {
         setKeyTakeaways([...keyTakeaways, '']);
-    };
-
-    const removeKeyTakeaway = (index: number) => {
-        const newTakeaways = keyTakeaways.filter((_, i) => i !== index);
-        setKeyTakeaways(newTakeaways);
     };
     
     const handleGenerateImage = async () => {
@@ -170,18 +163,17 @@ export default function PublishArticlePage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="article-title" className="text-lg font-semibold">Article Title</Label>
+                        <Label htmlFor="article-title">Article Title</Label>
                         <Input 
                             id="article-title" 
                             placeholder="Your engaging article title..." 
-                            className="text-lg"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-lg font-semibold">Summary</Label>
+                        <Label>Summary</Label>
                          <Textarea 
                             className="min-h-32"
                             placeholder="A brief summary of the article..."
@@ -191,7 +183,7 @@ export default function PublishArticlePage() {
                     </div>
                     
                     <div className="space-y-4">
-                        <Label className="text-lg font-semibold">Key Takeaways</Label>
+                        <Label>Key Takeaways</Label>
                         <div className="space-y-2">
                             {keyTakeaways.map((takeaway, index) => (
                                 <div key={index} className="flex items-center gap-2">
@@ -200,9 +192,6 @@ export default function PublishArticlePage() {
                                         value={takeaway}
                                         onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
                                     />
-                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)} disabled={keyTakeaways.length <= 1}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
                                 </div>
                             ))}
                         </div>
@@ -214,17 +203,13 @@ export default function PublishArticlePage() {
 
 
                     <div className="space-y-2">
-                        <Label className="text-lg font-semibold">Content</Label>
-                         <div className="border rounded-md">
-                            <RichTextToolbar textareaRef={contentTextareaRef} />
-                            <Textarea 
-                                ref={contentTextareaRef}
-                                className="min-h-96 border-t-0 rounded-t-none" 
-                                placeholder="Write the full content of your article here. You can use multiple paragraphs."
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                            />
-                        </div>
+                        <Label>Content</Label>
+                        <Textarea 
+                            className="min-h-96" 
+                            placeholder="Write the full content of your article here. You can use multiple paragraphs."
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                        />
                     </div>
                 </div>
 

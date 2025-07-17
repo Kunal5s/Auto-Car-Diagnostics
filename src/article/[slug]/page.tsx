@@ -4,6 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/common/footer";
 import { ArticleSummarizer } from "@/components/article/article-summarizer";
+import { KeyTakeaways } from "@/components/article/key-takeaways";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Car } from "lucide-react";
 import { format } from "date-fns";
@@ -43,7 +44,11 @@ function AuthorInfo({ author }: { author: Author }) {
               <p className="text-md text-muted-foreground">{author.role}</p>
           </div>
        </div>
-       <div className="mt-4 text-muted-foreground prose max-w-none" dangerouslySetInnerHTML={{ __html: author.bio.replace(/\n/g, '<br />') }} />
+       <div className="mt-4 text-muted-foreground prose max-w-none">
+        {author.bio.split('\n').map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+        ))}
+       </div>
     </div>
   )
 }
@@ -105,11 +110,17 @@ export default async function ArticlePage({
               />
             </div>
 
+            {article.keyTakeaways && article.keyTakeaways.length > 0 && (
+              <KeyTakeaways takeaways={article.keyTakeaways} />
+            )}
+
             <ArticleSummarizer articleContent={article.content} />
 
-            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
-                dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }}
-            />
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+                {article.content.split('\n\n').map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                ))}
+            </div>
             
             <AuthorInfo author={author} />
           </div>
