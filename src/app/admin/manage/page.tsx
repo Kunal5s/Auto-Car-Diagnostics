@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 function ArticlesSkeleton() {
   return (
@@ -145,9 +146,9 @@ export default function ManageArticlesPage() {
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className={cn(isPending && "opacity-50 pointer-events-none")}>
                   {articles.map((article) => (
-                    <TableRow key={article.slug} className={isPending ? "opacity-50" : ""}>
+                    <TableRow key={article.slug}>
                       <TableCell className="font-medium">{article.title}</TableCell>
                        <TableCell>
                         <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
