@@ -12,6 +12,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import type { Author } from "@/lib/types";
+import { draftMode } from 'next/headers'
 
 // This is a dummy component for header as we can't pass state to it from here
 function StaticHeader() {
@@ -55,10 +56,15 @@ export default async function ArticlePage({
 }: {
   params: { slug: string };
 }) {
-  const article = await getArticleBySlug(params.slug);
+  const { isEnabled } = draftMode()
+  const article = await getArticleBySlug(params.slug, { includeDrafts: isEnabled });
   const author = await getAuthor();
 
-  if (!article || article.status !== 'published') {
+  if (!article) {
+    notFound();
+  }
+  
+  if (!isEnabled && article.status !== 'published') {
     notFound();
   }
   

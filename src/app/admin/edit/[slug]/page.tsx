@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { getArticleBySlug, updateArticle } from '@/lib/data';
 import { categories } from '@/lib/config';
 import type { Article } from '@/lib/types';
@@ -268,7 +267,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     
     const handlePreview = () => {
         if (article) {
-            window.open(`/article/${article.slug}`, '_blank');
+            window.open(`/api/draft?slug=${article.slug}`, '_blank');
         }
     }
 

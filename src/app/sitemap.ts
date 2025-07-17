@@ -2,7 +2,7 @@ import { getArticles } from '@/lib/data'
 import { MetadataRoute } from 'next'
  
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const articles = await getArticles();
+  const articles = await getArticles({ includeDrafts: false }); // Only include published articles
   const articleEntries: MetadataRoute.Sitemap = articles.map(article => ({
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/article/${article.slug}`,
     lastModified: new Date(article.publishedAt),

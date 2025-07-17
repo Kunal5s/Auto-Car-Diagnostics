@@ -87,9 +87,18 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
 }
 
 
-export async function getArticleBySlug(slug: string): Promise<Article | undefined> {
-  const allArticles = await getArticles({ includeDrafts: true });
-  return allArticles.find(article => article.slug === slug);
+export async function getArticleBySlug(slug: string, options: { includeDrafts?: boolean } = {}): Promise<Article | undefined> {
+  const allArticles = await getArticles({ includeDrafts: true }); // Always get all articles first
+  const article = allArticles.find(article => article.slug === slug);
+  
+  if (!article) return undefined;
+
+  // If not including drafts, and article is a draft, return undefined
+  if (!options.includeDrafts && article.status !== 'published') {
+    return undefined;
+  }
+  
+  return article;
 }
 
 export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise<Article> {
@@ -121,7 +130,7 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
 }
 
 export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'slug'>>): Promise<Article> {
-    const originalArticle = await getArticleBySlug(slug);
+    const originalArticle = await getArticleBySlug(slug, { includeDrafts: true });
     if (!originalArticle) {
         throw new Error(`Article with slug "${slug}" not found.`);
     }
@@ -173,7 +182,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
 }
 
 export async function deleteArticle(slug: string): Promise<void> {
-    const article = await getArticleBySlug(slug);
+    const article = await getArticleBySlug(slug, { includeDrafts: true });
     if (!article) {
         throw new Error(`Article with slug "${slug}" not found for deletion.`);
     }
