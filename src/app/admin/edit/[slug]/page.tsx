@@ -143,9 +143,21 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         event.preventDefault();
-        const text = event.clipboardData.getData('text/plain');
-        const html = convertMarkdownToHtml(text);
-        document.execCommand('insertHTML', false, html);
+        const clipboardData = event.clipboardData;
+        let pastedData;
+
+        // Check for HTML content on the clipboard
+        if (clipboardData.types.includes('text/html')) {
+            pastedData = clipboardData.getData('text/html');
+        } else {
+            // Fallback to plain text and convert markdown
+            const text = clipboardData.getData('text/plain');
+            pastedData = convertMarkdownToHtml(text);
+        }
+        
+        // Sanitize and insert the HTML
+        document.execCommand('insertHTML', false, pastedData);
+        
         const editor = document.getElementById('content-editor');
         if (editor) {
             handleContentChange(editor.innerHTML);
@@ -491,5 +503,3 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
-
-    
