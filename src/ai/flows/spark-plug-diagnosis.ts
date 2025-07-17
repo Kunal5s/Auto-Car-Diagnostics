@@ -12,7 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const SparkPlugDiagnosisInputSchema = z.object({
+const SparkPlugDiagnosisInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe(
@@ -21,7 +21,7 @@ export const SparkPlugDiagnosisInputSchema = z.object({
 });
 export type SparkPlugDiagnosisInput = z.infer<typeof SparkPlugDiagnosisInputSchema>;
 
-export const SparkPlugDiagnosisOutputSchema = z.object({
+const SparkPlugDiagnosisOutputSchema = z.object({
   condition: z.enum([
       'Normal', 
       'Carbon-Fouled', 
