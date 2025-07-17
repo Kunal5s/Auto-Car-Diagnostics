@@ -13,14 +13,14 @@ import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 
 const lights = [
-  { name: "Check Engine", icon: Obd2Icon, lightName: "Check Engine Light" },
-  { name: "Oil Pressure", icon: Droplet, lightName: "Oil Pressure Light" },
-  { name: "Engine Temp", icon: Thermometer, lightName: "Engine Temperature Warning Light" },
+  { name: "Engine", icon: Obd2Icon, lightName: "Check Engine Light" },
+  { name: "Oil", icon: Droplet, lightName: "Oil Pressure Light" },
+  { name: "Temp", icon: Thermometer, lightName: "Engine Temperature Warning Light" },
   { name: "Battery", icon: BatteryWarning, lightName: "Battery or Charging System Light" },
-  { name: "Brake System", icon: AlertTriangle, lightName: "Brake System Warning Light" },
-  { name: "Tire Pressure (TPMS)", icon: CircleDot, lightName: "Tire Pressure Monitoring System (TPMS) Light" },
-  { name: "Washer Fluid", icon: Wind, lightName: "Washer Fluid Low Light" },
-  { name: "Exterior Light", icon: Lightbulb, lightName: "Exterior Light Fault" },
+  { name: "Brake", icon: AlertTriangle, lightName: "Brake System Warning Light" },
+  { name: "TPMS", icon: CircleDot, lightName: "Tire Pressure Monitoring System (TPMS) Light" },
+  { name: "Fluid", icon: Wind, lightName: "Washer Fluid Low Light" },
+  { name: "Light", icon: Lightbulb, lightName: "Exterior Light Fault" },
 ];
 
 const severityColors = {
