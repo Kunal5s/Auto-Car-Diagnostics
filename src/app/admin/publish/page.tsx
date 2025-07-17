@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { categories, addArticle } from '@/lib/data';
+import { categories, addArticle, getArticleBySlug } from '@/lib/data';
 import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -40,10 +40,6 @@ export default function PublishArticlePage() {
     const { toast } = useToast();
     const contentRef = useRef<HTMLTextAreaElement>(null);
     
-    const canPreview = (slug: string, status: Article['status']) => {
-        return !!slug && status === 'draft';
-    }
-
     const handleKeyTakeawayChange = (index: number, value: string) => {
         const newTakeaways = [...keyTakeaways];
         newTakeaways[index] = value;
@@ -129,14 +125,14 @@ export default function PublishArticlePage() {
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
-            toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not generate or insert body images." });
+            const errorMessage = error instanceof Error ? error.message : "Could not generate or insert body images.";
+            toast({ variant: "destructive", title: "Image Generation Failed", description: errorMessage });
         } finally {
             setIsGeneratingBodyImages(false);
         }
     }
 
     const handleResetBodyImages = () => {
-        // This regex finds all <img> tags and removes them.
         const newContent = content.replace(/<img[^>]*>\n\n?/g, '');
         setContent(newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
@@ -152,13 +148,20 @@ export default function PublishArticlePage() {
             return;
         }
 
+        const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const existingArticle = await getArticleBySlug(newSlug);
+        if (existingArticle) {
+            toast({
+                variant: "destructive",
+                title: "Slug Conflict",
+                description: "An article with this title (and slug) already exists. Please choose a unique title.",
+            });
+            return;
+        }
+        setSlug(newSlug);
+
         if (status === 'published') setIsPublishing(true);
         else setIsSavingDraft(true);
-
-        const newSlug = slug || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        if (!slug) {
-            setSlug(newSlug);
-        }
         
         try {
             await addArticle({
@@ -166,7 +169,7 @@ export default function PublishArticlePage() {
                 summary,
                 content,
                 category,
-                keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''), // Filter out empty takeaways
+                keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''),
                 imageUrl,
                 altText,
                 imageHint,
@@ -175,14 +178,16 @@ export default function PublishArticlePage() {
             });
             toast({
                 title: `Article ${status === 'published' ? 'Published' : 'Draft Saved'}!`,
-                description: `Your article has been successfully ${status}.`,
+                description: `Your article has been successfully saved.`,
             });
+            router.push(`/admin/edit/${newSlug}`);
         } catch(error) {
             console.error("Failed to save article", error);
+            const errorMessage = error instanceof Error ? error.message : "There was an error saving your article.";
             toast({
                 variant: "destructive",
                 title: "Saving Failed",
-                description: "There was an error saving your article.",
+                description: errorMessage,
             });
         } finally {
             if (status === 'published') setIsPublishing(false);
@@ -191,15 +196,11 @@ export default function PublishArticlePage() {
     }
 
     const handlePreview = () => {
-        if (slug) {
-            window.open(`/article/${slug}`, '_blank');
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Cannot Preview",
-                description: "You must save the article as a draft before you can preview it.",
-            });
-        }
+        toast({
+            variant: "destructive",
+            title: "Cannot Preview",
+            description: "You must save the article as a draft before you can preview it.",
+        });
     }
 
     return (
@@ -358,7 +359,7 @@ export default function PublishArticlePage() {
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview}>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Article
                                 </Button>

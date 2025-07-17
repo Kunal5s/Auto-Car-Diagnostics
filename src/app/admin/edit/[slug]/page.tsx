@@ -208,7 +208,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
-            toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not generate or insert body images." });
+            const errorMessage = error instanceof Error ? error.message : "Could not generate or insert body images.";
+            toast({ variant: "destructive", title: "Image Generation Failed", description: errorMessage });
         } finally {
             setIsGeneratingBodyImages(false);
         }
@@ -249,10 +250,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             });
         } catch(error) {
             console.error("Failed to update article", error);
+            const errorMessage = error instanceof Error ? error.message : "There was an error saving your changes.";
             toast({
                 variant: "destructive",
                 title: "Update Failed",
-                description: "There was an error saving your changes.",
+                description: errorMessage,
             });
         } finally {
             setIsUpdating(false);

@@ -1,0 +1,16 @@
+
+[
+  {
+    "slug": "demystifying-obd2-codes",
+    "title": "Demystifying OBD2 Codes",
+    "summary": "The 'Check Engine' light is on, and your mechanic mentions an OBD2 code. What does it all mean? This guide helps you understand OBD2 diagnostic codes.",
+    "content": "On-Board Diagnostics II (OBD2) is a standardized system that on-board computers in cars and trucks use for self-diagnostics and reporting. When the \"Check Engine\" light illuminates, it means the OBD2 system has detected a problem.\n\nA code reader can be plugged into the OBD2 port (usually located under the dashboard) to retrieve Diagnostic Trouble Codes (DTCs). These codes point to the specific issue the system has identified.\n\nCodes are alphanumeric and start with a letter followed by four numbers. The first letter indicates the system: P for Powertrain, B for Body, C for Chassis, and U for Network.\n\nFor example, a P0301 code indicates a misfire in cylinder 1. While the code tells you what the problem is, it doesn't always tell you why it's happening. The cause could be a bad spark plug, a faulty ignition coil, or a clogged fuel injector. Further diagnosis is often required to pinpoint the exact cause.",
+    "keyTakeaways": [],
+    "imageUrl": "https://placehold.co/600x400.png",
+    "altText": "A mechanic holding an OBD2 scanner connected to a car's port, with the device displaying a diagnostic trouble code on its screen, illustrating the process of vehicle diagnostics.",
+    "imageHint": "obd2 scanner",
+    "category": "OBD2",
+    "status": "published",
+    "publishedAt": "2024-05-15T09:00:00Z"
+  }
+]

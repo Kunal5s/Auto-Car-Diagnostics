@@ -76,19 +76,22 @@ export default function ManageArticlesPage() {
   const handleConfirmDelete = async () => {
     if (!articleToDelete) return;
 
-    try {
-      await deleteArticle(articleToDelete.slug);
-      setArticles(articles.filter((article) => article.slug !== articleToDelete.slug));
-      toast({
-        title: "Article Deleted",
-        description: `"${articleToDelete.title}" has been successfully deleted.`,
-      });
-    } catch (error) {
-      console.error("Failed to delete article:", error);
-      toast({ variant: "destructive", title: "Error", description: "Could not delete the article." });
-    } finally {
-      setArticleToDelete(null);
-    }
+    startTransition(async () => {
+        try {
+            await deleteArticle(articleToDelete.slug);
+            toast({
+                title: "Article Deleted",
+                description: `"${articleToDelete.title}" has been successfully deleted.`,
+            });
+            fetchArticles(); // Refetch articles to update the list
+        } catch (error) {
+            console.error("Failed to delete article:", error);
+            const errorMessage = error instanceof Error ? error.message : "Could not delete the article.";
+            toast({ variant: "destructive", title: "Error", description: errorMessage });
+        } finally {
+            setArticleToDelete(null);
+        }
+    });
   };
   
   const togglePublishState = (article: Article) => {
@@ -104,12 +107,12 @@ export default function ManageArticlesPage() {
           description: `"${article.title}" is now a ${newStatus}.`
         });
         
-        // Refetch to get the latest sorted list
         fetchArticles();
 
       } catch (error) {
         console.error("Failed to update article status:", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not update the article status." });
+        const errorMessage = error instanceof Error ? error.message : "Could not update the article status.";
+        toast({ variant: "destructive", title: "Error", description: errorMessage });
       }
     });
   };
@@ -158,7 +161,7 @@ export default function ManageArticlesPage() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
                               <span className="sr-only">Open menu</span>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -217,7 +220,9 @@ export default function ManageArticlesPage() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleConfirmDelete}
+              disabled={isPending}
             >
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -68,7 +68,8 @@ export default function AuthorProfilePage() {
             toast({ title: "Success!", description: "Author information has been updated." });
         } catch (error) {
             console.error("Failed to save author data", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not save author information." });
+            const errorMessage = error instanceof Error ? error.message : "Could not save author information.";
+            toast({ variant: "destructive", title: "Error", description: errorMessage });
         } finally {
             setIsSaving(false);
         }

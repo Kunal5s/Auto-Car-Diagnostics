@@ -1,0 +1,16 @@
+
+[
+  {
+    "slug": "common-car-sensors-and-what-they-do",
+    "title": "Common Car Sensors and What They Do",
+    "summary": "Modern cars are filled with sensors. Learn about the most important ones, like the O2 sensor and MAF sensor, and how they impact your car's performance.",
+    "content": "Modern cars are equipped with a wide array of sensors that monitor everything from engine performance to passenger safety. Understanding these sensors can help you diagnose problems and maintain your vehicle.\n\nThe Oxygen (O2) Sensor measures the amount of unburned oxygen in the exhaust system. This information is used by the engine control unit (ECU) to adjust the air-fuel mixture for optimal performance and emissions.\n\nThe Mass Air Flow (MAF) Sensor measures the amount of air entering the engine. The ECU uses this data to calculate the right amount of fuel to inject. A faulty MAF sensor can cause a range of problems, including poor fuel economy and stalling.\n\nThe Coolant Temperature Sensor monitors the temperature of the engine coolant. This data helps the ECU manage fuel injection, ignition timing, and the electric cooling fan.\n\nOther important sensors include the Throttle Position Sensor (TPS), Crankshaft Position Sensor (CKP), and Manifold Absolute Pressure (MAP) sensor. Each plays a vital role in the smooth and efficient operation of your vehicle.",
+    "keyTakeaways": [],
+    "imageUrl": "https://placehold.co/600x400.png",
+    "altText": "A diagram showing the placement of various common car sensors like the O2 sensor, MAF sensor, and coolant temperature sensor on a generic engine block.",
+    "imageHint": "car dashboard",
+    "category": "Sensors",
+    "status": "published",
+    "publishedAt": "2024-05-18T14:30:00Z"
+  }
+]
