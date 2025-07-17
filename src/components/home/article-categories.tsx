@@ -16,7 +16,7 @@ export function ArticleCategories() {
             key={category.name}
             className="group flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:-translate-y-1 cursor-pointer"
           >
-            <category.icon className="h-8 w-8 mb-2 text-accent group-hover:text-primary-foreground" />
+            <category.icon className="h-8 w-8 mb-2 text-primary group-hover:text-primary-foreground" />
             <span className="text-sm font-medium">{category.name}</span>
           </Card>
         ))}

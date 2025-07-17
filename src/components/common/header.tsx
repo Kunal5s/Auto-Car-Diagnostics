@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -22,11 +21,11 @@ const categoryIcons = {
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Car className="h-6 w-6 text-accent" />
+            <Car className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
               Car Diagnostics BrainAi
             </span>
@@ -41,12 +40,12 @@ export function Header() {
           </Button>
         </div>
       </div>
-      <div className="w-full border-t border-border/40">
+      <div className="w-full border-t">
         <div className="container px-0">
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex w-max space-x-4 p-4 lg:justify-center lg:space-x-8 lg:w-full">
               {categories.map((category) => (
-                <Button key={category.name} variant="ghost" className="h-auto p-1 text-muted-foreground hover:text-accent-foreground">
+                <Button key={category.name} variant="ghost" className="h-auto p-1 text-muted-foreground hover:text-primary">
                   {category.name}
                 </Button>
               ))}

@@ -7,7 +7,7 @@ export default function DisclaimerPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <div className="bg-[hsl(250_10%_8%)] py-20 text-center text-foreground">
+        <div className="bg-muted py-20 text-center text-foreground">
           <div className="container">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight font-headline">
               Disclaimer
@@ -20,12 +20,12 @@ export default function DisclaimerPage() {
 
         <div className="container py-16 md:py-24">
           <div className="max-w-4xl mx-auto">
-            <div className="prose prose-invert prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-accent prose-a:no-underline hover:prose-a:underline">
-              <div className="flex items-center not-prose bg-yellow-900/30 text-yellow-200 border border-yellow-700 rounded-lg p-6 mb-8">
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+              <div className="flex items-center not-prose bg-yellow-100 text-yellow-900 border border-yellow-300 rounded-lg p-6 mb-8">
                 <AlertTriangle className="h-12 w-12 mr-6 shrink-0" />
                 <div>
-                  <h2 className="text-yellow-200 mt-0">Important Notice</h2>
-                  <p className="text-yellow-300 mt-2">The information on this website is for educational and informational purposes only and should not be considered professional automotive advice. Always prioritize safety.</p>
+                  <h2 className="text-yellow-900 mt-0">Important Notice</h2>
+                  <p className="text-yellow-800 mt-2">The information on this website is for educational and informational purposes only and should not be considered professional automotive advice. Always prioritize safety.</p>
                 </div>
               </div>
 

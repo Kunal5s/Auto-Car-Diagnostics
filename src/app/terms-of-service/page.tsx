@@ -6,7 +6,7 @@ export default function TermsOfServicePage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <div className="bg-[hsl(250_10%_8%)] py-20 text-center text-foreground">
+        <div className="bg-muted py-20 text-center text-foreground">
           <div className="container">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight font-headline">
               Terms of Service
@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
 
         <div className="container py-16 md:py-24">
           <div className="max-w-4xl mx-auto">
-            <div className="prose prose-invert prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-accent prose-a:no-underline hover:prose-a:underline">
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
               <p>
                 Welcome to Car Diagnostics BrainAi. These Terms of Service ("Terms") govern your use of our website and the services we offer. By accessing or using our website, you agree to be bound by these Terms and our Privacy Policy. If you do not agree to these Terms, you may not use our services. Please read them carefully.
               </p>

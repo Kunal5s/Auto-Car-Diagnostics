@@ -6,7 +6,7 @@ export default function PrivacyPolicyPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <div className="bg-[hsl(250_10%_8%)] py-20 text-center text-foreground">
+        <div className="bg-muted py-20 text-center text-foreground">
           <div className="container">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight font-headline">
               Privacy Policy
@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="container py-16 md:py-24">
           <div className="max-w-4xl mx-auto">
-            <div className="prose prose-invert prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-accent prose-a:no-underline hover:prose-a:underline">
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
               <p>
                 Car Diagnostics BrainAi ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you visit our website. By using our site, you agree to the collection and use of information in accordance with this policy. We encourage you to read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
               </p>

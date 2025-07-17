@@ -13,8 +13,8 @@ function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function Footer() {
   return (
-    <footer className="bg-background">
-      <div className="bg-[hsl(250_10%_8%)] py-12 text-center text-primary-foreground">
+    <footer className="bg-background border-t">
+      <div className="bg-muted py-12 text-center text-foreground">
         <div className="container">
           <h2 className="text-3xl font-bold tracking-tight font-headline">
             Get Our Best Content Weekly
@@ -26,10 +26,10 @@ export function Footer() {
             <Input
               type="email"
               placeholder="Enter your email"
-              className="flex-1 rounded-r-none focus:ring-accent text-foreground"
+              className="flex-1 rounded-r-none focus:ring-primary text-foreground"
               aria-label="Email for newsletter"
             />
-            <Button type="submit" className="rounded-l-none bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button type="submit" className="rounded-l-none">
               Subscribe
             </Button>
           </div>
@@ -39,48 +39,48 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
             <div className="space-y-4 md:col-span-3 lg:col-span-2">
                 <div className="flex items-center">
-                    <Car className="h-8 w-8 mr-2 text-accent" />
+                    <Car className="h-8 w-8 mr-2 text-primary" />
                     <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
                 </div>
                 <p className="text-muted-foreground max-w-sm">
                 Your ultimate destination for AI-powered car diagnostics, maintenance tips, and automotive technology insights. Stay ahead with expert-curated content and cutting-edge diagnostic solutions.
                 </p>
                 <div className="flex space-x-4">
-                    <Link href="#" className="text-muted-foreground hover:text-accent"><Twitter /></Link>
-                    <Link href="#" className="text-muted-foreground hover:text-accent"><PinterestIcon /></Link>
-                    <Link href="#" className="text-muted-foreground hover:text-accent"><Linkedin /></Link>
+                    <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter /></Link>
+                    <Link href="#" className="text-muted-foreground hover:text-primary"><PinterestIcon /></Link>
+                    <Link href="#" className="text-muted-foreground hover:text-primary"><Linkedin /></Link>
                 </div>
             </div>
             <div>
                 <h4 className="font-bold tracking-wide text-muted-foreground mb-4">QUICK LINKS</h4>
                 <ul className="space-y-2">
-                    <li><Link href="/about-us" className="text-muted-foreground hover:text-accent hover:underline">About Us</Link></li>
-                    <li><Link href="/contact-us" className="text-muted-foreground hover:text-accent hover:underline">Contact Us</Link></li>
-                    <li><Link href="/privacy-policy" className="text-muted-foreground hover:text-accent hover:underline">Privacy Policy</Link></li>
-                    <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-accent hover:underline">Terms of Service</Link></li>
-                    <li><Link href="/disclaimer" className="text-muted-foreground hover:text-accent hover:underline">Disclaimer</Link></li>
+                    <li><Link href="/about-us" className="text-muted-foreground hover:text-primary hover:underline">About Us</Link></li>
+                    <li><Link href="/contact-us" className="text-muted-foreground hover:text-primary hover:underline">Contact Us</Link></li>
+                    <li><Link href="/privacy-policy" className="text-muted-foreground hover:text-primary hover:underline">Privacy Policy</Link></li>
+                    <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-primary hover:underline">Terms of Service</Link></li>
+                    <li><Link href="/disclaimer" className="text-muted-foreground hover:text-primary hover:underline">Disclaimer</Link></li>
                 </ul>
             </div>
             <div>
                 <h4 className="font-bold tracking-wide text-muted-foreground mb-4">CONTACT INFO</h4>
                 <ul className="space-y-3 text-muted-foreground">
                     <li className="flex items-center">
-                        <Mail className="h-5 w-5 mr-3 text-accent" />
+                        <Mail className="h-5 w-5 mr-3 text-primary" />
                         <span>info@cardiagnosticsai.com</span>
                     </li>
                     <li className="flex items-center">
-                        <Phone className="h-5 w-5 mr-3 text-accent" />
+                        <Phone className="h-5 w-5 mr-3 text-primary" />
                         <span>+1 (555) 123-4567</span>
                     </li>
                     <li className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-3 text-accent" />
+                        <MapPin className="h-5 w-5 mr-3 text-primary" />
                         <span>San Francisco, CA</span>
                     </li>
                 </ul>
             </div>
         </div>
       </div>
-      <div className="border-t border-border/40">
+      <div className="border-t">
         <div className="container flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-4 sm:py-0">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
             &copy; {new Date().getFullYear()} Car Diagnostics BrainAi. All rights reserved.

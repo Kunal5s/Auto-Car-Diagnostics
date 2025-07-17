@@ -33,7 +33,7 @@ export function ArticleSummarizer({ articleContent }: { articleContent: string }
   return (
     <div className="my-8">
       <div className="text-center">
-        <Button onClick={handleSummarize} disabled={isLoading} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button onClick={handleSummarize} disabled={isLoading} size="lg">
           {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -44,9 +44,9 @@ export function ArticleSummarizer({ articleContent }: { articleContent: string }
       </div>
 
       {summary && (
-        <Card className="mt-8 bg-card/50 border-accent">
+        <Card className="mt-8 bg-muted/50 border-primary">
           <CardHeader>
-            <CardTitle className="flex items-center font-headline text-accent">
+            <CardTitle className="flex items-center font-headline text-primary">
               <Sparkles className="mr-2 h-5 w-5" />
               AI Summary
             </CardTitle>

@@ -17,7 +17,7 @@ function StaticHeader() {
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Car className="h-6 w-6 text-accent" />
+            <Car className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
               Car Diagnostics BrainAi
             </span>
@@ -55,7 +55,7 @@ export default async function ArticlePage({
               </Link>
             </Button>
             <div className="space-y-4">
-              <Badge variant="secondary" className="w-fit bg-accent/20 text-accent border-none">{article.category}</Badge>
+              <Badge variant="secondary">{article.category}</Badge>
               <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight font-headline">
                 {article.title}
               </h1>
@@ -86,7 +86,7 @@ export default async function ArticlePage({
 
             <ArticleSummarizer articleContent={article.content} />
 
-            <div className="prose prose-invert prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-accent prose-a:no-underline hover:prose-a:underline">
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
                 {article.content.split('\n\n').map((paragraph, index) => (
                     <p key={index}>{paragraph}</p>
                 ))}

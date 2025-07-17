@@ -11,7 +11,7 @@ interface ArticleCardProps {
 
 export function ArticleCard({ article }: ArticleCardProps) {
   return (
-    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-accent hover:shadow-lg hover:shadow-accent/10">
+    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-primary hover:shadow-lg hover:shadow-primary/10">
       <CardHeader>
         <div className="aspect-[16/9] relative overflow-hidden rounded-t-lg -mt-6 -mx-6">
           <Image
@@ -22,14 +22,14 @@ export function ArticleCard({ article }: ArticleCardProps) {
             data-ai-hint={article.imageHint}
           />
         </div>
-        <Badge variant="secondary" className="w-fit mt-4 bg-accent/20 text-accent border-none">{article.category}</Badge>
+        <Badge variant="secondary" className="w-fit mt-4">{article.category}</Badge>
         <CardTitle className="font-headline pt-2">{article.title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow">
         <p className="text-muted-foreground">{article.summary}</p>
       </CardContent>
       <CardFooter>
-        <Link href={`/article/${article.slug}`} className="flex items-center text-sm font-semibold text-accent hover:underline">
+        <Link href={`/article/${article.slug}`} className="flex items-center text-sm font-semibold text-primary hover:underline">
           Read more <ArrowUpRight className="h-4 w-4 ml-1" />
         </Link>
       </CardFooter>

@@ -20,7 +20,7 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section className="w-full py-12 md:py-24 bg-[hsl(250_10%_8%)] text-primary-foreground">
+    <section className="w-full py-12 md:py-24 bg-primary text-primary-foreground">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
@@ -41,7 +41,7 @@ export function Testimonials() {
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-muted-foreground mb-4">"{testimonial.text}"</p>
+                <p className="text-primary-foreground/80 mb-4">"{testimonial.text}"</p>
                 <p className="font-semibold">{testimonial.name}</p>
               </CardContent>
             </Card>

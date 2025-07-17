@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
                             <DropdownMenuItem disabled>Edit</DropdownMenuItem>
                             <DropdownMenuItem disabled>Unpublish</DropdownMenuItem>
                             <DropdownMenuItem
-                              className="text-destructive"
+                              className="text-destructive focus:text-destructive"
                               onClick={() => handleDeleteClick(article)}
                             >
                               Delete

@@ -46,7 +46,7 @@ export function QuestionSubmission() {
 
   return (
     <section className="py-12">
-        <Card className="max-w-3xl mx-auto bg-card/50 border-2 border-dashed border-primary">
+        <Card className="max-w-3xl mx-auto bg-muted/50 border-2 border-dashed border-primary">
             <CardHeader className="text-center">
                 <CardTitle className="font-headline text-3xl">Have a Question?</CardTitle>
                 <CardDescription>
@@ -73,7 +73,7 @@ export function QuestionSubmission() {
                         </FormItem>
                     )}
                     />
-                    <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Button type="submit" className="w-full">
                         <Send className="mr-2 h-4 w-4" />
                         Submit Question
                     </Button>
