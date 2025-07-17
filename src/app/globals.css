@@ -14,8 +14,8 @@
     --popover: 0 0% 0%; /* black */
     --popover-foreground: 0 0% 100%; /* white */
 
-    --primary: 0 0% 20%; /* dark gray */
-    --primary-foreground: 0 0% 100%; /* white */
+    --primary: 0 0% 100%; /* white */
+    --primary-foreground: 0 0% 0%; /* black */
 
     --secondary: 0 0% 10%; /* very dark gray */
     --secondary-foreground: 0 0% 100%; /* white */
@@ -23,8 +23,8 @@
     --muted: 0 0% 10%; /* very dark gray */
     --muted-foreground: 0 0% 60%; /* light gray */
 
-    --accent: 0 0% 100%; /* white */
-    --accent-foreground: 0 0% 0%; /* black */
+    --accent: 0 0% 20%; /* dark gray */
+    --accent-foreground: 0 0% 100%; /* white */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
