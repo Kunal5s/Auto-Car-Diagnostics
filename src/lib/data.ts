@@ -1,4 +1,6 @@
 
+'use server';
+
 import type { Article, Category, Author } from "@/lib/types";
 import {
   Cog,
@@ -88,9 +90,11 @@ export async function updateAuthor(authorData: Author): Promise<Author> {
 
 // --- Article Data Functions ---
 export async function getArticles(options: { includeDrafts?: boolean } = {}): Promise<Article[]> {
+  const allCategories = [ "Engine", "Sensors", "OBD2", "Alerts", "Apps", "Maintenance", "Fuel", "EVs", "Trends" ];
   let allArticles: Article[] = [];
-  for (const category of categories) {
-    const categorySlug = category.name.toLowerCase().replace(/ /g, '-');
+  
+  for (const categoryName of allCategories) {
+    const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
     const filePath = path.join(dataPath, `${categorySlug}.json`);
     const categoryArticles = await readJsonFile<Article[]>(filePath);
     allArticles.push(...categoryArticles);

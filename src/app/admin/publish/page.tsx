@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
+import { generateImage } from '@/ai/flows/generate-image';
 
 
 export default function PublishArticlePage() {
@@ -59,28 +60,21 @@ export default function PublishArticlePage() {
         setImageUrl('');
         setAltText('');
 
-        const prompt = `${title}, automotive ${category || 'repair'}, photorealistic, professional automotive photography, high detail`;
-        const sanitizedPrompt = encodeURIComponent(prompt.trim().replace(/\s+/g, " "));
-        const generatedUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&nofeed=true`;
-        
-        const img = new window.Image();
-        img.src = generatedUrl;
-        img.onload = async () => {
-            setImageUrl(generatedUrl);
+        try {
+            const prompt = `${title}, automotive ${category || 'repair'}`;
+            const result = await generateImage({ prompt });
+            setImageUrl(result.imageUrl);
             setImageHint(title);
             toast({ title: "Image generated!", description: "Now generating SEO-friendly alt text..." });
-            try {
-                const altTextResponse = await generateAltText({ articleTitle: title });
-                setAltText(altTextResponse.altText);
-                toast({ title: "Alt text generated!", description: "The alt text has been automatically created and saved." });
-            } catch (err) {
-                 toast({ variant: "destructive", title: "Alt Text Generation Failed", description: "Could not generate alt text. You may need to write it manually." });
-            } finally {
-                setIsGeneratingFeaturedImage(false);
-            }
-        };
-        img.onerror = () => {
-            toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not load the image from Pollinations.ai." });
+            
+            const altTextResponse = await generateAltText({ articleTitle: title });
+            setAltText(altTextResponse.altText);
+            toast({ title: "Alt text generated!", description: "The alt text has been automatically created." });
+
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+            toast({ variant: "destructive", title: "Image Generation Failed", description: `Could not generate image or alt text. ${errorMessage}` });
+        } finally {
             setIsGeneratingFeaturedImage(false);
         }
     }
