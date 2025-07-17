@@ -46,7 +46,7 @@ export function Header() {
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex w-max space-x-4 p-4 lg:justify-center lg:space-x-8 lg:w-full">
               {categories.map((category) => (
-                <Button key={category.name} variant="ghost" className="h-auto p-1 text-muted-foreground hover:text-foreground">
+                <Button key={category.name} variant="ghost" className="h-auto p-1 text-muted-foreground hover:text-accent-foreground">
                   {category.name}
                 </Button>
               ))}
