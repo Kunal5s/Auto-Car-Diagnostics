@@ -23,7 +23,7 @@ export const categories: Category[] = [
   { name: "Trends", icon: TrendingUp },
 ];
 
-export const articles: Article[] = [
+export let articles: Article[] = [
   {
     slug: "understanding-your-cars-engine",
     title: "Understanding Your Car's Engine: A Beginner's Guide",
@@ -133,13 +133,19 @@ Dashboard warning lights are your car's way of communicating that something is w
 ];
 
 export async function getArticles() {
-  // simulate a delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  // This is in-memory, so it's not truly async, but we'll keep the promise to simulate a real API call.
+  return Promise.resolve(articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()));
 }
 
 export async function getArticleBySlug(slug: string) {
-    // simulate a delay
-  await new Promise(resolve => setTimeout(resolve, 200));
-  return articles.find(article => article.slug === slug);
+  // This is in-memory, so it's not truly async, but we'll keep the promise to simulate a real API call.
+  return Promise.resolve(articles.find(article => article.slug === slug));
+}
+
+// NOTE: This is not a proper database. In a real application, you would use a database
+// to store articles. This is a simplified approach for this prototype.
+export async function addArticle(article: Article) {
+  // This is not safe for concurrent requests but is fine for this prototype.
+  articles.unshift(article);
+  return Promise.resolve();
 }
