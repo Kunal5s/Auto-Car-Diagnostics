@@ -60,13 +60,13 @@ export function WarningLightGuide() {
     return (
         <div className="space-y-6">
             <p className="text-center text-muted-foreground">Select a warning light below to get a detailed explanation from our AI assistant.</p>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                 {lights.map((light) => (
                     <Button
                         key={light.name}
                         variant="outline"
                         className={cn(
-                            "flex flex-col h-20 items-center justify-center gap-2 transition-all",
+                            "flex flex-col h-24 items-center justify-center gap-2 text-center transition-all",
                             selectedLight === light.lightName && "ring-2 ring-primary"
                         )}
                         onClick={() => handleLightClick(light.lightName)}
