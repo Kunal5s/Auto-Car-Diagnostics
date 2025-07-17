@@ -57,7 +57,6 @@ export default function PublishArticlePage() {
     const [imageUrl, setImageUrl] = useState('');
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
-    const [slug, setSlug] = useState('');
     const [bodyImageCount, setBodyImageCount] = useState(3);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     
@@ -70,7 +69,6 @@ export default function PublishArticlePage() {
         setImageUrl('');
         setAltText('');
         setImageHint('');
-        setSlug('');
         localStorage.removeItem(DRAFT_STORAGE_KEY);
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
@@ -287,7 +285,6 @@ export default function PublishArticlePage() {
         }
 
         const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        setSlug(newSlug);
 
         if (status === 'published') setIsPublishing(true);
         else setIsSavingDraft(true);
