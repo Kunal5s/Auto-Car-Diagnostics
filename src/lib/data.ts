@@ -1,4 +1,4 @@
-import type { Article, Category } from "@/lib/types";
+import type { Article, Category, Author } from "@/lib/types";
 import {
   Cog,
   Signal,
@@ -132,6 +132,14 @@ Dashboard warning lights are your car's way of communicating that something is w
   },
 ];
 
+let author: Author = {
+  name: "Kunal Sonpitre",
+  role: "AI & Business Technical Expert",
+  bio: "Kunal is an expert in automotive technology and AI, with a passion for making complex car diagnostics understandable for everyone. He combines his deep technical knowledge with clear, concise writing to empower car owners.",
+  imageUrl: "https://placehold.co/100x100.png"
+};
+
+
 export async function getArticles(options: { includeDrafts?: boolean } = {}) {
   // This is in-memory, so it's not truly async, but we'll keep the promise to simulate a real API call.
   const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -183,4 +191,15 @@ export async function deleteArticle(slug: string) {
     throw new Error(`Article with slug "${slug}" not found.`);
   }
   return Promise.resolve();
+}
+
+
+// Author Data Functions
+export async function getAuthor() {
+    return Promise.resolve(author);
+}
+
+export async function updateAuthor(authorData: Author) {
+    author = { ...author, ...authorData };
+    return Promise.resolve(author);
 }

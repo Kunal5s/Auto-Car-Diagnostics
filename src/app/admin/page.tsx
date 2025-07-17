@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { PlusCircle, MoreHorizontal, Edit, Trash, Eye, EyeOff } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash, Eye, EyeOff, User } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -118,12 +119,20 @@ export default function AdminDashboardPage() {
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
-          <Button asChild>
-            <Link href="/admin/publish">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Article
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+             <Button variant="outline" asChild>
+                <Link href="/admin/author">
+                  <User className="mr-2 h-4 w-4" />
+                  Author Profile
+                </Link>
+              </Button>
+            <Button asChild>
+              <Link href="/admin/publish">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Article
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <Card>

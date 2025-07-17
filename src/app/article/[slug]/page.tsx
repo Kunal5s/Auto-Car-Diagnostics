@@ -1,4 +1,4 @@
-import { getArticleBySlug } from "@/lib/data";
+import { getArticleBySlug, getAuthor } from "@/lib/data";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/common/footer";
@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import type { Author } from "@/lib/types";
 
 // This is a dummy component for header as we can't pass state to it from here
 function StaticHeader() {
@@ -28,6 +29,24 @@ function StaticHeader() {
   );
 }
 
+function AuthorInfo({ author }: { author: Author }) {
+  return (
+    <div className="mt-16 pt-8 border-t">
+       <div className="flex items-center gap-4">
+          <div className="relative h-20 w-20 rounded-full overflow-hidden">
+            <Image src={author.imageUrl || '/placeholder-user.jpg'} alt={author.name} layout="fill" objectFit="cover" data-ai-hint="author photo" />
+          </div>
+          <div>
+              <p className="text-sm text-muted-foreground">Written by</p>
+              <h4 className="text-xl font-bold font-headline">{author.name}</h4>
+              <p className="text-md text-muted-foreground">{author.role}</p>
+          </div>
+       </div>
+       <p className="mt-4 text-muted-foreground">{author.bio}</p>
+    </div>
+  )
+}
+
 
 export default async function ArticlePage({
   params,
@@ -35,6 +54,7 @@ export default async function ArticlePage({
   params: { slug: string };
 }) {
   const article = await getArticleBySlug(params.slug);
+  const author = await getAuthor();
 
   if (!article) {
     notFound();
@@ -91,6 +111,8 @@ export default async function ArticlePage({
                     <p key={index}>{paragraph}</p>
                 ))}
             </div>
+            
+            <AuthorInfo author={author} />
           </div>
         </article>
       </main>

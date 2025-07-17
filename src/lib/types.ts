@@ -16,3 +16,10 @@ export interface Category {
   name: string;
   icon: LucideIcon | React.ComponentType<{ className?: string }>;
 }
+
+export interface Author {
+  name: string;
+  role: string;
+  bio: string;
+  imageUrl: string;
+}
