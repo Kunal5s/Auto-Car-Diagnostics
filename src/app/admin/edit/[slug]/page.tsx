@@ -509,7 +509,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                                 <SelectValue placeholder="Count" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => (
+                                                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
                                                     <SelectItem key={num} value={String(num)}>{num}</SelectItem>
                                                 ))}
                                             </SelectContent>
