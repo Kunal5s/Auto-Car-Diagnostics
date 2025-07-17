@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { categories, addArticle } from '@/lib/data';
+import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
@@ -25,12 +26,18 @@ export default function PublishArticlePage() {
     const [category, setCategory] = useState('');
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
+    const [slug, setSlug] = useState('');
     
     const { toast } = useToast();
-
+    
+    const canPreview = (slug: string, status: Article['status']) => {
+        return !!slug && status === 'draft';
+    }
+    
     const handleGenerateImage = async () => {
         if (!title) {
             toast({ variant: "destructive", title: "Title is required", description: "Please enter an article title to generate an image." });
@@ -66,17 +73,24 @@ export default function PublishArticlePage() {
         }
     }
 
-    const handlePublish = async () => {
+    const handleSave = async (status: 'published' | 'draft') => {
         if (!title || !summary || !content || !category || !imageUrl) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "Please fill in all fields and generate a featured image before publishing.",
+                description: "Please fill in all fields and generate a featured image before saving.",
             });
             return;
         }
 
-        setIsPublishing(true);
+        if (status === 'published') setIsPublishing(true);
+        else setIsSavingDraft(true);
+
+        const newSlug = slug || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        if (!slug) {
+            setSlug(newSlug);
+        }
+        
         try {
             await addArticle({
                 title,
@@ -86,30 +100,36 @@ export default function PublishArticlePage() {
                 imageUrl,
                 altText,
                 imageHint,
-                slug: title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                slug: newSlug,
+                status,
             });
             toast({
-                title: "Article Published!",
-                description: "Your new article is now live.",
+                title: `Article ${status === 'published' ? 'Published' : 'Draft Saved'}!`,
+                description: `Your article has been successfully ${status}.`,
             });
-            router.push('/admin');
         } catch(error) {
-            console.error("Failed to publish article", error);
+            console.error("Failed to save article", error);
             toast({
                 variant: "destructive",
-                title: "Publishing Failed",
+                title: "Saving Failed",
                 description: "There was an error saving your article.",
             });
         } finally {
-            setIsPublishing(false);
+            if (status === 'published') setIsPublishing(false);
+            else setIsSavingDraft(false);
         }
     }
 
-    const handleSaveDraft = () => {
-        toast({
-            title: "Draft Saved",
-            description: "Your article has been saved as a draft. (This is a demo feature)",
-        });
+    const handlePreview = () => {
+        if (slug) {
+            window.open(`/article/${slug}`, '_blank');
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Cannot Preview",
+                description: "You must save the article as a draft before you can preview it.",
+            });
+        }
     }
 
     return (
@@ -210,14 +230,15 @@ export default function PublishArticlePage() {
 
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={handlePublish} disabled={isPublishing || isGeneratingImage}>
+                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft || isGeneratingImage}>
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
                                 </Button>
-                                <Button variant="outline" className="w-full" onClick={handleSaveDraft}>
+                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft || isGeneratingImage}>
+                                     {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
-                                <Button variant="ghost" className="w-full" disabled>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Article
                                 </Button>

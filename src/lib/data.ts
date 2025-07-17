@@ -162,15 +162,27 @@ export async function getArticleBySlug(slug: string) {
 
 // NOTE: This is not a proper database. In a real application, you would use a database
 // to store articles. This is a simplified approach for this prototype.
-export async function addArticle(article: Omit<Article, 'publishedAt' | 'status'>) {
-  const newArticle: Article = {
-    ...article,
-    status: 'published',
-    publishedAt: new Date().toISOString(),
-  }
-  // This is not safe for concurrent requests but is fine for this prototype.
-  articles.unshift(newArticle);
-  return Promise.resolve(newArticle);
+export async function addArticle(article: Omit<Article, 'publishedAt'>) {
+    const existingIndex = articles.findIndex(a => a.slug === article.slug);
+  
+    if (existingIndex !== -1) {
+      // It's an update to an existing draft
+      const updatedArticle = {
+        ...articles[existingIndex],
+        ...article,
+        publishedAt: article.status === 'published' ? new Date().toISOString() : articles[existingIndex].publishedAt,
+      };
+      articles[existingIndex] = updatedArticle;
+      return Promise.resolve(updatedArticle);
+    } else {
+      // It's a new article
+      const newArticle: Article = {
+        ...article,
+        publishedAt: new Date().toISOString(),
+      };
+      articles.unshift(newArticle);
+      return Promise.resolve(newArticle);
+    }
 }
 
 export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'slug'>>) {

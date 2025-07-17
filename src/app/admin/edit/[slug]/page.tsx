@@ -170,7 +170,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 title: "Article Updated!",
                 description: "Your changes have been saved.",
             });
-            router.push('/admin');
         } catch(error) {
             console.error("Failed to update article", error);
             toast({
@@ -180,6 +179,12 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             });
         } finally {
             setIsUpdating(false);
+        }
+    }
+    
+    const handlePreview = () => {
+        if (article) {
+            window.open(`/article/${article.slug}`, '_blank');
         }
     }
 
@@ -301,7 +306,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                     {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Save Changes
                                 </Button>
-                                <Button variant="ghost" className="w-full" disabled>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={!article}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Changes
                                 </Button>
