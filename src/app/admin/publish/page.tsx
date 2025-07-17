@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { categories, addArticle, getArticleBySlug } from '@/lib/data';
+import { addArticle, getArticleBySlug } from '@/lib/data';
+import { categories } from '@/lib/config';
 import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -27,7 +28,7 @@ export default function PublishArticlePage() {
     const [summary, setSummary] = useState('');
     const [content, setContent] = useState('');
     const [category, setCategory] = useState('');
-    const [keyTakeaways, setKeyTakeaways] = useState<string[]>(Array(5).fill(''));
+    const [keyTakeaways, setKeyTakeaways] = useState<string[]>(['']);
     const [isGeneratingFeaturedImage, setIsGeneratingFeaturedImage] = useState(false);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -49,6 +50,11 @@ export default function PublishArticlePage() {
 
     const addKeyTakeaway = () => {
         setKeyTakeaways([...keyTakeaways, '']);
+    };
+
+     const removeKeyTakeaway = (index: number) => {
+        const newTakeaways = keyTakeaways.filter((_, i) => i !== index);
+        setKeyTakeaways(newTakeaways);
     };
     
     const handleGenerateFeaturedImage = async () => {
@@ -245,6 +251,9 @@ export default function PublishArticlePage() {
                                         value={takeaway}
                                         onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
                                     />
+                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
                                 </div>
                             ))}
                         </div>

@@ -1,4 +1,5 @@
-import { categories } from "@/lib/data";
+
+import { categories } from "@/lib/config";
 import { Card } from "@/components/ui/card";
 
 export function ArticleCategories() {

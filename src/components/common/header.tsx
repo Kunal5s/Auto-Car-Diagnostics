@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { User, Car, ShieldCheck, Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { categories } from "@/lib/data";
+import { categories } from "@/lib/config";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 

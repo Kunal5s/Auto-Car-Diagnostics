@@ -44,7 +44,7 @@ function AuthorInfo({ author }: { author: Author }) {
               <p className="text-md text-muted-foreground">{author.role}</p>
           </div>
        </div>
-       <div className="mt-4 text-muted-foreground prose max-w-none" dangerouslySetInnerHTML={{ __html: author.bio }} />
+       <div className="mt-4 text-muted-foreground prose max-w-none" dangerouslySetInnerHTML={{ __html: author.bio.replace(/\n/g, '<p />') }} />
     </div>
   )
 }
@@ -112,7 +112,7 @@ export default async function ArticlePage({
 
             <ArticleSummarizer articleContent={article.content} />
 
-            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline" dangerouslySetInnerHTML={{ __html: article.content.replace(/\n\n/g, '<br /><br />') }} />
+            <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline" dangerouslySetInnerHTML={{ __html: article.content.replace(/\n\n/g, '<p />') }} />
             
             <AuthorInfo author={author} />
           </div>

@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { categories, getArticleBySlug, updateArticle } from '@/lib/data';
+import { getArticleBySlug, updateArticle } from '@/lib/data';
+import { categories } from '@/lib/config';
 import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -325,6 +326,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         value={takeaway}
                                         onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
                                     />
+                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
                                 </div>
                             ))}
                         </div>

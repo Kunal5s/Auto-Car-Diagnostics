@@ -1,32 +1,9 @@
 
 'use server';
 
-import type { Article, Category, Author } from "@/lib/types";
-import {
-  Cog,
-  Signal,
-  AlertTriangle,
-  AppWindow,
-  Wrench,
-  Fuel,
-  BatteryCharging,
-  TrendingUp,
-} from "lucide-react";
-import { Obd2Icon } from "@/components/icons/obd2-icon";
+import type { Article, Author } from "@/lib/types";
 import fs from 'fs/promises';
 import path from 'path';
-
-export const categories: Category[] = [
-  { name: "Engine", icon: Cog },
-  { name: "Sensors", icon: Signal },
-  { name: "OBD2", icon: Obd2Icon },
-  { name: "Alerts", icon: AlertTriangle },
-  { name: "Apps", icon: AppWindow },
-  { name: "Maintenance", icon: Wrench },
-  { name: "Fuel", icon: Fuel },
-  { name: "EVs", icon: BatteryCharging },
-  { name: "Trends", icon: TrendingUp },
-];
 
 const dataPath = path.join(process.cwd(), 'src', 'data');
 
