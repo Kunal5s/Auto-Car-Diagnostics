@@ -149,3 +149,12 @@ export async function addArticle(article: Article) {
   articles.unshift(article);
   return Promise.resolve();
 }
+
+export async function deleteArticle(slug: string) {
+  const initialLength = articles.length;
+  articles = articles.filter(article => article.slug !== slug);
+  if (articles.length === initialLength) {
+    throw new Error(`Article with slug "${slug}" not found.`);
+  }
+  return Promise.resolve();
+}
