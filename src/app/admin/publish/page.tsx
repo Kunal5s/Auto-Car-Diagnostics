@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Trash2, Eye, Sparkles, Image as ImageIcon, Send, Bold, Italic, Underline, Link2, List, ListOrdered, Heading1, Heading2, Heading3, AlignLeft, AlignCenter, AlignRight, Quote, Redo, Undo, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Eye, Sparkles, Image as ImageIcon, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,53 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { categories, addArticle } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import { generateImage } from '@/ai/flows/generate-image';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-
-
-function RichTextEditorToolbar() {
-    return (
-        <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-card/50">
-            <div className="flex items-center gap-1">
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><Bold className="h-4 w-4" /></Button>
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><Italic className="h-4 w-4" /></Button>
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><Underline className="h-4 w-4" /></Button>
-            </div>
-            <Separator orientation="vertical" className="h-6 mx-1" />
-            <div className="flex items-center gap-1">
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><Link2 className="h-4 w-4" /></Button>
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><Quote className="h-4 w-4" /></Button>
-            </div>
-            <Separator orientation="vertical" className="h-6 mx-1" />
-            <div className="flex items-center gap-1">
-                 <Select defaultValue="p" disabled>
-                    <SelectTrigger className="w-auto h-8 text-xs border-0 focus:ring-0">
-                        <SelectValue placeholder="Font" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="p">Paragraph</SelectItem>
-                        <SelectItem value="h1"><Heading1 className="inline-block h-4 w-4 mr-2" /> Heading 1</SelectItem>
-                        <SelectItem value="h2"><Heading2 className="inline-block h-4 w-4 mr-2" /> Heading 2</SelectItem>
-                        <SelectItem value="h3"><Heading3 className="inline-block h-4 w-4 mr-2" /> Heading 3</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-             <Separator orientation="vertical" className="h-6 mx-1" />
-            <div className="flex items-center gap-1">
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><AlignLeft className="h-4 w-4" /></Button>
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><AlignCenter className="h-4 w-4" /></Button>
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><AlignRight className="h-4 w-4" /></Button>
-            </div>
-             <Separator orientation="vertical" className="h-6 mx-1" />
-            <div className="flex items-center gap-1">
-                <Button disabled variant="ghost" size="icon" className="h-8 w-8"><Undo className="h-4 w-4" /></Button>
-                <Button disabled variant="ghost" size="icon" className="h-8 w-4"><Redo className="h-4 w-4" /></Button>
-            </div>
-        </div>
-    )
-}
 
 
 export default function PublishArticlePage() {
