@@ -374,7 +374,7 @@ export default function PublishArticlePage() {
                                             <p className="text-sm text-muted-foreground mt-2">Generating image... <br/> Alt text will be generated next.</p>
                                         </div>
                                     ) : imageUrl ? (
-                                        <Image src={imageUrl} alt={altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" />
+                                        <Image src={imageUrl} alt={altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
