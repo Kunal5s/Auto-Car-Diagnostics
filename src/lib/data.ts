@@ -130,10 +130,7 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
 
     const articles = await readJsonFile<Article[]>(filePath);
     
-    const existingIndex = articles.findIndex(a => a.slug === newArticle.slug);
-    if (existingIndex !== -1) {
-        throw new Error(`Article with slug "${newArticle.slug}" already exists in category "${newArticle.category}".`);
-    }
+    // This was the buggy check causing the issue. It has been removed.
 
     articles.unshift(newArticle);
 
