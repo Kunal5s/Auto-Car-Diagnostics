@@ -195,8 +195,8 @@ export default function PublishArticlePage() {
                     setImageUrl(dataUrl);
                     toast({ title: "Featured image updated." });
                 } else {
-                    const img = `<img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" />`;
-                    document.execCommand('insertHTML', false, img);
+                    const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                    document.execCommand('insertHTML', false, imgHtml);
                     const editor = document.getElementById('content-editor');
                     if (editor) handleContentChange(editor.innerHTML);
                     toast({ title: "Image inserted into content." });
@@ -230,7 +230,7 @@ export default function PublishArticlePage() {
             let newContent = editorState.content;
             for (const generatedImageUrl of imageUrls) {
                 const imageAlt = `${editorState.title} - illustration`;
-                newContent += `<p><img src="${generatedImageUrl}" alt="${imageAlt}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" /></p>`;
+                 newContent += `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${generatedImageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" /></div>`;
             }
 
             handleStateChange('content', newContent.trim());
@@ -246,7 +246,7 @@ export default function PublishArticlePage() {
     }
 
     const handleResetBodyImages = () => {
-        const newContent = editorState.content.replace(/<p><img[^>]*><\/p>/g, '');
+        const newContent = editorState.content.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
         handleStateChange('content', newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
     };

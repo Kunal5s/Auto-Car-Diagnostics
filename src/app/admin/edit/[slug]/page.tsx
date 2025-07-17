@@ -227,8 +227,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                     setImageUrl(dataUrl);
                     toast({ title: "Featured image updated." });
                 } else {
-                    const img = `<img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" />`;
-                    document.execCommand('insertHTML', false, img);
+                    const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                    document.execCommand('insertHTML', false, imgHtml);
                     const editor = document.getElementById('content-editor');
                     if (editor) handleContentChange(editor.innerHTML);
                     toast({ title: "Image inserted into content." });
@@ -262,7 +262,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             let newContent = content;
             for (const generatedImageUrl of imageUrls) {
                 const imageAlt = `${title} - illustration`;
-                newContent += `<p><img src="${generatedImageUrl}" alt="${imageAlt}" style="margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;" data-ai-hint="${title} ${category}" /></p>`;
+                newContent += `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${generatedImageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${title} ${category}" /></div>`;
             }
 
             setContent(newContent.trim());
@@ -278,7 +278,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     }
     
     const handleResetBodyImages = () => {
-        const newContent = content.replace(/<p><img[^>]*><\/p>/g, '');
+        const newContent = content.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
         setContent(newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
     };
