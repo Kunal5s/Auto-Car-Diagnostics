@@ -49,8 +49,8 @@ export function VinDecoder() {
     }
   }
 
-  const DetailItem = ({ label, value }: { label: string; value?: string }) => (
-    value ? <div className="flex justify-between py-1 border-b border-dashed"><dt className="text-muted-foreground">{label}</dt><dd className="font-semibold text-right">{value}</dd></div> : null
+  const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => (
+    value ? <div className="flex justify-between items-center py-2 border-b border-dashed"><dt className="text-muted-foreground">{label}</dt><dd className="font-semibold text-right text-sm">{value}</dd></div> : null
   );
 
   return (
@@ -65,7 +65,7 @@ export function VinDecoder() {
                 <FormLabel className="sr-only">VIN</FormLabel>
                 <FormControl>
                     <div className="flex gap-2">
-                        <Input placeholder="Enter your 17-character VIN" {...field} className="text-base" />
+                        <Input placeholder="Enter your 17-character VIN" {...field} className="text-base uppercase" />
                         <Button type="submit" disabled={isLoading} className="min-w-[120px]">
                             {isLoading ? <Loader2 className="animate-spin" /> : "Decode VIN"}
                         </Button>
@@ -93,16 +93,19 @@ export function VinDecoder() {
               <CardTitle className="font-headline">Vehicle Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="space-y-2">
-                <DetailItem label="Make" value={result.vehicleInfo.Make} />
-                <DetailItem label="Model" value={result.vehicleInfo.Model} />
-                <DetailItem label="Year" value={result.vehicleInfo.ModelYear} />
-                <DetailItem label="Body Class" value={result.vehicleInfo.BodyClass} />
-                <DetailItem label="Engine Cylinders" value={result.vehicleInfo.EngineCylinders} />
-                <DetailItem label="Displacement (L)" value={result.vehicleInfo.DisplacementL} />
-                <DetailItem label="Fuel Type" value={result.vehicleInfo.FuelTypePrimary} />
-                <DetailItem label="Plant City" value={result.vehicleInfo.PlantCity} />
-                <DetailItem label="Plant Country" value={result.vehicleInfo.PlantCountry} />
+              <dl className="space-y-1">
+                <DetailItem label="Year" value={result.vehicleInfo.year} />
+                <DetailItem label="Make" value={result.vehicleInfo.make} />
+                <DetailItem label="Model" value={result.vehicleInfo.model} />
+                <DetailItem label="Body Style" value={result.vehicleInfo.body} />
+                <DetailItem label="Engine" value={result.vehicleInfo.engine} />
+                <DetailItem label="Transmission" value={result.vehicleInfo.transmission} />
+                <DetailItem label="Drivetrain" value={result.vehicleInfo.drivetrain} />
+                <DetailItem label="Fuel Type" value={result.vehicleInfo.fuel_type} />
+                <DetailItem label="Exterior Color" value={result.vehicleInfo.ext_color} />
+                <DetailItem label="Interior Color" value={result.vehicleInfo.int_color} />
+                <DetailItem label="MPG City" value={result.vehicleInfo.mileage_city} />
+                <DetailItem label="MPG Highway" value={result.vehicleInfo.mileage_highway} />
               </dl>
             </CardContent>
           </Card>
@@ -111,7 +114,7 @@ export function VinDecoder() {
             <CardHeader>
               <CardTitle className="font-headline">Safety Recalls</CardTitle>
               <CardDescription>
-                {result.recalls.length} recall(s) found for this make, model, and year.
+                {result.recalls.length} recall(s) found for this vehicle.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -123,10 +126,12 @@ export function VinDecoder() {
               ) : (
                 <div className="space-y-4">
                   {result.recalls.map((recall) => (
-                    <div key={recall.NHTSACampaignNumber} className="p-4 border rounded-lg">
-                      <h3 className="font-bold text-lg">{recall.Component}</h3>
-                      <p className="text-sm text-muted-foreground">Campaign #: {recall.NHTSACampaignNumber} | Date: {recall.ReportReceivedDate}</p>
-                      <p className="mt-2">{recall.Summary}</p>
+                    <div key={recall.nhtsa_id} className="p-4 border rounded-lg">
+                      <h3 className="font-bold text-lg">{recall.component}</h3>
+                      <p className="text-sm text-muted-foreground">Campaign #: {recall.nhtsa_id} | Date: {recall.report_date}</p>
+                      <p className="mt-2 text-sm"><strong className="font-semibold">Description:</strong> {recall.description}</p>
+                      <p className="mt-2 text-sm"><strong className="font-semibold">Consequence:</strong> {recall.consequence}</p>
+                      {recall.remedy && <p className="mt-2 text-sm"><strong className="font-semibold">Remedy:</strong> {recall.remedy}</p>}
                     </div>
                   ))}
                 </div>

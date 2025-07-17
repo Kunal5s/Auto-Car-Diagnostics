@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A flow for decoding a VIN using the CarAPI.app service.
+ * @fileOverview A flow for decoding a VIN and checking for recalls using the CarAPI.app service.
  *
  * - decodeVin - A function that takes a VIN and returns detailed vehicle information and recalls.
  * - VinInput - The input type for the decodeVin function.
@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { fetchCarApiData } from '@/lib/carapi';
 
 // Input Schema
@@ -69,7 +69,7 @@ const vinDecoderFlow = ai.defineFlow(
   },
   async ({ vin }) => {
     // Using Promise.all to fetch VIN details and recalls concurrently for better performance
-    const [vinDetails, recalls] = await Promise.all([
+    const [vinDetails, recallData] = await Promise.all([
         fetchCarApiData(`vin/${vin}`),
         fetchCarApiData('recalls', { vin })
     ]);
@@ -77,10 +77,13 @@ const vinDecoderFlow = ai.defineFlow(
     if (!vinDetails || !vinDetails.make) {
         throw new Error('Invalid VIN or no data found. Please check the VIN and try again.');
     }
+    
+    // The recalls might be nested in a 'data' property
+    const recalls = recallData?.data || recallData || [];
 
     return {
       vehicleInfo: vinDetails,
-      recalls: recalls || [] // CarAPI returns null if no recalls, so we default to an empty array
+      recalls: recalls,
     };
   }
 );
