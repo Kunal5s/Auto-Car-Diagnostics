@@ -105,7 +105,7 @@ export default function AuthorProfilePage() {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-8">
+         <div className="container mx-auto p-4 md:p-8">
             <div className="mb-6">
                 <Button variant="ghost" asChild>
                     <Link href="/admin">
