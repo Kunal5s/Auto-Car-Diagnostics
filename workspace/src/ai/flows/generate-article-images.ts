@@ -1,0 +1,79 @@
+
+'use server';
+
+/**
+ * @fileOverview A flow for generating multiple, contextually relevant images for an article using Pollinations.ai.
+ *
+ * - generateArticleImages - A function that analyzes article content and generates a specified number of images.
+ * - GenerateArticleImagesInput - The input type for the function.
+ * - GenerateArticleImagesOutput - The return type for the function.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+
+const GenerateArticleImagesInputSchema = z.object({
+  articleContent: z.string().describe('The full text content of the article.'),
+  articleTitle: z.string().describe('The title of the article.'),
+  category: z.string().describe('The category of the article.'),
+  imageCount: z.number().int().min(1).max(10).describe('The number of images to generate for the article body.'),
+});
+export type GenerateArticleImagesInput = z.infer<typeof GenerateArticleImagesInputSchema>;
+
+const GenerateArticleImagesOutputSchema = z.object({
+  imageUrls: z.array(z.string()).describe('An array of URLs for the generated images from Pollinations.ai.'),
+});
+export type GenerateArticleImagesOutput = z.infer<typeof GenerateArticleImagesOutputSchema>;
+
+// This function now wraps the flow, as per standard practice.
+export async function generateArticleImages(input: GenerateArticleImagesInput): Promise<GenerateArticleImagesOutput> {
+  return generateArticleImagesFlow(input);
+}
+
+
+const topicPrompt = ai.definePrompt({
+    name: 'generateImageTopics',
+    input: { schema: GenerateArticleImagesInputSchema },
+    output: { schema: z.object({ topics: z.array(z.string()).describe('A list of diverse, specific, and visually interesting image prompts.') }) },
+    prompt: `Based on the following article content, generate {{{imageCount}}} distinct and visually compelling image prompts. Each prompt should be a short phrase describing a specific scene, concept, or component mentioned in the article. The prompts should be suitable for a photorealistic image generation model.
+
+    Article Title: {{{articleTitle}}}
+    Category: {{{category}}}
+    Article Content:
+    ---
+    {{{articleContent}}}
+    ---
+
+    Generate exactly {{{imageCount}}} prompts.
+    `,
+    config: {
+        model: 'googleai/gemini-1.5-flash-latest'
+    }
+});
+
+
+const generateArticleImagesFlow = ai.defineFlow(
+  {
+    name: 'generateArticleImagesFlow',
+    inputSchema: GenerateArticleImagesInputSchema,
+    outputSchema: GenerateArticleImagesOutputSchema,
+  },
+  async (input) => {
+    // 1. Generate descriptive topics from the article content using Genkit
+    const { output } = await topicPrompt(input);
+    const topics = output?.topics || [];
+
+    if (topics.length === 0) {
+        throw new Error('Could not generate image topics from article content.');
+    }
+
+    // 2. Generate an image URL for each topic using Pollinations.ai
+    const imageUrls = topics.map(topic => {
+        const fullPrompt = `${topic}, related to ${input.articleTitle}, professional automotive photography, high detail, photorealistic`;
+        const encodedPrompt = encodeURIComponent(fullPrompt);
+        return `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+    });
+
+    return { imageUrls };
+  }
+);
