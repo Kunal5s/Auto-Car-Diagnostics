@@ -60,7 +60,7 @@ export default function Home() {
     async function loadArticles() {
       try {
         // We only fetch published articles for the homepage
-        const fetchedArticles = await getArticles();
+        const fetchedArticles = await getArticles({ includeDrafts: false });
         setArticles(fetchedArticles);
       } catch (error) {
         console.error("Failed to fetch articles:", error);
