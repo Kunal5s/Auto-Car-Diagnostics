@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -72,6 +72,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [summary, setSummary] = useState('');
     const [content, setContent] = useState('');
     const [category, setCategory] = useState('');
+    const [keyTakeaways, setKeyTakeaways] = useState<string[]>([]);
     const [imageUrl, setImageUrl] = useState('');
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
@@ -91,6 +92,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 setSummary(fetchedArticle.summary);
                 setContent(fetchedArticle.content);
                 setCategory(fetchedArticle.category);
+                setKeyTakeaways(fetchedArticle.keyTakeaways || []);
                 setImageUrl(fetchedArticle.imageUrl);
                 setAltText(fetchedArticle.altText || '');
                 setImageHint(fetchedArticle.imageHint);
@@ -111,6 +113,21 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             loadArticle();
         }
     }, [slug, loadArticle]);
+
+    const handleKeyTakeawayChange = (index: number, value: string) => {
+        const newTakeaways = [...keyTakeaways];
+        newTakeaways[index] = value;
+        setKeyTakeaways(newTakeaways);
+    };
+
+    const addKeyTakeaway = () => {
+        setKeyTakeaways([...keyTakeaways, '']);
+    };
+
+    const removeKeyTakeaway = (index: number) => {
+        const newTakeaways = keyTakeaways.filter((_, i) => i !== index);
+        setKeyTakeaways(newTakeaways);
+    };
 
     const handleGenerateImage = async () => {
         if (!title) {
@@ -164,6 +181,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 summary,
                 content,
                 category,
+                keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''),
                 imageUrl,
                 altText,
                 imageHint,
@@ -243,6 +261,28 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             value={summary}
                             onChange={(e) => setSummary(e.target.value)}
                          />
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <Label className="text-lg font-semibold">Key Takeaways</Label>
+                        <div className="space-y-2">
+                            {keyTakeaways.map((takeaway, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        placeholder={`Takeaway #${index + 1}`}
+                                        value={takeaway}
+                                        onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={addKeyTakeaway}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Takeaway
+                        </Button>
                     </div>
 
                     <div className="space-y-2">

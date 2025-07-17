@@ -4,7 +4,7 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ export default function PublishArticlePage() {
     const [summary, setSummary] = useState('');
     const [content, setContent] = useState('');
     const [category, setCategory] = useState('');
+    const [keyTakeaways, setKeyTakeaways] = useState<string[]>(Array(5).fill(''));
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -39,6 +40,21 @@ export default function PublishArticlePage() {
     const canPreview = (slug: string, status: Article['status']) => {
         return !!slug && status === 'draft';
     }
+
+    const handleKeyTakeawayChange = (index: number, value: string) => {
+        const newTakeaways = [...keyTakeaways];
+        newTakeaways[index] = value;
+        setKeyTakeaways(newTakeaways);
+    };
+
+    const addKeyTakeaway = () => {
+        setKeyTakeaways([...keyTakeaways, '']);
+    };
+
+    const removeKeyTakeaway = (index: number) => {
+        const newTakeaways = keyTakeaways.filter((_, i) => i !== index);
+        setKeyTakeaways(newTakeaways);
+    };
     
     const handleGenerateImage = async () => {
         if (!title) {
@@ -99,6 +115,7 @@ export default function PublishArticlePage() {
                 summary,
                 content,
                 category,
+                keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''), // Filter out empty takeaways
                 imageUrl,
                 altText,
                 imageHint,
@@ -172,6 +189,29 @@ export default function PublishArticlePage() {
                             onChange={(e) => setSummary(e.target.value)}
                          />
                     </div>
+                    
+                    <div className="space-y-4">
+                        <Label className="text-lg font-semibold">Key Takeaways</Label>
+                        <div className="space-y-2">
+                            {keyTakeaways.map((takeaway, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        placeholder={`Takeaway #${index + 1}`}
+                                        value={takeaway}
+                                        onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)} disabled={keyTakeaways.length <= 1}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={addKeyTakeaway}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Takeaway
+                        </Button>
+                    </div>
+
 
                     <div className="space-y-2">
                         <Label className="text-lg font-semibold">Content</Label>

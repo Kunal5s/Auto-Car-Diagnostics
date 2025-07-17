@@ -5,6 +5,7 @@ export interface Article {
   title: string;
   summary: string;
   content: string;
+  keyTakeaways: string[];
   imageUrl: string;
   altText: string;
   imageHint: string;

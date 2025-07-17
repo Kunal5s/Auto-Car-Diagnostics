@@ -36,6 +36,13 @@ To withstand the high temperatures and pressures, the engine must be robustly co
 
 The block houses the crankshaft, which converts the reciprocating motion of the pistons into rotary motion at the flywheel. The block also houses the camshaft, which operates the valves. Sometimes the camshaft is in the head (overhead camshaft) or there are two camshafts in the head (double overhead camshaft).
     `,
+    keyTakeaways: [
+        "The engine is an internal combustion engine that converts fuel into power.",
+        "It consists of two main parts: the cylinder block and the cylinder head.",
+        "The crankshaft converts the pistons' up-and-down motion into rotational motion.",
+        "The camshaft controls the opening and closing of valves for fuel/air intake and exhaust.",
+        "Engine robustness is crucial to handle high temperatures and pressures."
+    ],
     imageUrl: "https://placehold.co/600x400.png",
     altText: "Detailed illustration of a modern car engine with various parts labeled, shown against a clean, white background to emphasize its complexity and mechanical beauty.",
     imageHint: "car engine",
@@ -59,6 +66,7 @@ The Coolant Temperature Sensor monitors the temperature of the engine coolant. T
 
 Other important sensors include the Throttle Position Sensor (TPS), Crankshaft Position Sensor (CKP), and Manifold Absolute Pressure (MAP) sensor. Each plays a vital role in the smooth and efficient operation of your vehicle.
     `,
+    keyTakeaways: [],
     imageUrl: "https://placehold.co/600x400.png",
     altText: "A diagram showing the placement of various common car sensors like the O2 sensor, MAF sensor, and coolant temperature sensor on a generic engine block.",
     imageHint: "car dashboard",
@@ -80,6 +88,7 @@ Codes are alphanumeric and start with a letter followed by four numbers. The fir
 
 For example, a P0301 code indicates a misfire in cylinder 1. While the code tells you what the problem is, it doesn't always tell you why it's happening. The cause could be a bad spark plug, a faulty ignition coil, or a clogged fuel injector. Further diagnosis is often required to pinpoint the exact cause.
     `,
+    keyTakeaways: [],
     imageUrl: "https://placehold.co/600x400.png",
     altText: "A mechanic holding an OBD2 scanner connected to a car's port, with the device displaying a diagnostic trouble code on its screen, illustrating the process of vehicle diagnostics.",
     imageHint: "obd2 scanner",
@@ -105,6 +114,7 @@ Dashboard warning lights are your car's way of communicating that something is w
 
 5.  **Battery/Charging System Warning Light:** A battery-shaped icon indicates a problem with the car's electrical system, such as a failing battery, a bad alternator, or a broken serpentine belt.
     `,
+    keyTakeaways: [],
     imageUrl: "https://placehold.co/600x400.png",
     altText: "A close-up shot of a car's dashboard illuminated with various warning lights, prominently featuring the check engine light, oil pressure light, and battery alert symbol.",
     imageHint: "warning lights",
@@ -117,6 +127,7 @@ Dashboard warning lights are your car's way of communicating that something is w
     title: "An Essential Car Maintenance Schedule to Follow",
     summary: "Keep your car running smoothly and prevent costly repairs by following this essential maintenance schedule. We cover everything from oil changes to tire rotations.",
     content: "Regular maintenance is key to your vehicle's longevity and performance. Here's a general schedule to follow. Check your owner's manual for specific recommendations for your model. Monthly Checks: Check oil level, coolant level, tire pressure, and windshield washer fluid. Every 3-6 Months or 3,000-5,000 miles: Change engine oil and filter. Check battery and cables. Inspect belts and hoses. Check all lights. Every 6-12 Months or 6,000-10,000 miles: Rotate tires. Inspect brake system. Check air filter. Annually: Inspect steering and suspension. Check wheel alignment. Replace wiper blades.",
+    keyTakeaways: [],
     imageUrl: "https://placehold.co/600x400.png",
     altText: "A graphic checklist illustrating an essential car maintenance schedule, with icons for oil change, tire rotation, brake inspection, and battery check, organized by frequency.",
     imageHint: "car maintenance",
@@ -129,6 +140,7 @@ Dashboard warning lights are your car's way of communicating that something is w
     title: "10 Easy Ways to Improve Your Car's Fuel Efficiency",
     summary: "Save money at the pump with these simple tips and driving habits that can significantly boost your vehicle's gas mileage.",
     content: "Want to get more miles to the gallon? Try these tips: 1. Drive smoothly and avoid aggressive acceleration and braking. 2. Observe the speed limit. Fuel economy usually decreases above 50 mph. 3. Remove excess weight from your car. 4. Reduce aerodynamic drag by removing roof racks when not in use. 5. Keep tires properly inflated. 6. Use the recommended grade of motor oil. 7. Keep your engine properly tuned. 8. Use cruise control on the highway. 9. Avoid excessive idling. 10. Combine errands into one trip to avoid multiple cold starts.",
+    keyTakeaways: [],
     imageUrl: "https://placehold.co/600x400.png",
     altText: "A car's fuel gauge indicator on the dashboard pointing towards 'Full', with a green leaf symbol nearby, symbolizing improved fuel efficiency and eco-friendly driving.",
     imageHint: "fuel pump",

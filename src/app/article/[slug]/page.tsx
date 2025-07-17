@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/common/footer";
 import { ArticleSummarizer } from "@/components/article/article-summarizer";
+import { KeyTakeaways } from "@/components/article/key-takeaways";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Car } from "lucide-react";
 import { format } from "date-fns";
@@ -103,6 +104,10 @@ export default async function ArticlePage({
                 priority
               />
             </div>
+
+            {article.keyTakeaways && article.keyTakeaways.length > 0 && (
+              <KeyTakeaways takeaways={article.keyTakeaways} />
+            )}
 
             <ArticleSummarizer articleContent={article.content} />
 
