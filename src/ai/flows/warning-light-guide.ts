@@ -12,12 +12,12 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const WarningLightInputSchema = z.object({
+const WarningLightInputSchema = z.object({
   lightName: z.string().describe('The common name of the dashboard warning light, e.g., "Check Engine Light", "Oil Pressure Light".'),
 });
 export type WarningLightInput = z.infer<typeof WarningLightInputSchema>;
 
-export const WarningLightOutputSchema = z.object({
+const WarningLightOutputSchema = z.object({
   meaning: z.string().describe("A clear and concise explanation of what the selected warning light means."),
   severity: z.enum(['Low', 'Medium', 'High']).describe("The severity level of the warning. 'Low' for informational, 'Medium' for 'check soon', 'High' for 'stop driving immediately'."),
   action: z.string().describe("The recommended course of action for the driver when this light comes on."),
@@ -58,3 +58,4 @@ const warningLightGuideFlow = ai.defineFlow(
     return output;
   }
 );
+
