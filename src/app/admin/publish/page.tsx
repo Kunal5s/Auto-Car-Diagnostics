@@ -19,8 +19,6 @@ import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
-import { useDebounce } from '@/hooks/use-debounce';
-
 
 type EditorState = {
     title: string;
@@ -52,7 +50,6 @@ export default function PublishArticlePage() {
     
     const { toast } = useToast();
 
-    const debouncedTitle = useDebounce(editorState.title, 1500);
     const DRAFT_STORAGE_KEY = 'article_draft';
 
     // Load draft from local storage on mount
@@ -106,14 +103,6 @@ export default function PublishArticlePage() {
             setIsGeneratingFeaturedImage(false);
         }
     }, [editorState.category, isGeneratingFeaturedImage]);
-
-    useEffect(() => {
-        // Automatic featured image generation on title change (debounced)
-        if (debouncedTitle) {
-            handleGenerateFeaturedImage(debouncedTitle);
-        }
-    }, [debouncedTitle, handleGenerateFeaturedImage]);
-
 
     const handleContentChange = (newContent: string) => {
         handleStateChange('content', newContent);
@@ -377,7 +366,8 @@ export default function PublishArticlePage() {
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: editorState.summary }}
                             className={cn(
-                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold'
                             )}
                         />
                     </div>
@@ -415,7 +405,8 @@ export default function PublishArticlePage() {
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: editorState.content }}
                             className={cn(
-                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold'
                             )}
                         />
                     </div>
@@ -457,7 +448,7 @@ export default function PublishArticlePage() {
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">An image will be generated automatically when you type a title.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image based on the title.</p>
                                         </>
                                     )}
                                 </div>
@@ -538,5 +529,3 @@ export default function PublishArticlePage() {
         </div>
     );
 }
-
-    

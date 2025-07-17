@@ -20,7 +20,6 @@ import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
-import { useDebounce } from '@/hooks/use-debounce';
 
 function EditArticleSkeleton() {
     return (
@@ -86,8 +85,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const debouncedTitle = useDebounce(title, 1500);
-
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -138,13 +135,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     }, [category, isGeneratingFeaturedImage]);
 
-    useEffect(() => {
-        // Automatic featured image generation on title change (debounced)
-        if (debouncedTitle && debouncedTitle !== article?.title) {
-            handleGenerateFeaturedImage(debouncedTitle);
-        }
-    }, [debouncedTitle, article?.title, handleGenerateFeaturedImage]);
-    
     const handleContentChange = (newContent: string) => {
         setContent(newContent);
     };
@@ -399,8 +389,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             onInput={(e) => setSummary(e.currentTarget.innerText)}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: summary }}
-                            className={cn(
-                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                             className={cn(
+                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold'
                             )}
                         />
                     </div>
@@ -437,7 +428,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: content }}
                             className={cn(
-                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold'
                             )}
                         />
                     </div>
@@ -479,7 +471,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">An image will be generated automatically when you type a title.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image based on the title.</p>
                                         </>
                                     )}
                                 </div>
@@ -556,5 +548,3 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
-
-    
