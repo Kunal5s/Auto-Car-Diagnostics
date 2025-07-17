@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getWarningLightExplanation, type WarningLightOutput } from "@/ai/flows/warning-light-guide";
-import { AlertTriangle, OilCan, Thermometer, BatteryWarning, CircleDot, Windshield, Lightbulb } from "lucide-react";
+import { AlertTriangle, Droplet, Thermometer, BatteryWarning, CircleDot, Windshield, Lightbulb } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import { Badge } from "../ui/badge";
 
 const lights = [
   { name: "Check Engine", icon: Obd2Icon, lightName: "Check Engine Light" },
-  { name: "Oil Pressure", icon: OilCan, lightName: "Oil Pressure Light" },
+  { name: "Oil Pressure", icon: Droplet, lightName: "Oil Pressure Light" },
   { name: "Engine Temp", icon: Thermometer, lightName: "Engine Temperature Warning Light" },
   { name: "Battery", icon: BatteryWarning, lightName: "Battery or Charging System Light" },
   { name: "Brake System", icon: AlertTriangle, lightName: "Brake System Warning Light" },

@@ -1,4 +1,4 @@
-import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert } from "lucide-react";
+import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert, Wind } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import type { Category, Tool } from "./types";
 
@@ -26,6 +26,12 @@ export const tools: Tool[] = [
         slug: 'warning-light-guide',
         description: 'Understand what your dashboard warning lights mean and what to do about them.',
         icon: ShieldAlert,
+    },
+    {
+        name: 'Smoke Color Diagnosis',
+        slug: 'smoke-color-diagnosis',
+        description: 'Diagnose potential engine issues based on the color of your exhaust smoke.',
+        icon: Wind,
     },
     {
         name: 'OBD Code Scanner',

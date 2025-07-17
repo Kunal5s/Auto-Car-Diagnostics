@@ -21,9 +21,12 @@ import { BeltConditionEstimator } from "@/components/tools/belt-condition-estima
 import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker";
 import { VinDecoder } from "@/components/tools/vin-decoder";
 import { WarningLightGuide } from "@/components/tools/warning-light-guide";
+import { SmokeDiagnosis } from "@/components/tools/smoke-diagnosis";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
   "vin-decoder": VinDecoder,
+  "warning-light-guide": WarningLightGuide,
+  "smoke-color-diagnosis": SmokeDiagnosis,
   "obd-code-scanner": ObdCodeScanner,
   "battery-health-check": BatteryHealthCheck,
   "tire-pressure-guide": TirePressureGuide,
@@ -34,7 +37,6 @@ const toolComponents: { [key: string]: React.ComponentType } = {
   "engine-noise-analyzer": EngineNoiseAnalyzer,
   "belt-condition-estimator": BeltConditionEstimator,
   "ac-performance-checker": AcPerformanceChecker,
-  "warning-light-guide": WarningLightGuide,
 };
 
 export default function ToolPage() {
