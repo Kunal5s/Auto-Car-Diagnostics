@@ -18,8 +18,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Helvetica', 'sans-serif'],
-        headline: ['Arial Black', 'sans-serif'],
+        sans: ["var(--font-sans)"],
+        headline: ["var(--font-headline)"],
       },
       colors: {
         background: 'hsl(var(--background))',
