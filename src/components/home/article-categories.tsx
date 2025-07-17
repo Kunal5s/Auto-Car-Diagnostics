@@ -10,7 +10,7 @@ export function ArticleCategories() {
       <p className="text-muted-foreground text-center mb-8">
         Find articles on specific topics to solve your car problems.
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {categories.map((category) => (
           <Card
             key={category.name}
