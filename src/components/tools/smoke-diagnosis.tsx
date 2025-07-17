@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getSmokeDiagnosis, type SmokeDiagnosisOutput, type SmokeDiagnosisInput } from "@/ai/flows/smoke-diagnosis";
+import { getSmokeDiagnosis } from "@/ai/flows/smoke-diagnosis";
+import type { SmokeDiagnosisInput, SmokeDiagnosisOutput } from "@/ai/flows/smoke-diagnosis";
 import { Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 

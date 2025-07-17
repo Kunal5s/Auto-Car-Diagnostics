@@ -12,12 +12,12 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const SmokeDiagnosisInputSchema = z.object({
+const SmokeDiagnosisInputSchema = z.object({
   smokeColor: z.enum(['White', 'Blue', 'Black']).describe('The color of the exhaust smoke.'),
 });
 export type SmokeDiagnosisInput = z.infer<typeof SmokeDiagnosisInputSchema>;
 
-export const SmokeDiagnosisOutputSchema = z.object({
+const SmokeDiagnosisOutputSchema = z.object({
   possibleCauses: z.array(z.string()).describe("A list of the most likely causes for this color of smoke."),
   severity: z.enum(['Low', 'Medium', 'High']).describe("The potential severity of the underlying issue. 'Low' for minor issues, 'Medium' for 'should be checked soon', 'High' for 'potentially serious engine damage'."),
   recommendation: z.string().describe("The recommended course of action for the driver."),
