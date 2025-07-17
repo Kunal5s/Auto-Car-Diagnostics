@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2 } from 'lucide-react';
@@ -20,15 +20,26 @@ import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
+import { useDebounce } from '@/hooks/use-debounce';
 
+type EditorState = {
+    title: string;
+    summary: string;
+    content: string;
+    category: string;
+    keyTakeaways: string[];
+}
 
 export default function PublishArticlePage() {
     const router = useRouter();
-    const [title, setTitle] = useState('');
-    const [summary, setSummary] = useState('');
-    const [content, setContent] = useState('');
-    const [category, setCategory] = useState('');
-    const [keyTakeaways, setKeyTakeaways] = useState<string[]>(['']);
+    const [editorState, setEditorState] = useState<EditorState>({
+        title: '',
+        summary: '',
+        content: '',
+        category: '',
+        keyTakeaways: [''],
+    });
+    
     const [isGeneratingFeaturedImage, setIsGeneratingFeaturedImage] = useState(false);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -40,40 +51,76 @@ export default function PublishArticlePage() {
     const [bodyImageCount, setBodyImageCount] = useState(3);
     
     const { toast } = useToast();
-    const contentRef = useRef<HTMLTextAreaElement>(null);
-    
+    const debouncedTitle = useDebounce(editorState.title, 1500);
+
+    const DRAFT_STORAGE_KEY = 'article_draft';
+
+    // Load draft from local storage on mount
+    useEffect(() => {
+        const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (savedDraft) {
+            try {
+                const draft = JSON.parse(savedDraft);
+                setEditorState(draft.editorState);
+                setImageUrl(draft.imageUrl || '');
+                setAltText(draft.altText || '');
+                setImageHint(draft.imageHint || '');
+                 toast({ title: "Draft Restored", description: "Your previously saved draft has been loaded." });
+            } catch (error) {
+                console.error("Failed to parse draft from local storage", error);
+                localStorage.removeItem(DRAFT_STORAGE_KEY);
+            }
+        }
+    }, [toast]);
+
+    // Save draft to local storage on change
+    useEffect(() => {
+        const draftData = {
+            editorState,
+            imageUrl,
+            altText,
+            imageHint,
+        };
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+    }, [editorState, imageUrl, altText, imageHint]);
+
+
+    const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
+        setEditorState(prev => ({ ...prev, [key]: value }));
+    }
+
     const handleKeyTakeawayChange = (index: number, value: string) => {
-        const newTakeaways = [...keyTakeaways];
+        const newTakeaways = [...editorState.keyTakeaways];
         newTakeaways[index] = value;
-        setKeyTakeaways(newTakeaways);
+        handleStateChange('keyTakeaways', newTakeaways);
     };
 
     const addKeyTakeaway = () => {
-        setKeyTakeaways([...keyTakeaways, '']);
+        handleStateChange('keyTakeaways', [...editorState.keyTakeaways, '']);
     };
 
      const removeKeyTakeaway = (index: number) => {
-        const newTakeaways = keyTakeaways.filter((_, i) => i !== index);
-        setKeyTakeaways(newTakeaways);
+        const newTakeaways = editorState.keyTakeaways.filter((_, i) => i !== index);
+        handleStateChange('keyTakeaways', newTakeaways);
     };
-    
-    const handleGenerateFeaturedImage = async () => {
-        if (!title) {
-            toast({ variant: "destructive", title: "Title is required", description: "Please enter an article title to generate an image." });
+
+    const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
+        if (!titleToGenerate || isGeneratingFeaturedImage) {
             return;
         }
+        
         setIsGeneratingFeaturedImage(true);
         setImageUrl('');
         setAltText('');
 
         try {
-            const prompt = `${title}, automotive ${category || 'repair'}`;
+            const prompt = `${titleToGenerate}, automotive ${editorState.category || 'repair'}`;
             const result = await generateImage({ prompt });
             setImageUrl(result.imageUrl);
-            setImageHint(title);
+            setImageHint(titleToGenerate);
             toast({ title: "Image generated!", description: "Now generating SEO-friendly alt text..." });
             
-            const altTextResponse = await generateAltText({ articleTitle: title });
+            const altTextResponse = await generateAltText({ articleTitle: titleToGenerate });
             setAltText(altTextResponse.altText);
             toast({ title: "Alt text generated!", description: "The alt text has been automatically created." });
 
@@ -83,10 +130,17 @@ export default function PublishArticlePage() {
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
-    }
+    }, [editorState.category, isGeneratingFeaturedImage, toast]);
+
+    useEffect(() => {
+        if (debouncedTitle) {
+            handleGenerateFeaturedImage(debouncedTitle);
+        }
+    }, [debouncedTitle, handleGenerateFeaturedImage]);
+
 
     const handleGenerateBodyImages = async () => {
-        if (!content || !title) {
+        if (!editorState.content || !editorState.title) {
             toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
             return;
         }
@@ -94,9 +148,9 @@ export default function PublishArticlePage() {
         
         try {
             const result = await generateArticleImages({ 
-                articleContent: content, 
-                articleTitle: title,
-                category: category,
+                articleContent: editorState.content, 
+                articleTitle: editorState.title,
+                category: editorState.category,
                 imageCount: bodyImageCount 
             });
 
@@ -105,23 +159,14 @@ export default function PublishArticlePage() {
                 throw new Error("No images were generated.");
             }
 
-            const paragraphs = content.split('\n\n');
-            const step = Math.ceil(paragraphs.length / (imageUrls.length + 1));
-            let newContent = '';
-            let imageIndex = 0;
-
-            for (let i = 0; i < paragraphs.length; i++) {
-                newContent += paragraphs[i] + '\n\n';
-                if ((i + 1) % step === 0 && imageIndex < imageUrls.length) {
-                    const imageUrl = imageUrls[imageIndex];
-                    const imageAlt = `${title} - illustration ${imageIndex + 1}`;
-                    newContent += `<img src="${imageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${title} ${category}" />\n\n`;
-                    imageIndex++;
-                }
+            let newContent = editorState.content;
+            for (const generatedImageUrl of imageUrls) {
+                const imageAlt = `${editorState.title} - illustration`;
+                newContent += `\n\n<img src="${generatedImageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${editorState.title} ${editorState.category}" />`;
             }
 
-            setContent(newContent.trim());
-            toast({ title: "Images Inserted!", description: `${imageUrls.length} images have been generated and placed in the article.` });
+            handleStateChange('content', newContent.trim());
+            toast({ title: "Images Appended!", description: `${imageUrls.length} images have been generated and added to the end of the article.` });
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
@@ -133,17 +178,18 @@ export default function PublishArticlePage() {
     }
 
     const handleResetBodyImages = () => {
-        const newContent = content.replace(/<img[^>]*>\n\n?/g, '');
-        setContent(newContent);
+        const newContent = editorState.content.replace(/<img[^>]*>\n\n?/g, '');
+        handleStateChange('content', newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
     };
 
     const handleSave = async (status: 'published' | 'draft') => {
+        const { title, summary, content, category, keyTakeaways } = editorState;
         if (!title || !summary || !content || !category || !imageUrl) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "Please fill in all fields and generate a featured image before saving.",
+                description: "Please fill in all fields and ensure a featured image is generated before saving.",
             });
             return;
         }
@@ -180,6 +226,10 @@ export default function PublishArticlePage() {
                 title: `Article ${status === 'published' ? 'Published' : 'Draft Saved'}!`,
                 description: `Your article has been successfully saved.`,
             });
+            
+            // Clear the draft from local storage after successful save
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+
             router.push(`/admin/edit/${newSlug}`);
         } catch(error) {
             console.error("Failed to save article", error);
@@ -226,8 +276,8 @@ export default function PublishArticlePage() {
                         <Input 
                             id="article-title" 
                             placeholder="Your engaging article title..." 
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            value={editorState.title}
+                            onChange={(e) => handleStateChange('title', e.target.value)}
                         />
                     </div>
 
@@ -236,15 +286,15 @@ export default function PublishArticlePage() {
                          <Textarea 
                             className="min-h-32"
                             placeholder="A brief summary of the article..."
-                            value={summary}
-                            onChange={(e) => setSummary(e.target.value)}
+                            value={editorState.summary}
+                            onChange={(e) => handleStateChange('summary', e.target.value)}
                          />
                     </div>
                     
                     <div className="space-y-4">
                         <Label>Key Takeaways</Label>
                         <div className="space-y-2">
-                            {keyTakeaways.map((takeaway, index) => (
+                            {editorState.keyTakeaways.map((takeaway, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <Input
                                         placeholder={`Takeaway #${index + 1}`}
@@ -266,13 +316,12 @@ export default function PublishArticlePage() {
 
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar textareaRef={contentRef} />
+                        <RichTextToolbar content={editorState.content} onContentChange={(newContent) => handleStateChange('content', newContent)} />
                         <Textarea
-                            ref={contentRef}
                             className="min-h-96 rounded-t-none" 
                             placeholder="Write the full content of your article here. You can use multiple paragraphs."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            value={editorState.content}
+                            onChange={(e) => handleStateChange('content', e.target.value)}
                         />
                     </div>
                 </div>
@@ -286,7 +335,7 @@ export default function PublishArticlePage() {
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
                                 <Label htmlFor="category">Category</Label>
-                                <Select onValueChange={setCategory} value={category}>
+                                <Select onValueChange={(value) => handleStateChange('category', value)} value={editorState.category}>
                                     <SelectTrigger id="category">
                                         <SelectValue placeholder="Select a category" />
                                     </SelectTrigger>
@@ -309,18 +358,14 @@ export default function PublishArticlePage() {
                                             <p className="text-sm text-muted-foreground mt-2">Generating image... <br/> Alt text will be generated next.</p>
                                         </div>
                                     ) : imageUrl ? (
-                                        <Image src={imageUrl} alt={altText || title} width={600} height={400} className="object-cover w-full h-full" />
+                                        <Image src={imageUrl} alt={altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Enter a title and click below to generate an image.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Finish typing a title to automatically generate an image.</p>
                                         </>
                                     )}
                                 </div>
-                                 <Button variant="outline" className="w-full" onClick={handleGenerateFeaturedImage} disabled={isGeneratingFeaturedImage || !title}>
-                                    {isGeneratingFeaturedImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Generate Featured Image
-                                </Button>
                             </div>
 
                              <div className="space-y-4 pt-4 border-t">
@@ -335,12 +380,12 @@ export default function PublishArticlePage() {
                                                 <SelectValue placeholder="Count" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                                                {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => (
                                                     <SelectItem key={num} value={String(num)}>{num}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !content || !title}>
+                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content || !editorState.title}>
                                             {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                             Generate & Insert
                                         </Button>
@@ -349,6 +394,7 @@ export default function PublishArticlePage() {
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Reset Body Images
                                     </Button>
+                                    <p className="text-xs text-muted-foreground">Generates images and adds them to the end of your content. You can then drag and drop them to reorder.</p>
                                 </div>
                             </div>
 

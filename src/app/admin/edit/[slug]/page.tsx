@@ -21,6 +21,7 @@ import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
+import { useDebounce } from '@/hooks/use-debounce';
 
 function EditArticleSkeleton() {
     return (
@@ -87,6 +88,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [isUpdating, setIsUpdating] = useState(false);
 
     const contentRef = useRef<HTMLTextAreaElement>(null);
+    const debouncedTitle = useDebounce(title, 1500);
 
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
@@ -135,23 +137,22 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         setKeyTakeaways(newTakeaways);
     };
 
-    const handleGenerateFeaturedImage = async () => {
-        if (!title) {
-            toast({ variant: "destructive", title: "Title is required", description: "Please enter an article title to generate an image." });
+    const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
+        if (!titleToGenerate || isGeneratingFeaturedImage || imageUrl) {
             return;
         }
+        
         setIsGeneratingFeaturedImage(true);
-        setImageUrl(''); // Clear previous image
         setAltText('');
 
         try {
-            const prompt = `${title}, automotive ${category || 'repair'}`;
+            const prompt = `${titleToGenerate}, automotive ${category || 'repair'}`;
             const result = await generateImage({ prompt });
             setImageUrl(result.imageUrl);
-            setImageHint(title);
+            setImageHint(titleToGenerate);
             toast({ title: "Image generated!", description: "Now generating SEO-friendly alt text..." });
             
-            const altTextResponse = await generateAltText({ articleTitle: title });
+            const altTextResponse = await generateAltText({ articleTitle: titleToGenerate });
             setAltText(altTextResponse.altText);
             toast({ title: "Alt text generated!", description: "The alt text has been automatically created." });
 
@@ -161,7 +162,14 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
-    }
+    }, [category, isGeneratingFeaturedImage, imageUrl, toast]);
+    
+    useEffect(() => {
+        if (debouncedTitle && article && debouncedTitle !== article.title) {
+            handleGenerateFeaturedImage(debouncedTitle);
+        }
+    }, [debouncedTitle, article, handleGenerateFeaturedImage]);
+
 
     const handleGenerateBodyImages = async () => {
         if (!content || !title) {
@@ -183,23 +191,14 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 throw new Error("No images were generated.");
             }
 
-            const paragraphs = content.split('\n\n');
-            const step = Math.ceil(paragraphs.length / (imageUrls.length + 1));
-            let newContent = '';
-            let imageIndex = 0;
-
-            for (let i = 0; i < paragraphs.length; i++) {
-                newContent += paragraphs[i] + '\n\n';
-                if ((i + 1) % step === 0 && imageIndex < imageUrls.length) {
-                    const imageUrl = imageUrls[imageIndex];
-                    const imageAlt = `${title} - illustration ${imageIndex + 1}`;
-                    newContent += `<img src="${imageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${title} ${category}" />\n\n`;
-                    imageIndex++;
-                }
+            let newContent = content;
+            for (const generatedImageUrl of imageUrls) {
+                const imageAlt = `${title} - illustration`;
+                newContent += `\n\n<img src="${generatedImageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${title} ${category}" />`;
             }
 
             setContent(newContent.trim());
-            toast({ title: "Images Inserted!", description: `${imageUrls.length} images have been generated and placed in the article.` });
+            toast({ title: "Images Appended!", description: `${imageUrls.length} images have been generated and added to the end of the article.` });
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
@@ -211,7 +210,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     }
     
     const handleResetBodyImages = () => {
-        // This regex finds all <img> tags and removes them.
         const newContent = content.replace(/<img[^>]*>\n\n?/g, '');
         setContent(newContent);
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
@@ -302,7 +300,13 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             id="article-title" 
                             placeholder="Your engaging article title..." 
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                // If title is changed, clear old image to allow regeneration
+                                if(e.target.value !== (article?.title || '')) {
+                                    setImageUrl('');
+                                }
+                            }}
                         />
                     </div>
 
@@ -340,7 +344,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar textareaRef={contentRef} />
+                        <RichTextToolbar content={content} onContentChange={setContent} />
                         <Textarea 
                             ref={contentRef}
                             className="min-h-96 rounded-t-none" 
@@ -387,14 +391,10 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Enter a title and click below to generate an image.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Finish typing a title to automatically generate an image.</p>
                                         </>
                                     )}
                                 </div>
-                                 <Button variant="outline" className="w-full" onClick={handleGenerateFeaturedImage} disabled={isGeneratingFeaturedImage || !title}>
-                                    {isGeneratingFeaturedImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Generate New Image
-                                </Button>
                             </div>
 
                             <div className="space-y-4 pt-4 border-t">
@@ -409,7 +409,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                                 <SelectValue placeholder="Count" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                                                {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => (
                                                     <SelectItem key={num} value={String(num)}>{num}</SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -423,6 +423,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Reset Body Images
                                     </Button>
+                                    <p className="text-xs text-muted-foreground">Generates images and adds them to the end of your content. You can then drag and drop them to reorder.</p>
                                 </div>
                             </div>
 

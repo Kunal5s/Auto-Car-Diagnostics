@@ -1,9 +1,24 @@
+
 import * as React from 'react';
 
 import {cn} from '@/lib/utils';
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'textarea'>>(
   ({className, ...props}, ref) => {
+    
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+      
+      // Basic sanitization: allow only a few safe tags.
+      // This is not a full XSS-proof sanitizer but prevents most unwanted tags.
+      const simplifiedHtml = text
+        .replace(/<(\/?)((?!strong|em|u|h1|h2|h3|p|ul|li|a|br|img)\w*)\b[^>]*>/gi, "") // Remove most tags but keep safe ones
+        .replace(/\s*style="[^"]*"/gi, ""); // Remove style attributes
+
+      document.execCommand('insertHTML', false, simplifiedHtml);
+    };
+
     return (
       <textarea
         className={cn(
@@ -11,6 +26,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'tex
           className
         )}
         ref={ref}
+        onPaste={handlePaste}
         {...props}
       />
     );

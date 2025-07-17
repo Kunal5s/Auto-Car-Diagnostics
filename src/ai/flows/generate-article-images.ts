@@ -78,7 +78,7 @@ const generateArticleImagesFlow = ai.defineFlow(
     const results = await Promise.all(imagePromises);
 
     const imageUrls = results.map(result => {
-        if (!result.media.url) {
+        if (!result.media?.url) {
             console.warn('Image generation failed for one of the topics.');
             // Return a placeholder or handle the error as needed
             return 'https://placehold.co/600x400.png';

@@ -1,47 +1,59 @@
 
 "use client";
-import React from 'react';
-import { Bold, Italic, Underline, Link, List, Heading1, Heading2, Heading3, Pilcrow } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Bold, Italic, Underline, Link, List, Heading1, Heading2, Heading3, Pilcrow, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 
 interface RichTextToolbarProps {
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
+    content: string;
+    onContentChange: (newContent: string) => void;
 }
 
-export function RichTextToolbar({ textareaRef }: RichTextToolbarProps) {
-    
-    const applyFormat = (format: 'bold' | 'italic' | 'underline' | 'h1' | 'h2' | 'h3' | 'p' | 'ul' | 'link') => {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
+export function RichTextToolbar({ content, onContentChange }: RichTextToolbarProps) {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // This function ensures that the toolbar interacts with the parent's textarea state
+    const setTextAreaRefAndContent = (textarea: HTMLTextAreaElement) => {
+        (textareaRef.current as any) = textarea;
+        if (textareaRef.current) {
+            textareaRef.current.value = content;
+        }
+    };
+    
+    const applyFormat = (format: 'bold' | 'italic' | 'underline' | 'h1' | 'h2' | 'h3' | 'p' | 'ul' | 'link' | 'clear') => {
+        if (!textareaRef.current) return;
+        
+        const textarea = textareaRef.current;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const selectedText = textarea.value.substring(start, end);
         let replacement = selectedText;
 
+        const wrap = (tag: string) => `<${tag}>${selectedText}</${tag}>`;
+
         switch (format) {
             case 'bold':
-                replacement = `<strong>${selectedText}</strong>`;
+                replacement = wrap('strong');
                 break;
             case 'italic':
-                replacement = `<em>${selectedText}</em>`;
+                replacement = wrap('em');
                 break;
             case 'underline':
-                replacement = `<u>${selectedText}</u>`;
+                replacement = wrap('u');
                 break;
             case 'h1':
-                replacement = `<h1>${selectedText}</h1>`;
+                replacement = wrap('h1');
                 break;
             case 'h2':
-                replacement = `<h2>${selectedText}</h2>`;
+                replacement = wrap('h2');
                 break;
             case 'h3':
-                replacement = `<h3>${selectedText}</h3>`;
+                replacement = wrap('h3');
                 break;
             case 'p':
-                 replacement = `<p>${selectedText}</p>`;
+                 replacement = wrap('p');
                 break;
             case 'ul':
                 const items = selectedText.split('\n').map(item => `  <li>${item}</li>`).join('\n');
@@ -53,19 +65,23 @@ export function RichTextToolbar({ textareaRef }: RichTextToolbarProps) {
                     replacement = `<a href="${url}" target="_blank">${selectedText}</a>`;
                  }
                 break;
+            case 'clear':
+                // A simple regex to strip HTML tags from the selected text
+                replacement = selectedText.replace(/<[^>]*>/g, '');
+                break;
         }
         
-        const currentText = textarea.value;
-        const newText = currentText.substring(0, start) + replacement + currentText.substring(end);
-        
-        textarea.value = newText;
-        textarea.focus();
-        textarea.selectionStart = start + replacement.length;
-        textarea.selectionEnd = start + replacement.length;
+        const newText = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+        onContentChange(newText);
 
-        // This is a bit of a hack to trigger the onChange event for the parent form
-        const event = new Event('input', { bubbles: true });
-        textarea.dispatchEvent(event);
+        // After updating the state, we need to manually update the cursor position
+        setTimeout(() => {
+            if (textareaRef.current) {
+                textareaRef.current.focus();
+                textareaRef.current.selectionStart = start + replacement.length;
+                textareaRef.current.selectionEnd = start + replacement.length;
+            }
+        }, 0);
     };
 
     return (
@@ -104,6 +120,13 @@ export function RichTextToolbar({ textareaRef }: RichTextToolbarProps) {
              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyFormat('ul')}>
                 <List className="h-4 w-4" />
             </Button>
+             <Separator orientation="vertical" className="h-6 mx-1" />
+             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyFormat('clear')} title="Clear Formatting">
+                <Type className="h-4 w-4" />
+            </Button>
+
+            {/* Hidden textarea to proxy interactions */}
+            <textarea ref={setTextAreaRefAndContent} className="sr-only" tabIndex={-1} />
         </div>
     );
 }
