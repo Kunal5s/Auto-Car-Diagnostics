@@ -1,4 +1,4 @@
-import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge } from "lucide-react";
+import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import type { Category, Tool } from "./types";
 
@@ -44,5 +44,35 @@ export const tools: Tool[] = [
         slug: 'engine-temp-monitor',
         description: 'Check if your engine temperature is within the normal operating range.',
         icon: Thermometer,
+    },
+    {
+        name: 'Spark Plug Checker',
+        slug: 'spark-plug-checker',
+        description: 'Estimate if your spark plugs need replacement based on mileage.',
+        icon: Wrench,
+    },
+    {
+        name: 'Air Filter Checker',
+        slug: 'air-filter-checker',
+        description: 'Check if your air filter needs replacement based on kilometers driven.',
+        icon: Filter,
+    },
+    {
+        name: 'Engine Noise Analyzer',
+        slug: 'engine-noise-analyzer',
+        description: 'Simulate an engine noise analysis to detect potential issues.',
+        icon: AudioWaveform,
+    },
+    {
+        name: 'Belt Condition Estimator',
+        slug: 'belt-condition-estimator',
+        description: 'Estimate your car’s belt condition based on age.',
+        icon: Replace,
+    },
+    {
+        name: 'AC Performance Checker',
+        slug: 'ac-performance-checker',
+        description: 'Simulate a check of your air conditioner performance.',
+        icon: AirVent,
     }
 ];

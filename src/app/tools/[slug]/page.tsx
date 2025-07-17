@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useParams, notFound } from "next/navigation";
@@ -13,6 +14,11 @@ import { EngineTempMonitor } from "@/components/tools/engine-temp-monitor";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { SparkPlugChecker } from "@/components/tools/spark-plug-checker";
+import { AirFilterChecker } from "@/components/tools/air-filter-checker";
+import { EngineNoiseAnalyzer } from "@/components/tools/engine-noise-analyzer";
+import { BeltConditionEstimator } from "@/components/tools/belt-condition-estimator";
+import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
   "obd-code-scanner": ObdCodeScanner,
@@ -20,6 +26,11 @@ const toolComponents: { [key: string]: React.ComponentType } = {
   "tire-pressure-guide": TirePressureGuide,
   "fuel-cost-calculator": FuelCostCalculator,
   "engine-temp-monitor": EngineTempMonitor,
+  "spark-plug-checker": SparkPlugChecker,
+  "air-filter-checker": AirFilterChecker,
+  "engine-noise-analyzer": EngineNoiseAnalyzer,
+  "belt-condition-estimator": BeltConditionEstimator,
+  "ac-performance-checker": AcPerformanceChecker,
 };
 
 export default function ToolPage() {
