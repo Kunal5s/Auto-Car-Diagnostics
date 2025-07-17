@@ -25,26 +25,36 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Read credentials from environment variables
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setIsSigningIn(true);
 
-    // Simulate network delay for a better user experience
-    setTimeout(() => {
-      if (email === adminEmail && password === adminPassword) {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
         router.push('/admin');
+        router.refresh(); // Refresh to let middleware handle the redirect with the new cookie
       } else {
+        const errorData = await response.json();
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
+          description: errorData.message || "Invalid email or password. Please try again.",
         });
         setIsSigningIn(false);
       }
-    }, 500);
+    } catch (error) {
+       toast({
+          variant: "destructive",
+          title: "Login Error",
+          description: "An unexpected error occurred. Please try again later.",
+        });
+       setIsSigningIn(false);
+    }
   };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
