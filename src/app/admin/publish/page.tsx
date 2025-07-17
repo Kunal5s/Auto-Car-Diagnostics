@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { generateImage } from '@/ai/flows/generate-image';
-import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 
@@ -51,7 +50,6 @@ export default function PublishArticlePage() {
     const [bodyImageCount, setBodyImageCount] = useState(3);
     
     const { toast } = useToast();
-    const debouncedTitle = useDebounce(editorState.title, 1500);
 
     const DRAFT_STORAGE_KEY = 'article_draft';
 
@@ -138,6 +136,7 @@ export default function PublishArticlePage() {
 
     const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
         if (!titleToGenerate || isGeneratingFeaturedImage) {
+            toast({ variant: "destructive", title: "Title Needed", description: "Please provide a title to generate an image." });
             return;
         }
         
@@ -150,7 +149,6 @@ export default function PublishArticlePage() {
             const result = await generateImage({ prompt });
             setImageUrl(result.imageUrl);
             setImageHint(titleToGenerate);
-            toast({ title: "Featured image generated!" });
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
@@ -159,12 +157,6 @@ export default function PublishArticlePage() {
             setIsGeneratingFeaturedImage(false);
         }
     }, [editorState.category, isGeneratingFeaturedImage, toast]);
-
-    useEffect(() => {
-        if (debouncedTitle) {
-            handleGenerateFeaturedImage(debouncedTitle);
-        }
-    }, [debouncedTitle, handleGenerateFeaturedImage]);
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
         const file = e.target.files?.[0];
@@ -182,7 +174,6 @@ export default function PublishArticlePage() {
                 const dataUrl = reader.result as string;
                 if (isFeatured) {
                     setImageUrl(dataUrl);
-                    toast({ title: "Featured image updated." });
                 } else {
                     const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
@@ -449,20 +440,20 @@ export default function PublishArticlePage() {
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Finish typing a title to automatically generate an image.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image from the title.</p>
                                         </>
                                     )}
                                 </div>
                                 <div className="flex gap-2">
                                     <Button asChild variant="outline" className="flex-1">
                                         <label htmlFor="featured-image-upload">
-                                            <Upload />
+                                            <Upload className="mr-2 h-4 w-4" />
                                             Upload
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
                                     <Button onClick={() => handleGenerateFeaturedImage(editorState.title)} disabled={isGeneratingFeaturedImage || !editorState.title} className="flex-1">
-                                        <Sparkles />
+                                        <Sparkles className="mr-2 h-4 w-4" />
                                         Generate
                                     </Button>
                                 </div>
