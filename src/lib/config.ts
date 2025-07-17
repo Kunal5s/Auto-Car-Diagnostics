@@ -1,8 +1,9 @@
-import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert, Wind, Camera } from "lucide-react";
+import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert, Wind, Camera, Home } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import type { Category, Tool } from "./types";
 
 export const categories: Category[] = [
+  { name: 'Homepage', icon: Home },
   { name: 'Engine', icon: Cog },
   { name: 'Sensors', icon: Signal },
   { name: 'OBD2', icon: Obd2Icon },

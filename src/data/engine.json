@@ -1,22 +1,2 @@
 
-[
-  {
-    "slug": "understanding-your-cars-engine",
-    "title": "Understanding Your Car's Engine: A Beginner's Guide",
-    "summary": "Dive into the heart of your vehicle. This guide breaks down the basics of how your car's engine works, common issues, and preventive maintenance.",
-    "content": "A car engine is a complex machine that converts heat from burning gas into the force that turns the road wheels. The engine is the heart of your car. It is a complex machine built to convert heat from burning gas into the force that turns the road wheels. The chain of reactions which achieve that objective is set in motion by a spark, which ignites a mixture of petrol vapour and compressed air inside a momentarily sealed cylinder and causes it to burn rapidly. This is why the engine is called an internal combustion engine. As the mixture burns it expands, providing power to drive the car.\n\nTo withstand the high temperatures and pressures, the engine must be robustly constructed. It consists of two basic parts: the lower, heavier section is the cylinder block, a casing for the engine's main moving parts; the detachable upper cover is the cylinder head. The cylinder head contains valve-controlled passages through which the air and fuel mixture enters the cylinders, and others through which the gases produced by their combustion are expelled.\n\nThe block houses the crankshaft, which converts the reciprocating motion of the pistons into rotary motion at the flywheel. The block also houses the camshaft, which operates the valves. Sometimes the camshaft is in the head (overhead camshaft) or there are two camshafts in the head (double overhead camshaft).",
-    "keyTakeaways": [
-      "The engine is an internal combustion engine that converts fuel into power.",
-      "It consists of two main parts: the cylinder block and the cylinder head.",
-      "The crankshaft converts the pistons' up-and-down motion into rotational motion.",
-      "The camshaft controls the opening and closing of valves for fuel/air intake and exhaust.",
-      "Engine robustness is crucial to handle high temperatures and pressures."
-    ],
-    "imageUrl": "https://placehold.co/600x400.png",
-    "altText": "Detailed illustration of a modern car engine with various parts labeled, shown against a clean, white background to emphasize its complexity and mechanical beauty.",
-    "imageHint": "car engine",
-    "category": "Engine",
-    "status": "published",
-    "publishedAt": "2024-05-20T10:00:00Z"
-  }
-]
+[]

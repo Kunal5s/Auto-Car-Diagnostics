@@ -4,6 +4,7 @@
 import type { Article, Author } from "@/lib/types";
 import fs from 'fs/promises';
 import path from 'path';
+import { categories } from '@/lib/config';
 
 const dataPath = path.join(process.cwd(), 'src', 'data');
 
@@ -67,14 +68,21 @@ export async function updateAuthor(authorData: Author): Promise<Author> {
 
 // --- Article Data Functions ---
 export async function getArticles(options: { includeDrafts?: boolean } = {}): Promise<Article[]> {
-  const allCategoryNames = [ "Engine", "Sensors", "OBD2", "Alerts", "Apps", "Maintenance", "Fuel", "EVs", "Trends" ];
+  const allCategoryNames = categories.map(c => c.name);
   let allArticles: Article[] = [];
   
   for (const categoryName of allCategoryNames) {
     const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
     const filePath = path.join(dataPath, `${categorySlug}.json`);
-    const categoryArticles = await readJsonFile<Article[]>(filePath);
-    allArticles.push(...categoryArticles);
+    try {
+        const categoryArticles = await readJsonFile<Article[]>(filePath);
+        allArticles.push(...categoryArticles);
+    } catch (error) {
+        // if a category file doesn't exist, just skip it.
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            throw error;
+        }
+    }
   }
   
   const sortedArticles = allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
