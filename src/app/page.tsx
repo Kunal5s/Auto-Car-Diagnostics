@@ -1,10 +1,10 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/common/header";
 import { Footer } from "@/components/common/footer";
 import { Hero } from "@/components/home/hero";
-import { ArticleCategories } from "@/components/home/article-categories";
 import { RecentArticles } from "@/components/home/recent-articles";
 import { QuestionSubmission } from "@/components/home/question-submission";
 import { getArticles } from "@/lib/data";
@@ -12,6 +12,7 @@ import type { Article } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Testimonials } from "@/components/home/testimonials";
 import { Faq } from "@/components/home/faq";
+import { ArticleCategories } from "@/components/home/article-categories";
 
 function ArticlesSkeleton() {
   return (
