@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
+import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 
 function EditArticleSkeleton() {
@@ -76,9 +77,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [imageUrl, setImageUrl] = useState('');
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
+    const [bodyImageCount, setBodyImageCount] = useState(3);
     
     const [isLoading, setIsLoading] = useState(true);
-    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [isGeneratingFeaturedImage, setIsGeneratingFeaturedImage] = useState(false);
+    const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
     const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -130,12 +133,12 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         setKeyTakeaways(newTakeaways);
     };
 
-    const handleGenerateImage = async () => {
+    const handleGenerateFeaturedImage = async () => {
         if (!title) {
             toast({ variant: "destructive", title: "Title is required", description: "Please enter an article title to generate an image." });
             return;
         }
-        setIsGeneratingImage(true);
+        setIsGeneratingFeaturedImage(true);
         setImageUrl(''); // Clear previous image
         setAltText('');
 
@@ -156,12 +159,58 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             } catch (err) {
                  toast({ variant: "destructive", title: "Alt Text Generation Failed", description: "Could not generate alt text. You may need to write it manually." });
             } finally {
-                setIsGeneratingImage(false);
+                setIsGeneratingFeaturedImage(false);
             }
         };
         img.onerror = () => {
             toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not load the image from Pollinations.ai." });
-            setIsGeneratingImage(false);
+            setIsGeneratingFeaturedImage(false);
+        }
+    }
+
+    const handleGenerateBodyImages = async () => {
+        if (!content || !title) {
+            toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
+            return;
+        }
+        setIsGeneratingBodyImages(true);
+        
+        try {
+            const result = await generateArticleImages({ 
+                articleContent: content, 
+                articleTitle: title,
+                category: category,
+                imageCount: bodyImageCount 
+            });
+
+            const { imageUrls } = result;
+            if (!imageUrls || imageUrls.length === 0) {
+                throw new Error("No images were generated.");
+            }
+
+            const paragraphs = content.split('\n\n');
+            const step = Math.ceil(paragraphs.length / (imageUrls.length + 1));
+            let newContent = '';
+            let imageIndex = 0;
+
+            for (let i = 0; i < paragraphs.length; i++) {
+                newContent += paragraphs[i] + '\n\n';
+                if ((i + 1) % step === 0 && imageIndex < imageUrls.length) {
+                    const imageUrl = imageUrls[imageIndex];
+                    const imageAlt = `${title} - illustration ${imageIndex + 1}`;
+                    newContent += `<img src="${imageUrl}" alt="${imageAlt}" class="my-8 rounded-lg" data-ai-hint="${title} ${category}" />\n\n`;
+                    imageIndex++;
+                }
+            }
+
+            setContent(newContent.trim());
+            toast({ title: "Images Inserted!", description: `${imageUrls.length} images have been generated and placed in the article.` });
+
+        } catch (error) {
+            console.error("Failed to generate body images:", error);
+            toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not generate or insert body images." });
+        } finally {
+            setIsGeneratingBodyImages(false);
         }
     }
 
@@ -321,13 +370,13 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             <div className="space-y-2">
                                 <Label>Featured Image</Label>
                                 <div className="aspect-video rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 overflow-hidden">
-                                    {isGeneratingImage ? (
+                                    {isGeneratingFeaturedImage ? (
                                         <div className="flex flex-col items-center text-center p-4">
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
                                             <p className="text-sm text-muted-foreground mt-2">Generating image... <br/> Alt text will be generated next.</p>
                                         </div>
                                     ) : imageUrl ? (
-                                        <Image src={imageUrl} alt={altText || title} width={300} height={169} className="object-cover" data-ai-hint={imageHint || ''} />
+                                        <Image src={imageUrl} alt={altText || title} width={300} height={169} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
@@ -335,15 +384,33 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         </>
                                     )}
                                 </div>
-                                 <Button variant="outline" className="w-full" onClick={handleGenerateImage} disabled={isGeneratingImage || !title}>
-                                    {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                 <Button variant="outline" className="w-full" onClick={handleGenerateFeaturedImage} disabled={isGeneratingFeaturedImage || !title}>
+                                    {isGeneratingFeaturedImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                     Generate New Image
                                 </Button>
                             </div>
 
+                            <div className="space-y-4 pt-4 border-t">
+                                <Label>Generate Body Images</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        value={bodyImageCount}
+                                        onChange={(e) => setBodyImageCount(Math.max(1, Math.min(10, Number(e.target.value))))}
+                                        className="w-20"
+                                    />
+                                    <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !content || !title}>
+                                        {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                        Generate & Insert
+                                    </Button>
+                                </div>
+                            </div>
+
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={handleUpdate} disabled={isUpdating || isGeneratingImage}>
+                                <Button className="w-full" onClick={handleUpdate} disabled={isUpdating || isGeneratingFeaturedImage || isGeneratingBodyImages}>
                                     {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Save Changes
                                 </Button>
