@@ -25,3 +25,10 @@ export interface Author {
   bio: string;
   imageUrl: string;
 }
+
+export interface Tool {
+  name: string;
+  slug: string;
+  description: string;
+  icon: LucideIcon;
+}
