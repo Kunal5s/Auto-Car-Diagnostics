@@ -13,12 +13,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { getAuthor, updateAuthor } from '@/lib/data';
 import type { Author } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 
 export default function AuthorProfilePage() {
     const [author, setAuthor] = useState<Author>({ name: '', role: '', bio: '', imageUrl: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+    const bioTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     const loadAuthor = useCallback(async () => {
         setIsLoading(true);
@@ -148,24 +150,28 @@ export default function AuthorProfilePage() {
                                     <label htmlFor="photo-upload">
                                         <Upload className="mr-2" />
                                         Upload Photo
-                                        <input type="file" id="photo-upload" accept="image/png, image/jpeg" className="sr-only" onChange={handlePhotoUpload} />
+                                        <input type="file" id="photo-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={handlePhotoUpload} />
                                     </label>
                                 </Button>
-                                <p className="text-xs text-muted-foreground mt-2">Recommended size: 100x100 pixels. A PNG or JPG file is required.</p>
+                                <p className="text-xs text-muted-foreground mt-2">Recommended size: 100x100 pixels. A PNG, JPG or WEBP file is required.</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="author-bio">Author Bio</Label>
-                        <Textarea 
-                            id="author-bio" 
-                            name="bio"
-                            value={author.bio} 
-                            onChange={handleInputChange} 
-                            placeholder="Write a short bio about the author..."
-                            className="min-h-48"
-                        />
+                         <div className="border rounded-md">
+                            <RichTextToolbar textareaRef={bioTextareaRef} />
+                            <Textarea 
+                                ref={bioTextareaRef}
+                                id="author-bio" 
+                                name="bio"
+                                value={author.bio} 
+                                onChange={handleInputChange} 
+                                placeholder="Write a short bio about the author... You can use basic HTML like <p> and <strong> for formatting."
+                                className="min-h-48 border-t-0 rounded-t-none"
+                            />
+                         </div>
                     </div>
 
                     <Button onClick={handleSaveChanges} disabled={isSaving}>

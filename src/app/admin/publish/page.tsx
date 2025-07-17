@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save } from 'lucide-react';
@@ -16,6 +16,7 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
+import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 
 
 export default function PublishArticlePage() {
@@ -31,6 +32,7 @@ export default function PublishArticlePage() {
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
     const [slug, setSlug] = useState('');
+    const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
     
     const { toast } = useToast();
     
@@ -173,12 +175,16 @@ export default function PublishArticlePage() {
 
                     <div className="space-y-2">
                         <Label className="text-lg font-semibold">Content</Label>
-                        <Textarea 
-                            className="min-h-96" 
-                            placeholder="Write the full content of your article here. You can use multiple paragraphs."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                        />
+                         <div className="border rounded-md">
+                            <RichTextToolbar textareaRef={contentTextareaRef} />
+                            <Textarea 
+                                ref={contentTextareaRef}
+                                className="min-h-96 border-t-0 rounded-t-none" 
+                                placeholder="Write the full content of your article here. You can use multiple paragraphs."
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
