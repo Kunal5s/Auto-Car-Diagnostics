@@ -10,6 +10,7 @@ import { QuestionSubmission } from "@/components/home/question-submission";
 import { getArticles } from "@/lib/data";
 import type { Article } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Testimonials } from "@/components/home/testimonials";
 
 function ArticlesSkeleton() {
   return (
@@ -56,6 +57,7 @@ export default function Home() {
           {loading ? <ArticlesSkeleton /> : <RecentArticles articles={articles} searchQuery={searchQuery} />}
           <QuestionSubmission />
         </div>
+        <Testimonials />
       </main>
       <Footer />
     </div>
