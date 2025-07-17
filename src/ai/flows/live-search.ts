@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -77,24 +78,28 @@ const getSearchResultsTool = ai.defineTool(
       
       // Apify's Google Search Scraper can return multiple result sets if multiple queries are sent.
       // We are sending one, so we take the first result set.
-      const searchResult = data[0];
-      if (!searchResult || !searchResult.organicResults) {
+      const searchResult = data?.[0];
+
+      if (!searchResult || !Array.isArray(searchResult.organicResults)) {
+        console.warn("No organicResults found in Apify response:", data);
         return { organic_results: [] };
       }
 
-      // Ensure we only return the fields defined in our schema
+      // Ensure we only return the fields defined in our schema and filter out any invalid entries
       const validatedResults = searchResult.organicResults
-        .filter((res: any) => res.title && res.link && res.snippet) // Ensure essential fields exist
         .map((res: any, index: number) => ({
           position: res.position || index + 1, // Use provided position or fallback to index
-          title: res.title,
-          link: res.link,
-          snippet: res.snippet
-      }));
-
+          title: res.title || "Untitled",
+          link: res.link || "#",
+          snippet: res.snippet || "No snippet available."
+        }))
+        .filter((res: any) => OrganicResultSchema.safeParse(res).success);
+        
       return { organic_results: validatedResults };
+
     } catch (error) {
       console.error('Error fetching from Apify API:', error);
+      // It's better to throw the error so the frontend can catch it and display a message.
       throw new Error('Failed to fetch search results from Apify API.');
     }
   }
