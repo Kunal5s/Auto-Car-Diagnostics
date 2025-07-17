@@ -20,7 +20,7 @@ function StaticHeader() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Car className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
-              Car Diagnostics BrainAi
+              Auto Insights
             </span>
           </Link>
         </div>
@@ -56,7 +56,7 @@ export default async function ArticlePage({
   const article = await getArticleBySlug(params.slug);
   const author = await getAuthor();
 
-  if (!article) {
+  if (!article || article.status !== 'published') {
     notFound();
   }
   
@@ -96,7 +96,7 @@ export default async function ArticlePage({
             <div className="aspect-[16/9] relative overflow-hidden rounded-lg my-8">
               <Image
                 src={article.imageUrl}
-                alt={article.title}
+                alt={article.altText || article.title}
                 fill
                 className="object-cover"
                 data-ai-hint={article.imageHint}

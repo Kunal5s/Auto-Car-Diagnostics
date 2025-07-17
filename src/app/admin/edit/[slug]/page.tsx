@@ -16,6 +16,7 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateAltText } from '@/ai/flows/generate-alt-text';
 
 function EditArticleSkeleton() {
     return (
@@ -71,6 +72,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [content, setContent] = useState('');
     const [category, setCategory] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
     
     const [isLoading, setIsLoading] = useState(true);
@@ -88,6 +90,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 setContent(fetchedArticle.content);
                 setCategory(fetchedArticle.category);
                 setImageUrl(fetchedArticle.imageUrl);
+                setAltText(fetchedArticle.altText || '');
                 setImageHint(fetchedArticle.imageHint);
             } else {
                 toast({ variant: "destructive", title: "Error", description: "Article not found." });
@@ -114,20 +117,27 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
         setIsGeneratingImage(true);
         setImageUrl(''); // Clear previous image
+        setAltText('');
 
-        // Sanitize the prompt for the URL
-        const sanitizedPrompt = encodeURIComponent(
-            `${title}, automotive ${category || 'repair'}`.trim().replace(/\s+/g, " ")
-        );
-        const generatedUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}`;
+        const prompt = `${title}, automotive ${category || 'repair'}, photorealistic, professional automotive photography, high detail`;
+        const sanitizedPrompt = encodeURIComponent(prompt.trim().replace(/\s+/g, " "));
+        const generatedUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&nofeed=true`;
         
-        // We can "preload" the image to show a loading state, though it's often fast
         const img = new window.Image();
         img.src = generatedUrl;
-        img.onload = () => {
+        img.onload = async () => {
             setImageUrl(generatedUrl);
             setImageHint(title);
-            setIsGeneratingImage(false);
+            toast({ title: "Image generated!", description: "Now generating SEO-friendly alt text..." });
+            try {
+                const altTextResponse = await generateAltText({ articleTitle: title });
+                setAltText(altTextResponse.altText);
+                toast({ title: "Alt text generated!", description: "The alt text has been automatically created and saved." });
+            } catch (err) {
+                 toast({ variant: "destructive", title: "Alt Text Generation Failed", description: "Could not generate alt text. You may need to write it manually." });
+            } finally {
+                setIsGeneratingImage(false);
+            }
         };
         img.onerror = () => {
             toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not load the image from Pollinations.ai." });
@@ -153,8 +163,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 content,
                 category,
                 imageUrl,
+                altText,
                 imageHint,
-                // Slug cannot be changed from the edit page for simplicity
             });
             toast({
                 title: "Article Updated!",
@@ -266,12 +276,12 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                 <Label>Featured Image</Label>
                                 <div className="aspect-video rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 overflow-hidden">
                                     {isGeneratingImage ? (
-                                        <div className="flex flex-col items-center">
+                                        <div className="flex flex-col items-center text-center p-4">
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-                                            <p className="text-sm text-muted-foreground mt-2">Generating...</p>
+                                            <p className="text-sm text-muted-foreground mt-2">Generating image... <br/> Alt text will be generated next.</p>
                                         </div>
                                     ) : imageUrl ? (
-                                        <Image src={imageUrl} alt="Generated featured image" width={300} height={169} className="object-cover" data-ai-hint={imageHint || ''} />
+                                        <Image src={imageUrl} alt={altText || title} width={300} height={169} className="object-cover" data-ai-hint={imageHint || ''} />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />

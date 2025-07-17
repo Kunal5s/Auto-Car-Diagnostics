@@ -27,7 +27,7 @@ export function Header() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Car className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
-              Car Diagnostics BrainAi
+              Auto Insights
             </span>
           </Link>
         </div>

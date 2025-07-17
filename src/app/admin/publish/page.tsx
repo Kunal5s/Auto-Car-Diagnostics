@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { categories, addArticle } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { generateAltText } from '@/ai/flows/generate-alt-text';
 
 
 export default function PublishArticlePage() {
@@ -25,6 +26,7 @@ export default function PublishArticlePage() {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [imageUrl, setImageUrl] = useState('');
+    const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
     
     const { toast } = useToast();
@@ -35,21 +37,28 @@ export default function PublishArticlePage() {
             return;
         }
         setIsGeneratingImage(true);
-        setImageUrl(''); // Clear previous image
+        setImageUrl('');
+        setAltText('');
 
-        // Sanitize the prompt for the URL
-        const sanitizedPrompt = encodeURIComponent(
-            `${title}, automotive ${category || 'repair'}`.trim().replace(/\s+/g, " ")
-        );
-        const generatedUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}`;
+        const prompt = `${title}, automotive ${category || 'repair'}, photorealistic, professional automotive photography, high detail`;
+        const sanitizedPrompt = encodeURIComponent(prompt.trim().replace(/\s+/g, " "));
+        const generatedUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&nofeed=true`;
         
-        // We can "preload" the image to show a loading state, though it's often fast
         const img = new window.Image();
         img.src = generatedUrl;
-        img.onload = () => {
+        img.onload = async () => {
             setImageUrl(generatedUrl);
             setImageHint(title);
-            setIsGeneratingImage(false);
+            toast({ title: "Image generated!", description: "Now generating SEO-friendly alt text..." });
+            try {
+                const altTextResponse = await generateAltText({ articleTitle: title });
+                setAltText(altTextResponse.altText);
+                toast({ title: "Alt text generated!", description: "The alt text has been automatically created and saved." });
+            } catch (err) {
+                 toast({ variant: "destructive", title: "Alt Text Generation Failed", description: "Could not generate alt text. You may need to write it manually." });
+            } finally {
+                setIsGeneratingImage(false);
+            }
         };
         img.onerror = () => {
             toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not load the image from Pollinations.ai." });
@@ -75,6 +84,7 @@ export default function PublishArticlePage() {
                 content,
                 category,
                 imageUrl,
+                altText,
                 imageHint,
                 slug: title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
             });
@@ -179,12 +189,12 @@ export default function PublishArticlePage() {
                                 <Label>Featured Image</Label>
                                 <div className="aspect-video rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 overflow-hidden">
                                     {isGeneratingImage ? (
-                                        <div className="flex flex-col items-center">
+                                        <div className="flex flex-col items-center text-center p-4">
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-                                            <p className="text-sm text-muted-foreground mt-2">Generating...</p>
+                                            <p className="text-sm text-muted-foreground mt-2">Generating image... <br/> Alt text will be generated next.</p>
                                         </div>
                                     ) : imageUrl ? (
-                                        <Image src={imageUrl} alt="Generated featured image" width={300} height={169} className="object-cover" />
+                                        <Image src={imageUrl} alt={altText || title} width={600} height={400} className="object-cover" />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
