@@ -5,8 +5,14 @@ import type { Article, Author } from "@/lib/types";
 import fs from 'fs/promises';
 import path from 'path';
 import { categories } from '@/lib/config';
+import { Octokit } from '@octokit/rest';
 
 const dataPath = path.join(process.cwd(), 'src', 'data');
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+const owner = process.env.GITHUB_REPO_OWNER;
+const repo = process.env.GITHUB_REPO_NAME;
+const branch = process.env.GITHUB_REPO_BRANCH || 'main';
+
 
 async function readJsonFile<T>(filePath: string): Promise<T> {
     try {
@@ -14,7 +20,6 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
         return JSON.parse(fileContent) as T;
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-            // File not found, return empty array for articles or default object for author
             if (filePath.endsWith('author.json')) {
                 return {} as T;
             }
@@ -24,28 +29,42 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
     }
 }
 
+async function getFileSha(filePath: string): Promise<string | undefined> {
+  if (!owner || !repo) return undefined;
+  try {
+    const response = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: filePath,
+      ref: branch,
+    });
+    const data = response.data as { sha: string };
+    return data.sha;
+  } catch (error: any) {
+    if (error.status === 404) {
+      return undefined; // File doesn't exist
+    }
+    throw error;
+  }
+}
+
 async function commitData(commitDetails: { filePath: string, content: string, commitMessage: string }) {
     const { filePath, content, commitMessage } = commitDetails;
-    const url = new URL('/api/commit', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            filePath,
-            content,
-            commitMessage,
-        }),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to commit data to GitHub.');
+    if (!owner || !repo || !process.env.GITHUB_TOKEN) {
+        throw new Error("GitHub repository details are not configured in environment variables.");
     }
 
-    return await response.json();
+    const currentSha = await getFileSha(filePath);
+
+    await octokit.repos.createOrUpdateFileContents({
+        owner,
+        repo,
+        path: filePath,
+        message: commitMessage,
+        content: Buffer.from(content).toString('base64'),
+        sha: currentSha,
+        branch,
+    });
 }
 
 // --- Author Data Functions ---
@@ -78,7 +97,6 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
         const categoryArticles = await readJsonFile<Article[]>(filePath);
         allArticles.push(...categoryArticles);
     } catch (error) {
-        // if a category file doesn't exist, just skip it.
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
             throw error;
         }
@@ -99,6 +117,7 @@ export async function getArticlesByCategory(categoryName: string): Promise<Artic
   const filePath = path.join(dataPath, `${categorySlug}.json`);
   const articles = await readJsonFile<Article[]>(filePath);
 
+  // When fetching by category for public view, always filter for published.
   const publishedArticles = articles.filter(a => a.status === 'published');
   
   return publishedArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -110,7 +129,6 @@ export async function getArticleBySlug(slug: string, options: { includeDrafts?: 
   
   if (!article) return undefined;
 
-  // If not including drafts, and article is a draft, return undefined
   if (!options.includeDrafts && article.status !== 'published') {
     return undefined;
   }
@@ -128,10 +146,13 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
     const filePath = path.join(dataPath, `${categorySlug}.json`);
     const relativeFilePath = path.join('src', 'data', `${categorySlug}.json`);
 
-    const articles = await readJsonFile<Article[]>(filePath);
+    let articles = [];
+    try {
+        articles = await readJsonFile<Article[]>(filePath);
+    } catch (e) {
+        // if file doesn't exist, we start with an empty array.
+    }
     
-    // This was the buggy check causing the issue. It has been removed.
-
     articles.unshift(newArticle);
 
     await commitData({
@@ -149,16 +170,14 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         throw new Error(`Article with slug "${slug}" not found.`);
     }
 
-    // Always update the publishedAt date to reflect the last update time.
     const updatedArticle = { ...originalArticle, ...articleData, publishedAt: new Date().toISOString() };
 
-    // Handle category change
     if (articleData.category && articleData.category !== originalArticle.category) {
-        // Delete from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
         const oldFilePath = path.join(dataPath, `${oldCategorySlug}.json`);
         const oldRelativeFilePath = path.join('src', 'data', `${oldCategorySlug}.json`);
-        const oldArticles = await readJsonFile<Article[]>(oldFilePath);
+        let oldArticles = [];
+        try { oldArticles = await readJsonFile<Article[]>(oldFilePath) } catch(e) {}
         const filteredArticles = oldArticles.filter(a => a.slug !== slug);
         await commitData({
             filePath: oldRelativeFilePath,
@@ -166,11 +185,11 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
             commitMessage: `refactor(content): move article '${slug}' from ${originalArticle.category}`,
         });
 
-        // Add to new category file
         const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const newFilePath = path.join(dataPath, `${newCategorySlug}.json`);
         const newRelativeFilePath = path.join('src', 'data', `${newCategorySlug}.json`);
-        const newArticles = await readJsonFile<Article[]>(newFilePath);
+        let newArticles = [];
+        try { newArticles = await readJsonFile<Article[]>(newFilePath) } catch(e) {}
         newArticles.unshift(updatedArticle);
         await commitData({
             filePath: newRelativeFilePath,
@@ -178,14 +197,17 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
             commitMessage: `refactor(content): move article '${slug}' to ${updatedArticle.category}`,
         });
     } else {
-        // Update in the same category file
         const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const filePath = path.join(dataPath, `${categorySlug}.json`);
         const relativeFilePath = path.join('src', 'data', `${categorySlug}.json`);
-        const articles = await readJsonFile<Article[]>(filePath);
+        let articles: Article[] = [];
+        try { articles = await readJsonFile<Article[]>(filePath) } catch(e) {}
         const articleIndex = articles.findIndex(a => a.slug === slug);
-        if (articleIndex === -1) throw new Error("Consistency error: article not found in its category file.");
-        articles[articleIndex] = updatedArticle;
+        if (articleIndex === -1) { 
+             articles.unshift(updatedArticle);
+        } else {
+            articles[articleIndex] = updatedArticle;
+        }
         await commitData({
             filePath: relativeFilePath,
             content: JSON.stringify(articles, null, 2),
