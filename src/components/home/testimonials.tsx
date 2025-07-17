@@ -35,15 +35,15 @@ export function Testimonials() {
         </div>
         <div className="mx-auto grid max-w-5xl items-start gap-6 py-12 lg:grid-cols-3 lg:gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-background/10 border-border/20 text-foreground">
+            <Card key={index} className="bg-background/10 border-border/20 text-background">
               <CardContent className="p-6">
                 <div className="flex mb-4">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-muted-foreground mb-4">"{testimonial.text}"</p>
-                <p className="font-semibold">{testimonial.name}</p>
+                <p className="text-primary-foreground/80 mb-4">"{testimonial.text}"</p>
+                <p className="font-semibold text-background">{testimonial.name}</p>
               </CardContent>
             </Card>
           ))}
