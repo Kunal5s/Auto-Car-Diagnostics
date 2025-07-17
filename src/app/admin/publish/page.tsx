@@ -226,7 +226,7 @@ export default function PublishArticlePage() {
         toast({ title: "Images Reset", description: "All body images have been removed from the content." });
     };
 
-    const handleSave = async (status: 'published' | 'draft') => {
+    const handleSave = async (status: 'published' | 'draft'): Promise<string | null> => {
         const { title, summary, content, category, keyTakeaways } = editorState;
         if (!title || !summary || !content || !category || !imageUrl) {
             toast({
@@ -234,7 +234,7 @@ export default function PublishArticlePage() {
                 title: "Missing Information",
                 description: "Please fill in all fields and ensure a featured image is generated before saving.",
             });
-            return;
+            return null;
         }
 
         const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -245,7 +245,7 @@ export default function PublishArticlePage() {
                 title: "Slug Conflict",
                 description: "An article with this title (and slug) already exists. Please choose a unique title.",
             });
-            return;
+            return null;
         }
         setSlug(newSlug);
 
@@ -272,8 +272,14 @@ export default function PublishArticlePage() {
             
             // Clear the draft from local storage after successful save
             localStorage.removeItem(DRAFT_STORAGE_KEY);
+            
+            // Don't redirect immediately for published, allow preview
+            if (status === 'published') {
+                router.push(`/admin/edit/${newSlug}`);
+            }
 
-            router.push(`/admin/edit/${newSlug}`);
+            return newSlug;
+
         } catch(error) {
             console.error("Failed to save article", error);
             const errorMessage = error instanceof Error ? error.message : "There was an error saving your article.";
@@ -282,18 +288,18 @@ export default function PublishArticlePage() {
                 title: "Saving Failed",
                 description: errorMessage,
             });
+            return null;
         } finally {
             if (status === 'published') setIsPublishing(false);
             else setIsSavingDraft(false);
         }
     }
 
-    const handlePreview = () => {
-        toast({
-            variant: "destructive",
-            title: "Cannot Preview",
-            description: "You must save the article as a draft before you can preview it.",
-        });
+    const handlePreview = async () => {
+        const draftSlug = await handleSave('draft');
+        if (draftSlug) {
+             window.open(`/api/draft?slug=${draftSlug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
+        }
     }
 
     return (
@@ -468,7 +474,7 @@ export default function PublishArticlePage() {
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isSavingDraft}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Article
                                 </Button>

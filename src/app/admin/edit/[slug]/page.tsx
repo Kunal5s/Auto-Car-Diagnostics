@@ -264,7 +264,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 title: "Missing Information",
                 description: "Please fill in all fields and ensure there is a featured image.",
             });
-            return;
+            return false;
         }
 
         setIsUpdating(true);
@@ -283,6 +283,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 title: "Article Updated!",
                 description: "Your changes have been saved.",
             });
+            return true;
         } catch(error) {
             console.error("Failed to update article", error);
             const errorMessage = error instanceof Error ? error.message : "There was an error saving your changes.";
@@ -291,14 +292,20 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 title: "Update Failed",
                 description: errorMessage,
             });
+            return false;
         } finally {
             setIsUpdating(false);
         }
     }
     
-    const handlePreview = () => {
+    const handlePreview = async () => {
         if (article) {
-            window.open(`/api/draft?slug=${article.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
+            // First, save the changes to ensure the preview is up-to-date
+            const success = await handleUpdate();
+            if (success) {
+                // Then, open the draft preview link in a new tab
+                window.open(`/api/draft?slug=${article.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
+            }
         }
     }
 
@@ -491,7 +498,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                     {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Save Changes
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={!article}>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isUpdating || !article}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Changes
                                 </Button>
