@@ -132,6 +132,25 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             handleContentChange(editor.innerHTML);
         }
     };
+    
+    const convertMarkdownToHtml = (markdown: string) => {
+        return markdown
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/\n/g, '<br />');
+    };
+
+    const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        const text = event.clipboardData.getData('text/plain');
+        const html = convertMarkdownToHtml(text);
+        document.execCommand('insertHTML', false, html);
+        const editor = document.getElementById('content-editor');
+        if (editor) {
+            handleContentChange(editor.innerHTML);
+        }
+    };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
         const newTakeaways = [...keyTakeaways];
@@ -363,6 +382,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             id="content-editor"
                             contentEditable
                             onInput={(e) => handleContentChange(e.currentTarget.innerHTML)}
+                            onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: content }}
                             className={cn(
                                 'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
@@ -471,3 +491,5 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
+
+    
