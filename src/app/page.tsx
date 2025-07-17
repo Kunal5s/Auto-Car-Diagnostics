@@ -37,6 +37,7 @@ export default function Home() {
   useEffect(() => {
     async function loadArticles() {
       try {
+        // We only fetch published articles for the homepage
         const fetchedArticles = await getArticles();
         setArticles(fetchedArticles);
       } catch (error) {

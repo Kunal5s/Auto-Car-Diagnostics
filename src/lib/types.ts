@@ -8,7 +8,7 @@ export interface Article {
   imageUrl: string;
   imageHint: string;
   category: string;
-  isFeatured: boolean;
+  status: 'published' | 'draft';
   publishedAt: string;
 }
 

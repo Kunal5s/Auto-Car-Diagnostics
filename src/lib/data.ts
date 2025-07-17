@@ -39,7 +39,7 @@ The block houses the crankshaft, which converts the reciprocating motion of the 
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "car engine",
     category: "Engine",
-    isFeatured: true,
+    status: "published",
     publishedAt: "2024-05-20T10:00:00Z",
   },
   {
@@ -61,7 +61,7 @@ Other important sensors include the Throttle Position Sensor (TPS), Crankshaft P
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "car dashboard",
     category: "Sensors",
-    isFeatured: true,
+    status: "published",
     publishedAt: "2024-05-18T14:30:00Z",
   },
   {
@@ -81,7 +81,7 @@ For example, a P0301 code indicates a misfire in cylinder 1. While the code tell
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "obd2 scanner",
     category: "OBD2",
-    isFeatured: false,
+    status: "published",
     publishedAt: "2024-05-15T09:00:00Z",
   },
   {
@@ -105,7 +105,7 @@ Dashboard warning lights are your car's way of communicating that something is w
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "warning lights",
     category: "Alerts",
-    isFeatured: false,
+    status: "published",
     publishedAt: "2024-05-12T11:00:00Z",
   },
   {
@@ -116,7 +116,7 @@ Dashboard warning lights are your car's way of communicating that something is w
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "car maintenance",
     category: "Maintenance",
-    isFeatured: true,
+    status: "published",
     publishedAt: "2024-05-10T08:00:00Z",
   },
   {
@@ -127,14 +127,18 @@ Dashboard warning lights are your car's way of communicating that something is w
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "fuel pump",
     category: "Fuel",
-    isFeatured: false,
+    status: "published",
     publishedAt: "2024-05-05T16:00:00Z",
   },
 ];
 
-export async function getArticles() {
+export async function getArticles(options: { includeDrafts?: boolean } = {}) {
   // This is in-memory, so it's not truly async, but we'll keep the promise to simulate a real API call.
-  return Promise.resolve(articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()));
+  const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  if (options.includeDrafts) {
+    return Promise.resolve(sortedArticles);
+  }
+  return Promise.resolve(sortedArticles.filter(a => a.status === 'published'));
 }
 
 export async function getArticleBySlug(slug: string) {
@@ -144,10 +148,32 @@ export async function getArticleBySlug(slug: string) {
 
 // NOTE: This is not a proper database. In a real application, you would use a database
 // to store articles. This is a simplified approach for this prototype.
-export async function addArticle(article: Article) {
+export async function addArticle(article: Omit<Article, 'publishedAt' | 'status'>) {
+  const newArticle: Article = {
+    ...article,
+    status: 'published',
+    publishedAt: new Date().toISOString(),
+  }
   // This is not safe for concurrent requests but is fine for this prototype.
-  articles.unshift(article);
-  return Promise.resolve();
+  articles.unshift(newArticle);
+  return Promise.resolve(newArticle);
+}
+
+export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'slug'>>) {
+  const articleIndex = articles.findIndex(a => a.slug === slug);
+  if (articleIndex === -1) {
+    throw new Error(`Article with slug "${slug}" not found.`);
+  }
+  
+  const originalArticle = articles[articleIndex];
+  
+  const updatedArticle = {
+    ...originalArticle,
+    ...articleData,
+  };
+
+  articles[articleIndex] = updatedArticle;
+  return Promise.resolve(updatedArticle);
 }
 
 export async function deleteArticle(slug: string) {
