@@ -14,12 +14,12 @@ function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
 export function Footer() {
   return (
     <footer className="bg-background border-t">
-      <div className="bg-muted py-12 text-center text-foreground">
+      <div className="bg-primary py-12 text-center text-primary-foreground">
         <div className="container">
           <h2 className="text-3xl font-bold tracking-tight font-headline">
             Get Our Best Content Weekly
           </h2>
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-2 text-primary-foreground/80">
             Join our newsletter for helpful maintenance advice and new article alerts.
           </p>
           <div className="mt-6 flex max-w-md mx-auto">
@@ -29,7 +29,7 @@ export function Footer() {
               className="flex-1 rounded-r-none focus:ring-primary text-foreground"
               aria-label="Email for newsletter"
             />
-            <Button type="submit" className="rounded-l-none">
+            <Button type="submit" variant="secondary" className="rounded-l-none">
               Subscribe
             </Button>
           </div>
