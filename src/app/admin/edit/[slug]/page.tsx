@@ -14,7 +14,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { categories, getArticleBySlug, updateArticle } from '@/lib/data';
 import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { generateImage } from '@/ai/flows/generate-image';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -114,20 +113,24 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             return;
         }
         setIsGeneratingImage(true);
-        setImageUrl('');
-        try {
-            const hint = `automotive ${category || 'repair'}`;
-            const result = await generateImage({ prompt: `${title}, ${hint}` });
-            if (result.imageUrl) {
-                setImageUrl(result.imageUrl);
-                setImageHint(hint);
-            } else {
-                throw new Error("Image generation failed to return a URL.");
-            }
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not generate a featured image. Please try again." });
-        } finally {
+        setImageUrl(''); // Clear previous image
+
+        // Sanitize the prompt for the URL
+        const sanitizedPrompt = encodeURIComponent(
+            `${title}, automotive ${category || 'repair'}`.trim().replace(/\s+/g, " ")
+        );
+        const generatedUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}`;
+        
+        // We can "preload" the image to show a loading state, though it's often fast
+        const img = new window.Image();
+        img.src = generatedUrl;
+        img.onload = () => {
+            setImageUrl(generatedUrl);
+            setImageHint(title);
+            setIsGeneratingImage(false);
+        };
+        img.onerror = () => {
+            toast({ variant: "destructive", title: "Image Generation Failed", description: "Could not load the image from Pollinations.ai." });
             setIsGeneratingImage(false);
         }
     }
@@ -172,7 +175,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
     if (isLoading) {
         return (
-             <div className="container mx-auto py-8 bg-background text-foreground">
+             <div className="container mx-auto py-8">
                 <div className="mb-6">
                     <Button variant="ghost" asChild>
                         <Link href="/admin">
@@ -187,7 +190,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     }
 
     return (
-        <div className="container mx-auto py-8 bg-background text-foreground">
+        <div className="container mx-auto py-8">
             <div className="mb-6">
                 <Button variant="ghost" asChild>
                     <Link href="/admin">
@@ -238,7 +241,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                 {/* Publishing Tools Sidebar */}
                 <div className="lg:col-span-1">
-                    <Card className="sticky top-8 bg-card text-card-foreground">
+                    <Card className="sticky top-8">
                         <CardHeader>
                             <CardTitle>Publishing Tools</CardTitle>
                         </CardHeader>

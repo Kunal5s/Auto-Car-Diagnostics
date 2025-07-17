@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -17,9 +18,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['PT Sans', 'sans-serif'],
-        headline: ['Space Grotesk', 'sans-serif'],
-        code: ['monospace'],
+        body: ['Helvetica', 'sans-serif'],
+        headline: ['Arial Black', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
