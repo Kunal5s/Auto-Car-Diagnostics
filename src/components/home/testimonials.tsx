@@ -21,7 +21,7 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section className="w-full py-12 md:py-24 bg-primary text-primary-foreground">
+    <section className="w-full py-12 md:py-24 bg-foreground text-background">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
@@ -35,7 +35,7 @@ export function Testimonials() {
         </div>
         <div className="mx-auto grid max-w-5xl items-start gap-6 py-12 lg:grid-cols-3 lg:gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-background/80 border-border/20 text-foreground">
+            <Card key={index} className="bg-background/10 border-border/20 text-foreground">
               <CardContent className="p-6">
                 <div className="flex mb-4">
                   {[...Array(5)].map((_, i) => (
