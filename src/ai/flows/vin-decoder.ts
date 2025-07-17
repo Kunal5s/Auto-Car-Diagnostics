@@ -1,17 +1,17 @@
-// vin-decoder.ts story: As a user, I want to enter my Vehicle Identification Number (VIN) to get detailed information about my car and check for any open safety recalls.
 
 'use server';
 
 /**
- * @fileOverview A flow for decoding a VIN and checking for recalls using the NHTSA API.
+ * @fileOverview A flow for decoding a VIN using the CarAPI.app service.
  *
- * - decodeVin - A function that takes a VIN and returns vehicle details and recall information.
+ * - decodeVin - A function that takes a VIN and returns detailed vehicle information and recalls.
  * - VinInput - The input type for the decodeVin function.
  * - VinOutput - The return type for the decodeVin function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { fetchCarApiData } from '@/lib/carapi';
 
 // Input Schema
 const VinInputSchema = z.object({
@@ -19,25 +19,34 @@ const VinInputSchema = z.object({
 });
 export type VinInput = z.infer<typeof VinInputSchema>;
 
-// Output Schema
+// Output Schema for Vehicle Details from CarAPI
 const VehicleInfoSchema = z.object({
-  Make: z.string(),
-  Model: z.string(),
-  ModelYear: z.string(),
-  BodyClass: z.string().optional(),
-  EngineCylinders: z.string().optional(),
-  DisplacementL: z.string().optional(),
-  FuelTypePrimary: z.string().optional(),
-  PlantCity: z.string().optional(),
-  PlantCountry: z.string().optional(),
+  make: z.string().optional(),
+  model: z.string().optional(),
+  year: z.number().optional(),
+  engine: z.string().optional(),
+  fuel_type: z.string().optional(),
+  transmission: z.string().optional(),
+  drivetrain: z.string().optional(),
+  body: z.string().optional(),
+  ext_color: z.string().optional(),
+  int_color: z.string().optional(),
+  mileage_city: z.number().nullable().optional(),
+  mileage_highway: z.number().nullable().optional(),
 });
 
+// Output Schema for Recalls from CarAPI
 const RecallInfoSchema = z.object({
-  Manufacturer: z.string(),
-  NHTSACampaignNumber: z.string(),
-  ReportReceivedDate: z.string(),
-  Component: z.string(),
-  Summary: z.string(),
+  component: z.string(),
+  consequence: z.string(),
+  description: z.string(),
+  remedy: z.string().nullable(),
+  notes: z.string().nullable(),
+  model_year: z.string(),
+  make: z.string(),
+  model: z.string(),
+  report_date: z.string(),
+  nhtsa_id: z.string(),
 });
 
 const VinOutputSchema = z.object({
@@ -51,7 +60,6 @@ export async function decodeVin(input: VinInput): Promise<VinOutput> {
   return vinDecoderFlow(input);
 }
 
-
 // Define the Genkit Flow
 const vinDecoderFlow = ai.defineFlow(
   {
@@ -60,52 +68,19 @@ const vinDecoderFlow = ai.defineFlow(
     outputSchema: VinOutputSchema,
   },
   async ({ vin }) => {
-    // 1. Decode the VIN
-    const vinDetailsResponse = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinExtended/${vin}?format=json`);
-    if (!vinDetailsResponse.ok) {
-        throw new Error(`Failed to fetch VIN details. Status: ${vinDetailsResponse.status}`);
-    }
-    const vinDetailsJson = await vinDetailsResponse.json();
+    // Using Promise.all to fetch VIN details and recalls concurrently for better performance
+    const [vinDetails, recalls] = await Promise.all([
+        fetchCarApiData(`vin/${vin}`),
+        fetchCarApiData('recalls', { vin })
+    ]);
 
-    const vehicleData = vinDetailsJson.Results.find((r: any) => r.Variable === 'Make')?.Value ? vinDetailsJson.Results : [];
-    if (vehicleData.length === 0) {
+    if (!vinDetails || !vinDetails.make) {
         throw new Error('Invalid VIN or no data found. Please check the VIN and try again.');
     }
 
-    const getVal = (variable: string) => vehicleData.find((r: any) => r.Variable === variable)?.Value || '';
-
-    const vehicleInfo: z.infer<typeof VehicleInfoSchema> = {
-        Make: getVal('Make'),
-        Model: getVal('Model'),
-        ModelYear: getVal('Model Year'),
-        BodyClass: getVal('Body Class'),
-        EngineCylinders: getVal('Engine Number of Cylinders'),
-        DisplacementL: getVal('Displacement (L)'),
-        FuelTypePrimary: getVal('Fuel Type - Primary'),
-        PlantCity: getVal('Plant City'),
-        PlantCountry: getVal('Plant Country'),
+    return {
+      vehicleInfo: vinDetails,
+      recalls: recalls || [] // CarAPI returns null if no recalls, so we default to an empty array
     };
-
-    if (!vehicleInfo.Make || !vehicleInfo.Model || !vehicleInfo.ModelYear) {
-        throw new Error('Could not determine Make, Model, or Year from VIN.');
-    }
-
-    // 2. Fetch Recalls
-    const recallsResponse = await fetch(`https://api.nhtsa.gov/recalls/recallsByVehicle?make=${vehicleInfo.Make}&model=${vehicleInfo.Model}&modelYear=${vehicleInfo.ModelYear}`);
-     if (!recallsResponse.ok) {
-        // If recalls fail, don't throw an error, just return an empty array
-        return { vehicleInfo, recalls: [] };
-    }
-    const recallsJson = await recallsResponse.json();
-
-    const recalls: z.infer<typeof RecallInfoSchema>[] = recallsJson.results.map((r: any) => ({
-        Manufacturer: r.Manufacturer,
-        NHTSACampaignNumber: r.CampaignNumber,
-        ReportReceivedDate: r.ReportReceivedDate,
-        Component: r.Component,
-        Summary: r.Summary,
-    }));
-
-    return { vehicleInfo, recalls };
   }
 );
