@@ -19,7 +19,7 @@ const GenerateAltTextInputSchema = z.object({
 export type GenerateAltTextInput = z.infer<typeof GenerateAltTextInputSchema>;
 
 const GenerateAltTextOutputSchema = z.object({
-  altText: z.string().describe('The generated SEO-friendly alt text for the image, around 90 words.'),
+  altText: z.string().describe('The generated SEO-friendly alt text for the image, around 23 words.'),
 });
 export type GenerateAltTextOutput = z.infer<typeof GenerateAltTextOutputSchema>;
 
@@ -34,7 +34,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an SEO expert specializing in the automotive industry. Your task is to write a detailed, SEO-friendly alt text for an image. The image is the featured image for a blog post with the following title: "{{{articleTitle}}}".
 
   The alt text should:
-  1.  Be approximately 90 words long.
+  1.  Be approximately 23 words long.
   2.  Accurately describe a potential image related to the article title.
   3.  Incorporate relevant keywords from the title naturally.
   4.  Be descriptive and useful for visually impaired users.

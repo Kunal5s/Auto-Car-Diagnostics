@@ -1,14 +1,13 @@
 
 'use server';
 /**
- * @fileOverview A flow for generating images using AI.
+ * @fileOverview A flow for generating images using Pollinations.ai.
  *
  * - generateImage - A function that generates an image based on a text prompt.
  * - GenerateImageInput - The input type for the generateImage function.
  * - GenerateImageOutput - The return type for the generateImage function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateImageInputSchema = z.object({
@@ -17,35 +16,17 @@ const GenerateImageInputSchema = z.object({
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
 const GenerateImageOutputSchema = z.object({
-  imageUrl: z.string().describe('The data URI of the generated image.'),
+  imageUrl: z.string().describe('The URL of the generated image from Pollinations.ai.'),
 });
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageOutput> {
-  return generateImageFlow(input);
+  // Construct the URL for Pollinations.ai
+  const encodedPrompt = encodeURIComponent(input.prompt);
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+  
+  // Directly return the URL without calling Genkit, as requested.
+  return {
+    imageUrl: imageUrl
+  };
 }
-
-const generateImageFlow = ai.defineFlow(
-  {
-    name: 'generateImageFlow',
-    inputSchema: GenerateImageInputSchema,
-    outputSchema: GenerateImageOutputSchema,
-  },
-  async (input) => {
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: `photorealistic image of ${input.prompt}, professional automotive photography, high detail`,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
-
-    if (!media?.url) {
-        throw new Error('Image generation failed to return a URL.')
-    }
-
-    return {
-        imageUrl: media.url
-    };
-  }
-);

@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A flow for generating multiple, contextually relevant images for an article.
+ * @fileOverview A flow for generating multiple, contextually relevant images for an article using Pollinations.ai.
  *
  * - generateArticleImages - A function that analyzes article content and generates a specified number of images.
  * - GenerateArticleImagesInput - The input type for the function.
@@ -21,10 +21,11 @@ const GenerateArticleImagesInputSchema = z.object({
 export type GenerateArticleImagesInput = z.infer<typeof GenerateArticleImagesInputSchema>;
 
 const GenerateArticleImagesOutputSchema = z.object({
-  imageUrls: z.array(z.string()).describe('An array of data URIs for the generated images.'),
+  imageUrls: z.array(z.string()).describe('An array of URLs for the generated images from Pollinations.ai.'),
 });
 export type GenerateArticleImagesOutput = z.infer<typeof GenerateArticleImagesOutputSchema>;
 
+// This function now wraps the flow, as per standard practice.
 export async function generateArticleImages(input: GenerateArticleImagesInput): Promise<GenerateArticleImagesOutput> {
   return generateArticleImagesFlow(input);
 }
@@ -55,7 +56,7 @@ const generateArticleImagesFlow = ai.defineFlow(
     outputSchema: GenerateArticleImagesOutputSchema,
   },
   async (input) => {
-    // 1. Generate descriptive topics from the article content
+    // 1. Generate descriptive topics from the article content using Genkit
     const { output } = await topicPrompt(input);
     const topics = output?.topics || [];
 
@@ -63,27 +64,11 @@ const generateArticleImagesFlow = ai.defineFlow(
         throw new Error('Could not generate image topics from article content.');
     }
 
-    // 2. Generate an image for each topic in parallel
-    const imagePromises = topics.map(topic => {
+    // 2. Generate an image URL for each topic using Pollinations.ai
+    const imageUrls = topics.map(topic => {
         const fullPrompt = `${topic}, related to ${input.articleTitle}, professional automotive photography, high detail, photorealistic`;
-        return ai.generate({
-            model: 'googleai/gemini-2.0-flash-preview-image-generation',
-            prompt: fullPrompt,
-            config: {
-              responseModalities: ['TEXT', 'IMAGE'],
-            },
-        });
-    });
-
-    const results = await Promise.all(imagePromises);
-
-    const imageUrls = results.map(result => {
-        if (!result.media?.url) {
-            console.warn('Image generation failed for one of the topics.');
-            // Return a placeholder or handle the error as needed
-            return 'https://placehold.co/600x400.png';
-        }
-        return result.media.url;
+        const encodedPrompt = encodeURIComponent(fullPrompt);
+        return `https://image.pollinations.ai/prompt/${encodedPrompt}`;
     });
 
     return { imageUrls };

@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { addArticle, getArticleBySlug } from '@/lib/data';
 import { categories } from '@/lib/config';
 import type { Article } from '@/lib/types';
@@ -127,7 +126,7 @@ export default function PublishArticlePage() {
         setAltText('');
 
         try {
-            const prompt = `${titleToGenerate}, automotive ${editorState.category || 'repair'}`;
+            const prompt = `photorealistic image of ${titleToGenerate}, professional automotive photography, high detail, in the style of ${editorState.category || 'repair'}`;
             const result = await generateImage({ prompt });
             setImageUrl(result.imageUrl);
             setImageHint(titleToGenerate);
@@ -208,7 +207,7 @@ export default function PublishArticlePage() {
         }
 
         const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const existingArticle = await getArticleBySlug(newSlug);
+        const existingArticle = await getArticleBySlug(newSlug, { includeDrafts: true });
         if (existingArticle) {
             toast({
                 variant: "destructive",
@@ -296,12 +295,15 @@ export default function PublishArticlePage() {
 
                     <div className="space-y-2">
                         <Label>Summary</Label>
-                         <Textarea 
-                            className="min-h-32"
-                            placeholder="A brief summary of the article..."
-                            value={editorState.summary}
-                            onChange={(e) => handleStateChange('summary', e.target.value)}
-                         />
+                        <div
+                            id="summary-editor"
+                            contentEditable
+                            onInput={(e) => handleStateChange('summary', e.currentTarget.innerText)}
+                            dangerouslySetInnerHTML={{ __html: editorState.summary }}
+                            className={cn(
+                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                            )}
+                        />
                     </div>
                     
                     <div className="space-y-4">

@@ -92,7 +92,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
         try {
-            const fetchedArticle = await getArticleBySlug(slug);
+            const fetchedArticle = await getArticleBySlug(slug, { includeDrafts: true });
             if (fetchedArticle) {
                 setArticle(fetchedArticle);
                 setTitle(fetchedArticle.title);
@@ -157,7 +157,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         setAltText('');
 
         try {
-            const prompt = `${titleToGenerate}, automotive ${category || 'repair'}`;
+            const prompt = `photorealistic image of ${titleToGenerate}, professional automotive photography, high detail, in the style of ${category || 'repair'}`;
             const result = await generateImage({ prompt });
             setImageUrl(result.imageUrl);
             setImageHint(titleToGenerate);
@@ -267,7 +267,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     
     const handlePreview = () => {
         if (article) {
-            window.open(`/api/draft?slug=${article.slug}`, '_blank');
+            window.open(`/api/draft?slug=${article.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         }
     }
 
@@ -323,12 +323,15 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                     <div className="space-y-2">
                         <Label>Summary</Label>
-                         <Textarea 
-                            className="min-h-32"
-                            placeholder="A brief summary of the article..."
-                            value={summary}
-                            onChange={(e) => setSummary(e.target.value)}
-                         />
+                        <div
+                            id="summary-editor"
+                            contentEditable
+                            onInput={(e) => setSummary(e.currentTarget.innerText)}
+                            dangerouslySetInnerHTML={{ __html: summary }}
+                            className={cn(
+                                'prose max-w-none min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                            )}
+                        />
                     </div>
                     
                     <div className="space-y-4">
