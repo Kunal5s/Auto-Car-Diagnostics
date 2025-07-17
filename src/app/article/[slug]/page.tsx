@@ -42,7 +42,7 @@ function AuthorInfo({ author }: { author: Author }) {
               <p className="text-md text-muted-foreground">{author.role}</p>
           </div>
        </div>
-       <p className="mt-4 text-muted-foreground">{author.bio}</p>
+       <div className="mt-4 text-muted-foreground prose max-w-none" dangerouslySetInnerHTML={{ __html: author.bio }} />
     </div>
   )
 }
