@@ -367,7 +367,7 @@ export default function PublishArticlePage() {
                                 </Select>
                             </div>
                             
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                                 <Label>Featured Image</Label>
                                 <div className="aspect-video rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 overflow-hidden">
                                     {isGeneratingFeaturedImage ? (
@@ -383,6 +383,16 @@ export default function PublishArticlePage() {
                                             <p className="text-sm text-muted-foreground mt-2 text-center px-4">Finish typing a title to automatically generate an image.</p>
                                         </>
                                     )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="alt-text">Alt Text</Label>
+                                    <Input
+                                        id="alt-text"
+                                        placeholder="Descriptive alt text for the image..."
+                                        value={altText}
+                                        onChange={(e) => setAltText(e.target.value)}
+                                        disabled={isGeneratingFeaturedImage}
+                                    />
                                 </div>
                             </div>
 
