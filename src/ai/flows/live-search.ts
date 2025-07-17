@@ -68,6 +68,8 @@ const getSearchResultsTool = ai.defineTool(
       });
 
       if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Apify API request failed:', response.status, errorBody);
         throw new Error(`Apify API request failed with status ${response.status}`);
       }
       
@@ -98,16 +100,6 @@ const getSearchResultsTool = ai.defineTool(
   }
 );
 
-
-const prompt = ai.definePrompt({
-  name: 'liveSearchPrompt',
-  input: { schema: LiveSearchInputSchema },
-  output: { schema: LiveSearchOutputSchema },
-  tools: [getSearchResultsTool],
-  prompt: `You are a search assistant. Use the getSearchResults tool to find information about the user's query: {{{query}}}. Return the search results directly.`,
-});
-
-
 const liveSearchFlow = ai.defineFlow(
   {
     name: 'liveSearchFlow',
@@ -115,8 +107,8 @@ const liveSearchFlow = ai.defineFlow(
     outputSchema: LiveSearchOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    // Call the tool directly instead of going through an LLM
+    return await getSearchResultsTool(input);
   }
 );
 
