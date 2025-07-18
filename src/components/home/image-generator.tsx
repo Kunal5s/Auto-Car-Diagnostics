@@ -10,44 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, Image as ImageIcon, Copy, RefreshCcw, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateMultipleGeminiImages } from '@/ai/flows/generate-multiple-gemini-images';
-
-const creativeOptions = {
-    artisticStyle: ['Photographic', 'Digital Art', 'Cinematic', '3D Render', 'Anime', 'Retro'],
-    aspectRatio: {
-        'Widescreen (16:9)': '16/9',
-        'Standard (4:3)': '4/3',
-        'Square (1:1)': '1/1',
-        'Portrait (9:16)': '9/16',
-    },
-    mood: ['None', 'Vibrant', 'Dark', 'Pastel', 'Monochromatic'],
-    lighting: ['None', 'Soft Light', 'Hard Light', 'Rim Light', 'Studio Lighting'],
-};
 
 export function ImageGenerator() {
     const [prompt, setPrompt] = useState('');
     const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [creativeSettings, setCreativeSettings] = useState({
-        artisticStyle: 'Photographic',
-        aspectRatio: '16/9',
-        mood: 'None',
-        lighting: 'None',
-    });
     const { toast } = useToast();
-
-    const handleSettingChange = (key: keyof typeof creativeSettings, value: string) => {
-        setCreativeSettings(prev => ({ ...prev, [key]: value }));
-    };
-
-    const buildFullPrompt = (): string => {
-        let fullPrompt = prompt;
-        if (creativeSettings.artisticStyle !== 'None') fullPrompt += `, ${creativeSettings.artisticStyle}`;
-        if (creativeSettings.mood !== 'None') fullPrompt += `, ${creativeSettings.mood} mood`;
-        if (creativeSettings.lighting !== 'None') fullPrompt += `, ${creativeSettings.lighting}`;
-        fullPrompt += `, high quality, sharp focus, 4k`;
-        return fullPrompt;
-    };
 
     const handleGenerate = async () => {
         if (!prompt) {
@@ -57,31 +25,20 @@ export function ImageGenerator() {
         setIsLoading(true);
         setImageUrls([]);
 
-        try {
-            const fullPrompt = buildFullPrompt();
-            const { images } = await generateMultipleGeminiImages({
-                prompts: Array(4).fill(fullPrompt)
+        // Simulate a delay for placeholder generation
+        setTimeout(() => {
+            const newUrls = Array(4).fill(null).map(() => {
+                const uniqueString = Math.random().toString(36).substring(7);
+                return `https://placehold.co/400x400.png?text=${uniqueString}`;
             });
-            
-            const finalUrls = images.map(img => img.url);
-            setImageUrls(finalUrls);
-
-        } catch (error) {
-            console.error("Image generation failed:", error);
-            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-            toast({
-                variant: 'destructive',
-                title: 'Image Generation Failed',
-                description: errorMessage,
-            });
-        } finally {
+            setImageUrls(newUrls);
             setIsLoading(false);
-        }
+        }, 1500);
     };
     
     const copyPrompt = () => {
-        navigator.clipboard.writeText(buildFullPrompt());
-        toast({ title: 'Prompt Copied!', description: 'The full prompt has been copied to your clipboard.' });
+        navigator.clipboard.writeText(prompt);
+        toast({ title: 'Prompt Copied!', description: 'The prompt has been copied to your clipboard.' });
     };
 
     const handleDownload = async (imageUrl: string) => {
@@ -103,7 +60,7 @@ export function ImageGenerator() {
     return (
         <section className="py-12">
             <h2 className="text-3xl font-bold tracking-tight font-headline text-center mb-2">
-                AI Image Generator
+                AI Image Generator (Demo)
             </h2>
             <p className="text-muted-foreground text-center mb-8">
                 Create stunning visuals with our powerful AI. Type a prompt and watch your ideas come to life.
@@ -120,44 +77,6 @@ export function ImageGenerator() {
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                             />
-                        </div>
-
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold font-headline">Creative Tools</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Artistic Style</Label>
-                                    <Select value={creativeSettings.artisticStyle} onValueChange={(v) => handleSettingChange('artisticStyle', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{creativeOptions.artisticStyle.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Aspect Ratio</Label>
-                                     <Select value={creativeSettings.aspectRatio} onValueChange={(v) => handleSettingChange('aspectRatio', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select ratio" /></SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(creativeOptions.aspectRatio).map(([name, value]) => (
-                                                <SelectItem key={value} value={value}>{name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Mood</Label>
-                                    <Select value={creativeSettings.mood} onValueChange={(v) => handleSettingChange('mood', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{creativeOptions.mood.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Lighting</Label>
-                                    <Select value={creativeSettings.lighting} onValueChange={(v) => handleSettingChange('lighting', v)}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{creativeOptions.lighting.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
                         </div>
 
                         <Button onClick={handleGenerate} disabled={isLoading} size="lg" className="w-full">
@@ -179,7 +98,7 @@ export function ImageGenerator() {
                             <>
                                 <div className="w-full grid grid-cols-2 gap-2">
                                     {imageUrls.map((url, index) => (
-                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group" style={{ aspectRatio: creativeSettings.aspectRatio }}>
+                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group aspect-square">
                                             <Image src={url} alt={`Generated image ${index + 1} for prompt: ${prompt}`} layout="fill" objectFit="cover" />
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button variant="secondary" size="icon" onClick={() => handleDownload(url)}>
@@ -198,7 +117,7 @@ export function ImageGenerator() {
                             <div className="text-center text-muted-foreground">
                                 <ImageIcon className="h-20 w-20 mx-auto" />
                                 <p className="mt-4 text-lg font-medium">Your generated images will appear here.</p>
-                                <p className="text-sm">Enter a prompt and adjust your settings to begin.</p>
+                                <p className="text-sm">Enter a prompt to begin.</p>
                             </div>
                         )}
                     </CardContent>

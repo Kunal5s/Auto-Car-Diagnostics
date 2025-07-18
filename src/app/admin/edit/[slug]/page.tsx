@@ -121,15 +121,13 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         
         setIsGenerating(true);
         try {
-            // Use the new Gemini image generator
-            const result = await generateGeminiImage({ 
-                prompt: `Photorealistic image for an article titled: ${article.title}, 4k, professional photography` 
-            });
+            // Use placeholder images
+            const imageUrl = `https://placehold.co/600x400.png?text=${encodeURIComponent(article.title.substring(0,20))}`;
             const altText = `Featured image for article: ${article.title}`;
             
             setArticle(prev => prev ? ({
                 ...prev,
-                imageUrl: result.imageUrl,
+                imageUrl: imageUrl,
                 altText: altText,
                 imageHint: prev.title.split(' ').slice(0, 2).join(' ')
             }) : null);

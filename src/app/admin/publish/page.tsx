@@ -92,14 +92,14 @@ export default function PublishArticlePage() {
         
         setIsGenerating(true);
         try {
-            const result = await generateGeminiImage({ 
-                prompt: `Photorealistic image for an article titled: ${title}, 4k, professional photography` 
-            });
+            // Use placeholder images with a unique element to ensure variation
+            const uniqueString = Date.now().toString(36);
+            const imageUrl = `https://placehold.co/600x400.png?text=${uniqueString}`;
             const altText = `Featured image for article: ${title}`;
             
             setEditorState(prev => ({
                 ...prev,
-                imageUrl: result.imageUrl,
+                imageUrl: imageUrl,
                 altText: altText,
                 imageHint: title.split(' ').slice(0, 2).join(' ')
             }));
@@ -255,7 +255,10 @@ export default function PublishArticlePage() {
             let imagesInserted = 0;
 
             for (const placement of result.placements) {
-                const { imageUrl, subheading } = placement;
+                const { subheading } = placement;
+                // Use a unique placeholder for each image
+                const uniqueString = Math.random().toString(36).substring(7);
+                const imageUrl = `https://placehold.co/600x400.png?text=${uniqueString}`;
                 const h2s = Array.from(doc.querySelectorAll('h2'));
                 const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
 
@@ -286,10 +289,10 @@ export default function PublishArticlePage() {
 
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="data:image\/[^;]+;base64,[^"]+"[^>]*><\/div>/g, '');
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="[^"]+"[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
             handleStateChange('content', newContent);
-            toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
+            toast({ title: "Images Reset", description: "All generated body images have been removed from the content." });
         }
     };
 
@@ -344,7 +347,7 @@ export default function PublishArticlePage() {
             return { slug: null, success: false };
         } finally {
             if (status === 'published') setIsPublishing(false);
-            else setIsSavingDraft(false);
+            else setIsSavingDraft(true);
         }
     }
 
