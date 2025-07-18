@@ -81,8 +81,13 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
   let allArticles: Article[] = [];
 
   for (const categorySlug of allCategorySlugs) {
-    const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
-    allArticles.push(...categoryArticles);
+    try {
+        const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
+        allArticles.push(...categoryArticles);
+    } catch(e) {
+        console.warn(`Could not read articles for category: ${categorySlug}.json`);
+        // file probably doesn't exist, which is fine
+    }
   }
 
   // Deduplicate articles based on ID, important if an article was somehow in multiple files
