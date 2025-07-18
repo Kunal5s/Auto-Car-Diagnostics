@@ -7,155 +7,63 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-// --- GitHub API Configuration ---
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_OWNER = process.env.GITHUB_REPO_OWNER;
-const GITHUB_REPO = process.env.GITHUB_REPO_NAME;
-const GITHUB_BRANCH = process.env.NEXT_PUBLIC_GITHUB_BRANCH || 'main';
-const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
+// --- Local File System Data Functions ---
 
-// --- Local File Handlers ---
+// The canonical path to the data directory.
+const dataDir = path.join(process.cwd(), 'src/data');
 
-async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<T> {
-    const fullPath = path.join(process.cwd(), 'src/data', path.basename(filePath));
+/**
+ * Reads a JSON file from the local data directory.
+ * If the file doesn't exist, it returns a default value.
+ * @param filePath - The name of the file (e.g., "engine.json").
+ * @param defaultValue - The value to return if the file doesn't exist.
+ */
+async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
+    const fullPath = path.join(dataDir, filePath);
     try {
-        await fs.access(fullPath);
+        await fs.access(fullPath); // Check if file exists
         const fileContent = await fs.readFile(fullPath, 'utf-8');
-        // Handle empty file case
+        // Handle empty file case, which is valid
         if (fileContent.trim() === '') {
             return defaultValue;
         }
         return JSON.parse(fileContent) as T;
     } catch (error) {
-        // If file doesn't exist or other error, return default
+        // If file doesn't exist or any other read error, return the default.
+        console.warn(`Could not read file ${fullPath}, returning default value. Error: ${error}`);
         return defaultValue;
     }
 }
 
-async function writeJsonToLocal<T>(filePath: string, data: T): Promise<void> {
-    const content = JSON.stringify(data, null, 2) + '\n';
-    const fullPath = path.join(process.cwd(), 'src/data', path.basename(filePath));
+/**
+ * Writes data to a JSON file in the local data directory.
+ * Vercel's git integration will automatically commit this change to the repository.
+ * @param filePath - The name of the file (e.g., "engine.json").
+ * @param data - The data to write to the file.
+ */
+async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
+    const fullPath = path.join(dataDir, filePath);
     try {
         await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        const content = JSON.stringify(data, null, 2) + '\n';
         await fs.writeFile(fullPath, content, 'utf-8');
     } catch (error) {
-        console.error(`Failed to write to local file: ${fullPath}`, error);
-        throw new Error(`Could not save data to the server's local storage.`);
+        console.error(`Fatal error: Failed to write to local file: ${fullPath}`, error);
+        // This is a critical error, as it means the primary data store failed.
+        throw new Error(`Could not save data to the server's file system.`);
     }
-}
-
-// --- GitHub Data Functions ---
-
-async function getFileShaFromGithub(filePath: string): Promise<string | undefined> {
-    if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) return undefined;
-    
-    try {
-        const response = await fetch(`${GITHUB_API_URL}/contents/${filePath}?ref=${GITHUB_BRANCH}`, {
-            headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' },
-            cache: 'no-store'
-        });
-        if (!response.ok) {
-            if (response.status === 404) return undefined; // File doesn't exist
-            throw new Error(`GitHub API error getting file SHA: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data.sha;
-    } catch (error) {
-        console.error(`Failed to get file SHA from GitHub: ${filePath}`, error);
-        // This is not a fatal error for the app's operation, so we don't throw.
-        return undefined;
-    }
-}
-
-async function commitFileToGithub(filePath: string, content: string, commitMessage: string, sha?: string): Promise<void> {
-    if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) {
-        // This is not an error, just a configuration choice.
-        console.log("GitHub credentials not configured. Skipping commit to GitHub.");
-        return;
-    }
-
-    const encodedContent = Buffer.from(content).toString('base64');
-    
-    const body = {
-        message: commitMessage,
-        content: encodedContent,
-        branch: GITHUB_BRANCH,
-        sha: sha,
-    };
-
-    const response = await fetch(`${GITHUB_API_URL}/contents/${filePath}`, {
-        method: 'PUT',
-        headers: { 
-            Authorization: `Bearer ${GITHUB_TOKEN}`, 
-            Accept: 'application/vnd.github.v3+json', 
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error("GitHub API commit failed:", errorData);
-        // We throw here because if the user has configured GitHub, they expect it to work.
-        // This indicates a problem with permissions or the repository setup.
-        throw new Error(`Failed to commit to GitHub: ${errorData.message}`);
-    }
-}
-
-async function deleteFileFromGithub(filePath: string, commitMessage: string, sha: string): Promise<void> {
-    if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) {
-        console.log("GitHub credentials not configured. Skipping file deletion from GitHub.");
-        return;
-    }
-
-    const body = {
-        message: commitMessage,
-        branch: GITHUB_BRANCH,
-        sha: sha,
-    };
-
-    const response = await fetch(`${GITHUB_API_URL}/contents/${filePath}`, {
-        method: 'DELETE',
-        headers: {
-            Authorization: `Bearer ${GITHUB_TOKEN}`,
-            Accept: 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error("GitHub API delete failed:", errorData);
-        throw new Error(`Failed to delete file from GitHub: ${errorData.message}`);
-    }
-}
-
-
-// Unified Write Function (writes to local AND GitHub)
-async function writeJson<T>(filePath: string, data: T, commitMessage: string): Promise<void> {
-    // 1. Write to local file system first for speed and reliability of the live app
-    await writeJsonToLocal(filePath, data);
-
-    // 2. Then, attempt to write to GitHub for permanent backup
-    const githubFilePath = `src/data/${path.basename(filePath)}`;
-    const sha = await getFileShaFromGithub(githubFilePath);
-    const content = JSON.stringify(data, null, 2) + '\n';
-    await commitFileToGithub(githubFilePath, content, commitMessage, sha);
 }
 
 
 // --- Author Data Functions ---
 
 export async function getAuthor(): Promise<Author> {
-    const filePath = 'author.json';
     const defaultAuthor: Author = { name: 'Author', role: 'Writer', bio: '', imageUrl: '' };
-    return await readJsonFromLocal<Author>(filePath, defaultAuthor);
+    return await readJsonFile<Author>('author.json', defaultAuthor);
 }
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
-    const filePath = 'author.json';
-    await writeJson(filePath, authorData, `docs(author): update author profile`);
+    await writeJsonFile('author.json', authorData);
     return authorData;
 }
 
@@ -167,12 +75,11 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
   let allArticles: Article[] = [];
 
   for (const categorySlug of allCategorySlugs) {
-    const filePath = `${categorySlug}.json`;
-    const categoryArticles = await readJsonFromLocal<Article[]>(filePath, []);
+    const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`, []);
     allArticles.push(...categoryArticles);
   }
 
-  // Deduplicate articles based on ID, in case an article was moved but the old file wasn't cleaned up
+  // Deduplicate articles based on ID
   const uniqueArticles = Array.from(new Map(allArticles.map(article => [article.id, article])).values());
 
   const sortedArticles = uniqueArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -186,12 +93,10 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
 
 export async function getArticlesByCategory(categoryName: string): Promise<Article[]> {
   const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
-  const filePath = `${categorySlug}.json`;
-  const articles = await readJsonFromLocal<Article[]>(filePath, []);
+  const articles = await readJsonFile<Article[]>(`${categorySlug}.json`, []);
   
   const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   
-  // Filter out drafts for public category pages
   return sortedArticles.filter(a => a.status === 'published');
 }
 
@@ -209,13 +114,12 @@ export async function getArticleBySlug(slug: string, options: { includeDrafts?: 
 export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): Promise<Article> {
     const newArticle: Article = { 
         ...article, 
-        id: uuidv4(), // Assign a new unique ID
+        id: uuidv4(),
         publishedAt: new Date().toISOString() 
     };
     
     const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
-    const filePath = `${categorySlug}.json`;
-    const articles = await readJsonFromLocal<Article[]>(filePath, []);
+    const articles = await readJsonFile<Article[]>(`${categorySlug}.json`, []);
     
     const existingIndex = articles.findIndex(a => a.slug === newArticle.slug);
     if (existingIndex !== -1) {
@@ -223,7 +127,7 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     }
 
     articles.unshift(newArticle);
-    await writeJson(filePath, articles, `feat(content): add '${newArticle.title}'`);
+    await writeJsonFile(`${categorySlug}.json`, articles);
     return newArticle;
 }
 
@@ -233,7 +137,6 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
 
     const updatedArticle = { ...originalArticle, ...articleData };
 
-    // If status changes from draft to published, update the timestamp
     if (articleData.status === 'published' && originalArticle.status === 'draft') {
         updatedArticle.publishedAt = new Date().toISOString();
     }
@@ -243,34 +146,26 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
     if (hasCategoryChanged) {
         // Remove from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
-        const oldFilePath = `${oldCategorySlug}.json`;
-        const oldArticles = await readJsonFromLocal<Article[]>(oldFilePath, []);
-        const filteredArticles = oldArticles.filter(a => a.id !== originalArticle.id);
-        await writeJson(oldFilePath, filteredArticles, `refactor(content): move '${slug}' from ${originalArticle.category}`);
+        const oldArticles = await readJsonFile<Article[]>(`${oldCategorySlug}.json`, []);
+        const filteredOldArticles = oldArticles.filter(a => a.id !== originalArticle.id);
+        await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
     }
 
-    // Add to new category file (or update in the same file)
     const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
-    const newFilePath = `${newCategorySlug}.json`;
-    const newArticles = await readJsonFromLocal<Article[]>(newFilePath, []);
-    const articleIndex = newArticles.findIndex(a => a.id === updatedArticle.id);
+    const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`, []);
+    
+    // Find index to update or -1 if it's a new category
+    const articleIndexInNewList = newArticles.findIndex(a => a.id === updatedArticle.id);
 
-    if (articleIndex === -1) {
-        // This happens when the category has changed, or if it was missing before
+    if (articleIndexInNewList === -1) { // Article is moving to a new category
         newArticles.unshift(updatedArticle);
-    } else {
-        // This happens when updating an article in the same category
-        newArticles[articleIndex] = updatedArticle;
+    } else { // Article is being updated in the same category
+        newArticles[articleIndexInNewList] = updatedArticle;
     }
     
-    // Sort articles by date after update/add to ensure newest is first
     newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-    const commitMessage = hasCategoryChanged 
-        ? `refactor(content): move '${slug}' to ${updatedArticle.category}`
-        : `docs(content): update '${slug}'`;
-
-    await writeJson(newFilePath, newArticles, commitMessage);
+    await writeJsonFile(`${newCategorySlug}.json`, newArticles);
     
     return updatedArticle;
 }
@@ -283,31 +178,13 @@ export async function deleteArticle(slug: string): Promise<void> {
     }
 
     const categorySlug = article.category.toLowerCase().replace(/ /g, '-');
-    const localFilePath = `${categorySlug}.json`;
-    const githubFilePath = `src/data/${localFilePath}`;
-
-    const articles = await readJsonFromLocal<Article[]>(localFilePath, []);
+    const articles = await readJsonFile<Article[]>(`${categorySlug}.json`, []);
     const updatedArticles = articles.filter(a => a.id !== article.id);
 
     if (articles.length === updatedArticles.length) {
-        // This might happen if the article was found in the global list but not its own category file (e.g., after a failed move)
-        console.warn(`Article with slug "${slug}" not found in its category file '${localFilePath}'. No deletion performed from this file.`);
+        console.warn(`Article with slug "${slug}" not found in its category file '${categorySlug}.json'. No deletion performed.`);
         return;
     }
     
-    const commitMessage = `feat(content): delete '${article.title}'`;
-
-    // If the category is now empty, delete the file from GitHub, otherwise update it.
-    if (updatedArticles.length === 0) {
-        // 1. Delete local file
-        await fs.unlink(path.join(process.cwd(), 'src/data', localFilePath)).catch(e => console.error("Could not delete empty local file, it might not exist.", e));
-        // 2. Delete GitHub file
-        const sha = await getFileShaFromGithub(githubFilePath);
-        if (sha) {
-            await deleteFileFromGithub(githubFilePath, commitMessage, sha);
-        }
-    } else {
-        // Update the file with the article removed
-        await writeJson(localFilePath, updatedArticles, commitMessage);
-    }
+    await writeJsonFile(`${categorySlug}.json`, updatedArticles);
 }
