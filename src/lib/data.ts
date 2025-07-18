@@ -155,7 +155,7 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     const filePath = 'author.json';
-    await writeJson(filePath, authorData, `docs: update author profile`);
+    await writeJson(filePath, authorData, `docs(author): update author profile`);
     return authorData;
 }
 
@@ -223,7 +223,7 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     }
 
     articles.unshift(newArticle);
-    await writeJson(filePath, articles, `feat: add article '${newArticle.title}'`);
+    await writeJson(filePath, articles, `feat(content): add '${newArticle.title}'`);
     return newArticle;
 }
 
@@ -246,7 +246,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const oldFilePath = `${oldCategorySlug}.json`;
         const oldArticles = await readJsonFromLocal<Article[]>(oldFilePath, []);
         const filteredArticles = oldArticles.filter(a => a.id !== originalArticle.id);
-        await writeJson(oldFilePath, filteredArticles, `refactor: move article '${slug}' from ${originalArticle.category}`);
+        await writeJson(oldFilePath, filteredArticles, `refactor(content): move '${slug}' from ${originalArticle.category}`);
     }
 
     // Add to new category file (or update in the same file)
@@ -267,8 +267,8 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
     newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
     const commitMessage = hasCategoryChanged 
-        ? `refactor: move article '${slug}' to ${updatedArticle.category}`
-        : `docs: update article '${slug}'`;
+        ? `refactor(content): move '${slug}' to ${updatedArticle.category}`
+        : `docs(content): update '${slug}'`;
 
     await writeJson(newFilePath, newArticles, commitMessage);
     
@@ -295,7 +295,7 @@ export async function deleteArticle(slug: string): Promise<void> {
         return;
     }
     
-    const commitMessage = `feat: delete article '${article.title}'`;
+    const commitMessage = `feat(content): delete '${article.title}'`;
 
     // If the category is now empty, delete the file from GitHub, otherwise update it.
     if (updatedArticles.length === 0) {
