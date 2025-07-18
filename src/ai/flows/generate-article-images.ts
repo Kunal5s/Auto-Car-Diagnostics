@@ -71,7 +71,8 @@ const generateArticleImagesFlow = ai.defineFlow(
     const { output } = await placementPrompt(input);
     
     if (!output || !output.placements || output.placements.length === 0) {
-        throw new Error('Could not generate image placement instructions from the article content.');
+        // Return an empty array if no placements can be determined, preventing a crash.
+        return { placements: [] };
     }
     
     // 2. For each placement, create a placeholder image URL

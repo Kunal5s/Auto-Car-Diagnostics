@@ -16,7 +16,7 @@ const dataDir = path.join(process.cwd(), 'src/data');
  * @param filePath - The relative path within the data directory.
  * @param defaultContent - The default content to write if the file is created.
  */
-async function ensureFileExists(filePath: string, defaultContent: string = '[]\n'): Promise<void> {
+async function ensureFileExists(filePath: string, defaultContent: string = '[]\\n'): Promise<void> {
     const fullPath = path.join(dataDir, filePath);
     try {
         await fs.access(fullPath);
@@ -50,7 +50,7 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
 async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
     await ensureFileExists(filePath); // Ensure the directory exists before writing
     const fullPath = path.join(dataDir, filePath);
-    const content = JSON.stringify(data, null, 2) + '\n';
+    const content = JSON.stringify(data, null, 2) + '\\n';
     await fs.writeFile(fullPath, content, 'utf-8');
 }
 
@@ -60,7 +60,7 @@ async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
 export async function getAuthor(): Promise<Author> {
     const defaultAuthor: Author = { name: 'Author', role: 'Writer', bio: '', imageUrl: '' };
     try {
-        await ensureFileExists('author.json', JSON.stringify(defaultAuthor, null, 2) + '\n');
+        await ensureFileExists('author.json', JSON.stringify(defaultAuthor, null, 2) + '\\n');
         const author = await readJsonFile<Author>('author.json');
         return author;
     } catch (error) {
