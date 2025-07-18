@@ -28,8 +28,9 @@ export function RecentArticles({ articles }: RecentArticlesProps) {
           ))}
         </div>
       ) : (
-        <div className="text-center text-muted-foreground py-16">
-          <p>No articles found.</p>
+        <div className="text-center text-muted-foreground py-16 bg-muted rounded-lg">
+          <p className="text-lg font-medium">No articles have been published yet.</p>
+          <p>Check back soon for new content!</p>
         </div>
       )}
     </section>
