@@ -31,7 +31,7 @@ const AdminCard = ({ icon: Icon, title, description, buttonText, href, disabled 
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'Admin';
+  const adminEmail = process.env.ADMIN_EMAIL || 'Admin';
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
