@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, Image as ImageIcon, Copy, RefreshCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
+import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
 
 const creativeOptions = {
     artisticStyle: ['Photographic', 'Digital Art', 'Cinematic', '3D Render', 'Anime', 'Retro'],
@@ -22,10 +23,6 @@ const creativeOptions = {
     },
     mood: ['None', 'Vibrant', 'Dark', 'Pastel', 'Monochromatic'],
     lighting: ['None', 'Soft Light', 'Hard Light', 'Rim Light', 'Studio Lighting'],
-};
-
-const sanitizePrompt = (prompt: string): string => {
-    return encodeURIComponent(prompt.trim().replace(/\s+/g, " "));
 };
 
 export function ImageGenerator() {
@@ -52,7 +49,7 @@ export function ImageGenerator() {
         return fullPrompt;
     };
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         if (!prompt) {
             toast({ variant: 'destructive', title: 'Prompt is required', description: 'Please enter a prompt to generate images.' });
             return;
@@ -60,17 +57,34 @@ export function ImageGenerator() {
         setIsLoading(true);
         setImages([]);
 
-        const fullPrompt = buildFullPrompt();
-        const sanitized = sanitizePrompt(fullPrompt);
-        
-        // Use a timeout to simulate network and generation time
-        setTimeout(() => {
-             const imageUrls = Array(4).fill(null).map((_, i) => 
-                `https://image.pollinations.ai/prompt/${sanitized}${creativeSettings.aspectRatio}&seed=${Math.random() * 10000}`
+        try {
+            const fullPrompt = buildFullPrompt();
+            
+            // Generate 4 images in parallel
+            const imagePromises = Array(4).fill(null).map(() => 
+                generatePollinationsImage({ 
+                    prompt: fullPrompt, 
+                    // Add a random seed to get different images each time
+                    seed: Math.random() * 10000 
+                })
             );
+
+            const results = await Promise.all(imagePromises);
+            const imageUrls = results.map(res => `${res.imageUrl}${creativeSettings.aspectRatio}`);
+
             setImages(imageUrls);
+
+        } catch (error) {
+            console.error("Image generation failed:", error);
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+            toast({
+                variant: 'destructive',
+                title: 'Image Generation Failed',
+                description: errorMessage,
+            });
+        } finally {
             setIsLoading(false);
-        }, 2000); // 2 second delay
+        }
     };
     
     const copyPrompt = () => {
