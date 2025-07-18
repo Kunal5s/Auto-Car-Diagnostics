@@ -332,7 +332,7 @@ export default function PublishArticlePage() {
             });
             toast({
                 title: `Article ${status === 'published' ? 'Published' : 'Draft Saved'}!`,
-                description: `Your article has been successfully saved to GitHub.`,
+                description: `Your article has been successfully saved.`,
             });
             
             if (status === 'published') {

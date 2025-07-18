@@ -15,7 +15,7 @@ const branch = process.env.GITHUB_REPO_BRANCH || 'main';
 
 // --- GitHub API Helpers ---
 
-async function getFileSha(filePath: string): Promise<string | null> {
+async function getFileShaFromGithub(filePath: string): Promise<string | null> {
     if (!owner || !repo) return null;
     try {
         const response = await octokit.repos.getContent({
@@ -38,12 +38,15 @@ async function getFileSha(filePath: string): Promise<string | null> {
 }
 
 
-async function commitData(filePath: string, content: string, commitMessage: string): Promise<void> {
+async function commitDataToGithub(filePath: string, content: string, commitMessage: string): Promise<void> {
+    // Do not commit if GitHub details are not configured.
+    // This allows the app to run locally without GitHub credentials.
     if (!owner || !repo || !process.env.GITHUB_TOKEN) {
-        throw new Error("GitHub repository details are not configured in environment variables.");
+        console.warn("GitHub repository details not configured. Skipping GitHub commit.");
+        return;
     }
     
-    const sha = await getFileSha(filePath);
+    const sha = await getFileShaFromGithub(filePath);
     
     await octokit.repos.createOrUpdateFileContents({
         owner,
@@ -65,6 +68,7 @@ async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<
         return JSON.parse(fileContent) as T;
     } catch (error: any) {
         if (error.code === 'ENOENT') {
+            console.log(`File not found: ${filePath}, returning default value.`);
             return defaultValue; // File doesn't exist, return default
         }
         console.error(`Error reading or parsing JSON from ${filePath}`, error);
@@ -72,9 +76,15 @@ async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<
     }
 }
 
-async function writeJsonToGithub<T>(filePath: string, data: T, commitMessage: string): Promise<void> {
-    const content = JSON.stringify(data, null, 2);
-    await commitData(filePath, content, commitMessage);
+async function writeJsonToLocalAndGithub<T>(filePath: string, data: T, commitMessage: string): Promise<void> {
+    const content = JSON.stringify(data, null, 2) + '\n';
+    const fullPath = path.join(process.cwd(), filePath);
+    
+    // Write to local file first
+    await fs.writeFile(fullPath, content, 'utf-8');
+
+    // Then commit to GitHub
+    await commitDataToGithub(filePath, content, commitMessage);
 }
 
 
@@ -88,7 +98,7 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     const filePath = 'src/data/author.json';
-    await writeJsonToGithub(filePath, authorData, 'docs(content): update author information');
+    await writeJsonToLocalAndGithub(filePath, authorData, 'docs(content): update author information');
     return authorData;
 }
 
@@ -148,7 +158,6 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
     const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
     const filePath = `src/data/${categorySlug}.json`;
     
-    // Reads from local file system as the source of truth for current articles
     const articles = await readJsonFromLocal<Article[]>(filePath, []);
     
     const existingIndex = articles.findIndex(a => a.slug === newArticle.slug);
@@ -158,7 +167,7 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
 
     articles.unshift(newArticle);
 
-    await writeJsonToGithub(
+    await writeJsonToLocalAndGithub(
         filePath,
         articles,
         `feat(content): add article '${newArticle.title}'`
@@ -174,7 +183,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
     }
 
     const updatedArticle = { ...originalArticle, ...articleData };
-    if (articleData.status) { // Only update publishedAt if status changes
+    if (articleData.status && articleData.status !== originalArticle.status) { // Only update publishedAt if status changes
         updatedArticle.publishedAt = new Date().toISOString();
     }
 
@@ -185,7 +194,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const oldFilePath = `src/data/${oldCategorySlug}.json`;
         const oldArticles = await readJsonFromLocal<Article[]>(oldFilePath, []);
         const filteredArticles = oldArticles.filter(a => a.slug !== slug);
-        await writeJsonToGithub(
+        await writeJsonToLocalAndGithub(
             oldFilePath,
             filteredArticles,
             `refactor(content): move article '${slug}' from ${originalArticle.category}`
@@ -196,7 +205,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const newFilePath = `src/data/${newCategorySlug}.json`;
         const newArticles = await readJsonFromLocal<Article[]>(newFilePath, []);
         newArticles.unshift(updatedArticle);
-        await writeJsonToGithub(
+        await writeJsonToLocalAndGithub(
             newFilePath,
             newArticles,
             `refactor(content): move article '${slug}' to ${updatedArticle.category}`
@@ -214,7 +223,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
             articles[articleIndex] = updatedArticle;
         }
 
-        await writeJsonToGithub(
+        await writeJsonToLocalAndGithub(
             filePath,
             articles,
             `docs(content): update article '${slug}'`
@@ -241,7 +250,7 @@ export async function deleteArticle(slug: string): Promise<void> {
         return;
     }
 
-    await writeJsonToGithub(
+    await writeJsonToLocalAndGithub(
         filePath,
         updatedArticles,
         `feat(content): delete article '${slug}'`
