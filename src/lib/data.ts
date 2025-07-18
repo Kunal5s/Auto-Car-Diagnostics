@@ -23,7 +23,7 @@ async function getFileFromGithub(filePath: string): Promise<{ content: string; s
             ref: branch,
         });
         // This check is crucial to ensure we're dealing with a file and not a directory.
-        if (Array.isArray(response.data)) {
+        if (Array.isArray(response.data) || !('content' in response.data)) {
             return null;
         }
         const data = response.data as { content: string; encoding: "base64", sha: string };
@@ -61,6 +61,10 @@ async function commitData(filePath: string, content: string, commitMessage: stri
 async function readJsonFromGithub<T>(filePath: string, defaultValue: T): Promise<T> {
     const file = await getFileFromGithub(filePath);
     if (!file) {
+        // If the file doesn't exist, let's create it with the default value to ensure stability.
+        if(filePath.startsWith('src/data/') && filePath.endsWith('.json')) {
+            await commitData(filePath, JSON.stringify(defaultValue, null, 2), `feat(content): create initial data file for ${filePath.split('/').pop()}`);
+        }
         return defaultValue;
     }
     try {
