@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Provides a diagnosis based on the color of exhaust smoke using a static data map.
- * This has been updated to remove the Genkit wrapper.
+ * This has been updated to remove any Genkit or external AI dependency.
  *
  * - getSmokeDiagnosis - A function that returns a diagnosis for a given smoke color.
  * - SmokeDiagnosisInput - The input type for the function.

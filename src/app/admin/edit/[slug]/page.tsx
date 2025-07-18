@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
-import { generateGeminiImage } from '@/ai/flows/generate-gemini-image';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
@@ -121,9 +120,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         
         setIsGenerating(true);
         try {
-            // Use placeholder images
-            const imageUrl = `https://placehold.co/600x400.png?text=${encodeURIComponent(article.title.substring(0,20))}`;
-            const altText = `Featured image for article: ${article.title}`;
+            const uniqueString = Date.now().toString(36);
+            const imageUrl = `https://placehold.co/600x400.png?text=${uniqueString}`;
+            const { altText } = await generateAltText({ articleTitle: article.title });
             
             setArticle(prev => prev ? ({
                 ...prev,
@@ -282,7 +281,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             });
 
             if (!result.placements || result.placements.length === 0) {
-                throw new Error("AI could not determine where to place images.");
+                throw new Error("Could not determine where to place images based on subheadings.");
             }
 
             const parser = new DOMParser();
@@ -298,7 +297,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                     const imageAlt = `${article.title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" />`;
+                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${subheading.split(' ').slice(0, 2).join(' ')}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
                     imagesInserted++;
@@ -321,11 +320,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            // Updated regex to catch both data URI and pollinations URI for older content
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="(data:image\/[^;]+;base64,[^"]+|https:\/\/image\.pollinations\.ai\/[^"]+)"[^>]*><\/div>/g, '');
+            // This regex is now more generic to catch any image inside a centered div
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="[^"]+"[^>]*><\/div>/gi, '');
             contentRef.current.innerHTML = newContent;
             handleStateChange('content', newContent);
-            toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
+            toast({ title: "Images Reset", description: "All inserted body images have been removed from the content." });
         }
     };
 

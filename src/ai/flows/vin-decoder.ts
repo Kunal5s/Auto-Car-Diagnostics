@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview A flow for decoding a VIN and checking for recalls using the CarAPI.app service.
- * This has been updated to remove the Genkit wrapper.
+ * This has been updated to remove any Genkit or external AI dependency.
  *
  * - decodeVin - A function that takes a VIN and returns detailed vehicle information and recalls.
  * - VinInput - The input type for the decodeVin function.
@@ -55,7 +55,7 @@ const VinOutputSchema = z.object({
 });
 export type VinOutput = z.infer<typeof VinOutputSchema>;
 
-// This is now a standard server function, no Genkit flow needed.
+// This is now a standard server function, no external AI model needed.
 export async function decodeVin({ vin }: VinInput): Promise<VinOutput> {
     // Using Promise.all to fetch VIN details and recalls concurrently for better performance
     const [vinDetails, recallData] = await Promise.all([

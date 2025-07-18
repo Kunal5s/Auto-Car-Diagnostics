@@ -3,7 +3,6 @@ import { getArticleBySlug, getAuthor } from "@/lib/data";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/common/footer";
-import { ArticleSummarizer } from "@/components/article/article-summarizer";
 import { KeyTakeaways } from "@/components/article/key-takeaways";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Car } from "lucide-react";
@@ -118,8 +117,6 @@ export default async function ArticlePage({
             {article.keyTakeaways && article.keyTakeaways.length > 0 && (
               <KeyTakeaways takeaways={article.keyTakeaways} />
             )}
-
-            <ArticleSummarizer articleContent={article.content} />
 
             <div className={cn(
               "prose prose-lg max-w-none prose-headings:font-headline prose-headings:font-semibold prose-headings:text-foreground prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline",

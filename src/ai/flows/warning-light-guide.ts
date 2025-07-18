@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Provides an explanation for a selected car dashboard warning light using a static data map.
- * This has been updated to remove the Genkit wrapper.
+ * This has been updated to remove any Genkit or external AI dependency.
  *
  * - getWarningLightExplanation - A function that returns details about a warning light.
  * - WarningLightInput - The input type for the function.

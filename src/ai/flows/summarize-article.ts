@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview This flow is deprecated as text generation features have been removed.
+ * It now throws an error to indicate it is non-functional.
  */
 
 import { z } from 'genkit';

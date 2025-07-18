@@ -16,7 +16,7 @@ import { categories } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
-import { generateGeminiImage } from '@/ai/flows/generate-gemini-image';
+import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import {
@@ -92,10 +92,9 @@ export default function PublishArticlePage() {
         
         setIsGenerating(true);
         try {
-            // Use placeholder images with a unique element to ensure variation
             const uniqueString = Date.now().toString(36);
             const imageUrl = `https://placehold.co/600x400.png?text=${uniqueString}`;
-            const altText = `Featured image for article: ${title}`;
+            const { altText } = await generateAltText({ articleTitle: title });
             
             setEditorState(prev => ({
                 ...prev,
@@ -247,7 +246,7 @@ export default function PublishArticlePage() {
             });
 
             if (!result.placements || result.placements.length === 0) {
-                throw new Error("AI could not determine where to place images.");
+                throw new Error("Could not determine where to place images based on subheadings.");
             }
 
             const parser = new DOMParser();
@@ -255,10 +254,7 @@ export default function PublishArticlePage() {
             let imagesInserted = 0;
 
             for (const placement of result.placements) {
-                const { subheading } = placement;
-                // Use a unique placeholder for each image
-                const uniqueString = Math.random().toString(36).substring(7);
-                const imageUrl = `https://placehold.co/600x400.png?text=${uniqueString}`;
+                const { imageUrl, subheading } = placement;
                 const h2s = Array.from(doc.querySelectorAll('h2'));
                 const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
 
@@ -266,7 +262,7 @@ export default function PublishArticlePage() {
                     const imageAlt = `${title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" />`;
+                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${subheading.split(' ').slice(0, 2).join(' ')}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
                     imagesInserted++;
@@ -289,10 +285,11 @@ export default function PublishArticlePage() {
 
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="[^"]+"[^>]*><\/div>/g, '');
+            // This regex is now more generic to catch any image inside a centered div
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="[^"]+"[^>]*><\/div>/gi, '');
             contentRef.current.innerHTML = newContent;
             handleStateChange('content', newContent);
-            toast({ title: "Images Reset", description: "All generated body images have been removed from the content." });
+            toast({ title: "Images Reset", description: "All inserted body images have been removed from the content." });
         }
     };
 
@@ -347,7 +344,7 @@ export default function PublishArticlePage() {
             return { slug: null, success: false };
         } finally {
             if (status === 'published') setIsPublishing(false);
-            else setIsSavingDraft(true);
+            else setIsSavingDraft(false);
         }
     }
 
@@ -358,7 +355,6 @@ export default function PublishArticlePage() {
             return;
         }
 
-        // For preview, we always save as a draft.
         const { slug, success } = await handleSave('draft');
         if (success && slug) {
              window.open(`/api/draft?slug=${slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
