@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, Image as ImageIcon, Copy, RefreshCcw, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '../ui/skeleton';
 import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
+import { cn } from '@/lib/utils';
 
 const creativeOptions = {
     artisticStyle: ['Photographic', 'Digital Art', 'Cinematic', '3D Render', 'Anime', 'Retro'],
@@ -27,11 +27,11 @@ const creativeOptions = {
 
 export function ImageGenerator() {
     const [prompt, setPrompt] = useState('');
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [creativeSettings, setCreativeSettings] = useState({
         artisticStyle: 'Photographic',
-        aspectRatio: 'width=600&height=450', // Default to 4:3
+        aspectRatio: 'width=600&height=450',
         mood: 'None',
         lighting: 'None',
     });
@@ -51,23 +51,24 @@ export function ImageGenerator() {
 
     const handleGenerate = async () => {
         if (!prompt) {
-            toast({ variant: 'destructive', title: 'Prompt is required', description: 'Please enter a prompt to generate an image.' });
+            toast({ variant: 'destructive', title: 'Prompt is required', description: 'Please enter a prompt to generate images.' });
             return;
         }
         setIsLoading(true);
-        setImageUrl(null);
+        setImageUrls([]);
 
         try {
             const fullPrompt = buildFullPrompt();
+            const imagePromises = Array.from({ length: 4 }).map((_, i) =>
+                generatePollinationsImage({
+                    prompt: fullPrompt,
+                    seed: Math.random() * 10000 + i
+                })
+            );
             
-            const result = await generatePollinationsImage({ 
-                prompt: fullPrompt, 
-                seed: Math.random() * 10000 
-            });
-
-            // Append the client-side aspect ratio setting to the URL
-            const finalUrl = `${result.imageUrl}${creativeSettings.aspectRatio}`;
-            setImageUrl(finalUrl);
+            const results = await Promise.all(imagePromises);
+            const finalUrls = results.map(result => `${result.imageUrl}${creativeSettings.aspectRatio}`);
+            setImageUrls(finalUrls);
 
         } catch (error) {
             console.error("Image generation failed:", error);
@@ -87,16 +88,18 @@ export function ImageGenerator() {
         toast({ title: 'Prompt Copied!', description: 'The full prompt has been copied to your clipboard.' });
     };
 
-    const handleDownload = async () => {
+    const handleDownload = async (imageUrl: string) => {
         if (!imageUrl) return;
         try {
-            const response = await fetch(imageUrl);
+            // Using a CORS proxy to fetch the image data as a blob
+            const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(imageUrl)}`);
+            if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+            
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            // Create a filename from the prompt
             const filename = `${prompt.substring(0, 30).replace(/\s/g, '_') || 'generated_image'}.png`;
             a.download = filename;
             document.body.appendChild(a);
@@ -106,7 +109,7 @@ export function ImageGenerator() {
             toast({ title: 'Download Started!', description: 'Your image is being downloaded.' });
         } catch (error) {
             console.error('Download failed:', error);
-            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not download the image.' });
+            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not download the image. The server may be blocking direct downloads.' });
         }
     };
 
@@ -172,33 +175,42 @@ export function ImageGenerator() {
 
                         <Button onClick={handleGenerate} disabled={isLoading} size="lg" className="w-full">
                             {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                            Generate Image
+                            Generate Images
                         </Button>
                     </CardContent>
                 </Card>
                 
                 <Card className="p-1.5 bg-gradient-to-bl from-primary/20 to-secondary/20 rounded-xl shadow-lg transition-all hover:shadow-2xl h-full">
-                    <CardContent className="bg-background rounded-lg p-6 flex flex-col justify-center items-center min-h-[500px] h-full">
+                    <CardContent className="bg-background rounded-lg p-6 flex flex-col justify-center items-center min-h-[500px] h-full space-y-4">
                         {isLoading ? (
                             <div className='flex flex-col items-center justify-center text-muted-foreground'>
                                 <Loader2 className="h-20 w-20 animate-spin text-primary" />
-                                <p className="mt-4 text-lg font-medium">Generating your masterpiece...</p>
+                                <p className="mt-4 text-lg font-medium">Generating your masterpieces...</p>
+                                <p className="text-sm">This can take up to 30 seconds.</p>
                             </div>
-                        ) : imageUrl ? (
-                            <div className="w-full space-y-4">
-                                <div className="relative w-full rounded-lg overflow-hidden" style={{ aspectRatio: creativeSettings.aspectRatio.includes('600&height=600') ? '1/1' : creativeSettings.aspectRatio.includes('600&height=337') ? '16/9' : creativeSettings.aspectRatio.includes('337&height=600') ? '9/16' : '4/3' }}>
-                                    <Image src={imageUrl} alt={`Generated image for prompt: ${prompt}`} layout="fill" objectFit="cover" />
+                        ) : imageUrls.length > 0 ? (
+                            <>
+                                <div className="w-full grid grid-cols-2 gap-2">
+                                    {imageUrls.map((url, index) => (
+                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group" style={{ aspectRatio: creativeSettings.aspectRatio.includes('600&height=600') ? '1/1' : creativeSettings.aspectRatio.includes('600&height=337') ? '16/9' : creativeSettings.aspectRatio.includes('337&height=600') ? '9/16' : '4/3' }}>
+                                            <Image src={url} alt={`Generated image ${index + 1} for prompt: ${prompt}`} layout="fill" objectFit="cover" />
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="secondary" size="icon" onClick={() => handleDownload(url)}>
+                                                    <Download className="h-5 w-5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="flex gap-2 justify-center">
+                                <div className="flex flex-wrap gap-2 justify-center">
                                     <Button variant="outline" onClick={handleGenerate}><RefreshCcw className="mr-2 h-4 w-4" />Regenerate</Button>
-                                    <Button variant="outline" onClick={handleDownload}><Download className="mr-2 h-4 w-4" />Download</Button>
                                     <Button variant="outline" onClick={copyPrompt}><Copy className="mr-2 h-4 w-4" />Copy Prompt</Button>
                                 </div>
-                            </div>
+                            </>
                         ) : (
                             <div className="text-center text-muted-foreground">
                                 <ImageIcon className="h-20 w-20 mx-auto" />
-                                <p className="mt-4 text-lg font-medium">Your generated image will appear here.</p>
+                                <p className="mt-4 text-lg font-medium">Your generated images will appear here.</p>
                                 <p className="text-sm">Enter a prompt and adjust your settings to begin.</p>
                             </div>
                         )}
