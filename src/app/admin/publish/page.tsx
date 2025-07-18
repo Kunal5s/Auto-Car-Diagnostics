@@ -515,7 +515,7 @@ export default function PublishArticlePage() {
                             </div>
 
                              <div className="space-y-4 pt-4 border-t">
-                                <Label>Generate Body Images (with Pollinations)</ILabel>
+                                <Label>Generate Body Images (with Pollinations)</Label>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Select
@@ -566,5 +566,3 @@ export default function PublishArticlePage() {
         </div>
     );
 }
-
-    
