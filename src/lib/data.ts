@@ -3,88 +3,36 @@
 
 import type { Article, Author } from "@/lib/types";
 import { categories } from '@/lib/config';
-import { Octokit } from '@octokit/rest';
-import { Buffer } from 'buffer';
 import fs from 'fs/promises';
 import path from 'path';
-
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const owner = process.env.GITHUB_REPO_OWNER;
-const repo = process.env.GITHUB_REPO_NAME;
-const branch = process.env.GITHUB_REPO_BRANCH || 'main';
-
-// --- GitHub API Helpers ---
-
-async function getFileShaFromGithub(filePath: string): Promise<string | null> {
-    if (!owner || !repo) return null;
-    try {
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: filePath,
-            ref: branch,
-        });
-        if (Array.isArray(response.data) || !('sha' in response.data)) {
-            return null;
-        }
-        return response.data.sha;
-    } catch (error: any) {
-        if (error.status === 404) {
-            return null; // File doesn't exist, so no SHA
-        }
-        console.error(`Error getting file SHA from GitHub: ${filePath}`, error);
-        throw new Error(`Could not get file SHA from repository: ${filePath}`);
-    }
-}
-
-
-async function commitDataToGithub(filePath: string, content: string, commitMessage: string): Promise<void> {
-    // Do not commit if GitHub details are not configured.
-    // This allows the app to run locally without GitHub credentials.
-    if (!owner || !repo || !process.env.GITHUB_TOKEN) {
-        console.warn("GitHub repository details not configured. Skipping GitHub commit.");
-        return;
-    }
-    
-    const sha = await getFileShaFromGithub(filePath);
-    
-    await octokit.repos.createOrUpdateFileContents({
-        owner,
-        repo,
-        path: filePath,
-        message: commitMessage,
-        content: Buffer.from(content).toString('base64'),
-        sha, // Pass the SHA for updates, will be null for new files
-        branch,
-    });
-}
 
 // --- Local JSON File Handlers ---
 
 async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<T> {
     const fullPath = path.join(process.cwd(), filePath);
     try {
+        await fs.access(fullPath); // Check if file exists
         const fileContent = await fs.readFile(fullPath, 'utf-8');
         return JSON.parse(fileContent) as T;
     } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            console.log(`File not found: ${filePath}, returning default value.`);
-            return defaultValue; // File doesn't exist, return default
-        }
-        console.error(`Error reading or parsing JSON from ${filePath}`, error);
-        return defaultValue; // Return default on any other error
+        // If file doesn't exist or another error occurs, return the default.
+        // This is safe for read operations.
+        return defaultValue;
     }
 }
 
-async function writeJsonToLocalAndGithub<T>(filePath: string, data: T, commitMessage: string): Promise<void> {
+async function writeJsonToLocal<T>(filePath: string, data: T): Promise<void> {
     const content = JSON.stringify(data, null, 2) + '\n';
     const fullPath = path.join(process.cwd(), filePath);
     
-    // Write to local file first
-    await fs.writeFile(fullPath, content, 'utf-8');
-
-    // Then commit to GitHub
-    await commitDataToGithub(filePath, content, commitMessage);
+    try {
+        // Ensure directory exists before writing
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        await fs.writeFile(fullPath, content, 'utf-8');
+    } catch (error) {
+        console.error(`Failed to write to local file: ${fullPath}`, error);
+        throw new Error(`Could not save data to the server.`);
+    }
 }
 
 
@@ -98,7 +46,7 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     const filePath = 'src/data/author.json';
-    await writeJsonToLocalAndGithub(filePath, authorData, 'docs(content): update author information');
+    await writeJsonToLocal(filePath, authorData);
     return authorData;
 }
 
@@ -167,11 +115,7 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
 
     articles.unshift(newArticle);
 
-    await writeJsonToLocalAndGithub(
-        filePath,
-        articles,
-        `feat(content): add article '${newArticle.title}'`
-    );
+    await writeJsonToLocal(filePath, articles);
 
     return newArticle;
 }
@@ -194,22 +138,14 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const oldFilePath = `src/data/${oldCategorySlug}.json`;
         const oldArticles = await readJsonFromLocal<Article[]>(oldFilePath, []);
         const filteredArticles = oldArticles.filter(a => a.slug !== slug);
-        await writeJsonToLocalAndGithub(
-            oldFilePath,
-            filteredArticles,
-            `refactor(content): move article '${slug}' from ${originalArticle.category}`
-        );
+        await writeJsonToLocal(oldFilePath, filteredArticles);
 
         // Add to new category file
         const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const newFilePath = `src/data/${newCategorySlug}.json`;
         const newArticles = await readJsonFromLocal<Article[]>(newFilePath, []);
         newArticles.unshift(updatedArticle);
-        await writeJsonToLocalAndGithub(
-            newFilePath,
-            newArticles,
-            `refactor(content): move article '${slug}' to ${updatedArticle.category}`
-        );
+        await writeJsonToLocal(newFilePath, newArticles);
     } else {
         // Update in the same category file
         const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
@@ -223,11 +159,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
             articles[articleIndex] = updatedArticle;
         }
 
-        await writeJsonToLocalAndGithub(
-            filePath,
-            articles,
-            `docs(content): update article '${slug}'`
-        );
+        await writeJsonToLocal(filePath, articles);
     }
     
     return updatedArticle;
@@ -250,9 +182,5 @@ export async function deleteArticle(slug: string): Promise<void> {
         return;
     }
 
-    await writeJsonToLocalAndGithub(
-        filePath,
-        updatedArticles,
-        `feat(content): delete article '${slug}'`
-    );
+    await writeJsonToLocal(filePath, updatedArticles);
 }
