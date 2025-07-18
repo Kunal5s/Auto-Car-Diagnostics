@@ -10,16 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, Image as ImageIcon, Copy, RefreshCcw, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
-import { cn } from '@/lib/utils';
+import { generateMultipleGeminiImages } from '@/ai/flows/generate-multiple-gemini-images';
 
 const creativeOptions = {
     artisticStyle: ['Photographic', 'Digital Art', 'Cinematic', '3D Render', 'Anime', 'Retro'],
     aspectRatio: {
-        'Widescreen (16:9)': 'width=600&height=337',
-        'Standard (4:3)': 'width=600&height=450',
-        'Square (1:1)': 'width=600&height=600',
-        'Portrait (9:16)': 'width=337&height=600',
+        'Widescreen (16:9)': '16/9',
+        'Standard (4:3)': '4/3',
+        'Square (1:1)': '1/1',
+        'Portrait (9:16)': '9/16',
     },
     mood: ['None', 'Vibrant', 'Dark', 'Pastel', 'Monochromatic'],
     lighting: ['None', 'Soft Light', 'Hard Light', 'Rim Light', 'Studio Lighting'],
@@ -31,7 +30,7 @@ export function ImageGenerator() {
     const [isLoading, setIsLoading] = useState(false);
     const [creativeSettings, setCreativeSettings] = useState({
         artisticStyle: 'Photographic',
-        aspectRatio: 'width=600&height=450',
+        aspectRatio: '16/9',
         mood: 'None',
         lighting: 'None',
     });
@@ -46,6 +45,7 @@ export function ImageGenerator() {
         if (creativeSettings.artisticStyle !== 'None') fullPrompt += `, ${creativeSettings.artisticStyle}`;
         if (creativeSettings.mood !== 'None') fullPrompt += `, ${creativeSettings.mood} mood`;
         if (creativeSettings.lighting !== 'None') fullPrompt += `, ${creativeSettings.lighting}`;
+        fullPrompt += `, high quality, sharp focus, 4k`;
         return fullPrompt;
     };
 
@@ -59,15 +59,11 @@ export function ImageGenerator() {
 
         try {
             const fullPrompt = buildFullPrompt();
-            const imagePromises = Array.from({ length: 4 }).map((_, i) =>
-                generatePollinationsImage({
-                    prompt: fullPrompt,
-                    seed: Math.floor(Math.random() * 10000) + i
-                })
-            );
+            const { images } = await generateMultipleGeminiImages({
+                prompts: Array(4).fill(fullPrompt)
+            });
             
-            const results = await Promise.all(imagePromises);
-            const finalUrls = results.map(result => `${result.imageUrl}${creativeSettings.aspectRatio}`);
+            const finalUrls = images.map(img => img.url);
             setImageUrls(finalUrls);
 
         } catch (error) {
@@ -91,17 +87,12 @@ export function ImageGenerator() {
     const handleDownload = async (imageUrl: string) => {
         if (!imageUrl) return;
         try {
-            // Use a proxy or server-side fetch if CORS is an issue, but for Pollinations, this works.
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = imageUrl;
             a.download = `${prompt.substring(0, 20).replace(/ /g, '_') || 'generated_image'}.png`;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.URL.revokeObjectURL(url);
             toast({ title: 'Download Started', description: 'Your image is being downloaded.' });
         } catch (error) {
              toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not download the image directly. Try right-clicking to save.' });
@@ -188,7 +179,7 @@ export function ImageGenerator() {
                             <>
                                 <div className="w-full grid grid-cols-2 gap-2">
                                     {imageUrls.map((url, index) => (
-                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group" style={{ aspectRatio: creativeSettings.aspectRatio.includes('600&height=600') ? '1/1' : creativeSettings.aspectRatio.includes('600&height=337') ? '16/9' : creativeSettings.aspectRatio.includes('337&height=600') ? '9/16' : '4/3' }}>
+                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group" style={{ aspectRatio: creativeSettings.aspectRatio }}>
                                             <Image src={url} alt={`Generated image ${index + 1} for prompt: ${prompt}`} layout="fill" objectFit="cover" />
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button variant="secondary" size="icon" onClick={() => handleDownload(url)}>

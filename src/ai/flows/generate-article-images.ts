@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A flow for generating multiple, contextually relevant images for an article using Pollinations.ai.
+ * @fileOverview A flow for generating multiple, contextually relevant images for an article using Gemini.
  *
  * - generateArticleImages - A function that analyzes article content and generates images with placement instructions.
  * - GenerateArticleImagesInput - The input type for the function.
@@ -11,12 +11,13 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { generateMultipleGeminiImages } from './generate-multiple-gemini-images';
 
 const GenerateArticleImagesInputSchema = z.object({
   articleContent: z.string().describe('The full HTML content of the article.'),
   articleTitle: z.string().describe('The title of the article.'),
   category: z.string().describe('The category of the article.'),
-  imageCount: z.number().int().min(1).max(30).describe('The number of images to generate for the article body.'),
+  imageCount: z.number().int().min(1).max(5).describe('The number of images to generate for the article body.'),
 });
 export type GenerateArticleImagesInput = z.infer<typeof GenerateArticleImagesInputSchema>;
 
@@ -46,7 +47,7 @@ const placementPrompt = ai.definePrompt({
 
 You will be given the article's HTML content. First, identify all of the H2 subheadings. From that list, select the best {{{imageCount}}} subheadings to have an image placed after them.
 
-For each selected subheading, create a detailed, specific, and photorealistic image prompt that visually represents the content of that section. The prompt should be suitable for a text-to-image AI like Pollinations.ai.
+For each selected subheading, create a detailed, specific, and photorealistic image prompt that visually represents the content of that section. The prompt should be suitable for a modern text-to-image AI.
 
 Return an array of objects, each containing:
 1. 'subheading': The exact text of the H2 subheading.
@@ -77,15 +78,18 @@ const generateArticleImagesFlow = ai.defineFlow(
         throw new Error("AI could not determine where to place images or create prompts from the article content.");
     }
     
-    // 2. For each placement, create an image URL using the generated prompt.
-    const placementsWithUrls = output.placements.map(placement => {
-        const enhancedPrompt = `${placement.imagePrompt}, 4k, photorealistic`;
-        const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
-        // We add a negative prompt to the URL to avoid text, watermarks, logos, and malformed features.
-        const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&negative_prompt=text%2C+logo%2C+watermark%2C+deformed%2C+ugly`;
-        
+    // 2. Generate all images in parallel using the new Gemini batch flow.
+    const prompts = output.placements.map(p => p.imagePrompt);
+    const { images } = await generateMultipleGeminiImages({ prompts });
+
+    if (images.length !== output.placements.length) {
+        throw new Error("The number of generated images does not match the number of requested placements.");
+    }
+
+    // 3. Combine the generated image URLs with their subheadings.
+    const placementsWithUrls = output.placements.map((placement, index) => {
         return {
-            imageUrl,
+            imageUrl: images[index].url,
             subheading: placement.subheading,
         };
     });
