@@ -16,7 +16,8 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
-import { generateImage } from '@/ai/flows/generate-image';
+import { generateImage as generateGeminiImage } from '@/ai/flows/generate-image';
+import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import {
@@ -50,7 +51,7 @@ export default function PublishArticlePage() {
     const router = useRouter();
     const [editorState, setEditorState] = useState<EditorState>(initialEditorState);
     
-    const [isGeneratingFeaturedImage, setIsGeneratingFeaturedImage] = useState(false);
+    const [isGenerating, setIsGenerating] = useState<null | 'gemini' | 'pollinations'>(null);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -107,27 +108,35 @@ export default function PublishArticlePage() {
         setEditorState(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleGenerateFeaturedImage = useCallback(async (titleToGenerate: string) => {
-        if (!titleToGenerate || isGeneratingFeaturedImage) return;
+    const handleGenerateFeaturedImage = useCallback(async (generator: 'gemini' | 'pollinations') => {
+        const { title, category } = editorState;
+        if (!title || isGenerating) return;
         
-        setIsGeneratingFeaturedImage(true);
+        setIsGenerating(generator);
         try {
-            const prompt = `photorealistic image of ${titleToGenerate}, professional automotive photography, high detail, in the style of ${editorState.category || 'repair'}`;
-            const result = await generateImage({ prompt });
+            const prompt = `photorealistic image of ${title}, professional automotive photography, high detail, in the style of ${category || 'repair'}`;
+            let result;
+
+            if (generator === 'gemini') {
+                result = await generateGeminiImage({ prompt });
+            } else {
+                result = await generatePollinationsImage({ prompt });
+            }
+            
             setImageUrl(result.imageUrl);
-            setImageHint(titleToGenerate);
+            setImageHint(title);
 
         } catch (err) {
-            console.error("Image Generation Failed:", err);
+            console.error(`Image Generation Failed with ${generator}:`, err);
             toast({
                 variant: "destructive",
                 title: "Image Generation Failed",
-                description: "An error occurred while generating the featured image. Please try again.",
+                description: `An error occurred while generating the featured image with ${generator}. Please try again.`,
             });
         } finally {
-            setIsGeneratingFeaturedImage(false);
+            setIsGenerating(null);
         }
-    }, [editorState.category, isGeneratingFeaturedImage, toast]);
+    }, [editorState, isGenerating, toast]);
 
 
     const handleContentChange = (newContent: string) => {
@@ -178,14 +187,6 @@ export default function PublishArticlePage() {
      const removeKeyTakeaway = (index: number) => {
         const newTakeaways = editorState.keyTakeaways.filter((_, i) => i !== index);
         handleStateChange('keyTakeaways', newTakeaways);
-    };
-
-    const handleManualGenerateClick = () => {
-        if (!editorState.title) {
-             toast({ variant: "destructive", title: "Title Needed", description: "Please provide a title to generate an image." });
-             return;
-        }
-        handleGenerateFeaturedImage(editorState.title);
     };
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
@@ -242,20 +243,17 @@ export default function PublishArticlePage() {
             let imagesInserted = 0;
 
             for (const placement of result.placements) {
-                const { prompt, subheading } = placement;
+                const { imageUrl, subheading } = placement;
                 const h2s = Array.from(doc.querySelectorAll('h2'));
                 const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
 
                 if (targetH2) {
-                    const fullPrompt = `${prompt}, related to ${editorState.title}, professional automotive photography, high detail, photorealistic`;
-                    const imageResult = await generateImage({ prompt: fullPrompt });
-                    
                     const imageAlt = `${editorState.title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.style.display = 'flex';
                     imageDiv.style.justifyContent = 'center';
                     imageDiv.style.margin = '1rem 0';
-                    imageDiv.innerHTML = `<img src="${imageResult.imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" />`;
+                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
                     imagesInserted++;
@@ -473,17 +471,17 @@ export default function PublishArticlePage() {
                             <div className="space-y-4">
                                 <Label>Featured Image</Label>
                                 <div className="aspect-video rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 overflow-hidden">
-                                    {isGeneratingFeaturedImage ? (
+                                    {isGenerating ? (
                                         <div className="flex flex-col items-center text-center p-4">
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-                                            <p className="text-sm text-muted-foreground mt-2">Generating image...</p>
+                                            <p className="text-sm text-muted-foreground mt-2">Generating with {isGenerating}...</p>
                                         </div>
                                     ) : imageUrl ? (
                                         <Image src={imageUrl} alt={altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Click "Generate" to create an image based on the title.</p>
+                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Generate an image or upload one.</p>
                                         </>
                                     )}
                                 </div>
@@ -495,11 +493,15 @@ export default function PublishArticlePage() {
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button onClick={handleManualGenerateClick} disabled={isGeneratingFeaturedImage || !editorState.title} className="flex-1">
+                                    <Button onClick={() => handleGenerateFeaturedImage('pollinations')} disabled={!!isGenerating || !editorState.title} className="flex-1">
                                         <Sparkles className="mr-2 h-4 w-4" />
-                                        Generate
+                                        Pollinations
                                     </Button>
                                 </div>
+                                <Button onClick={() => handleGenerateFeaturedImage('gemini')} disabled={!!isGenerating || !editorState.title} className="w-full">
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Generate with Gemini
+                                </Button>
                                 <div className="space-y-2">
                                     <Label htmlFor="alt-text">Alt Text (for SEO)</Label>
                                     <Input
@@ -507,13 +509,13 @@ export default function PublishArticlePage() {
                                         placeholder="Descriptive alt text for the image..."
                                         value={altText}
                                         onChange={(e) => setAltText(e.target.value)}
-                                        disabled={isGeneratingFeaturedImage}
+                                        disabled={!!isGenerating}
                                     />
                                 </div>
                             </div>
 
                              <div className="space-y-4 pt-4 border-t">
-                                <Label>Generate Body Images</Label>
+                                <Label>Generate Body Images (with Pollinations)</Label>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Select
@@ -544,11 +546,11 @@ export default function PublishArticlePage() {
 
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft || isGeneratingFeaturedImage || isGeneratingBodyImages}>
+                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft || !!isGenerating || isGeneratingBodyImages}>
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
                                 </Button>
-                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft || isGeneratingFeaturedImage || isGeneratingBodyImages}>
+                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft || !!isGenerating || isGeneratingBodyImages}>
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
