@@ -6,6 +6,7 @@ import { categories } from '@/lib/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { commitFilesToGitHub } from '@/lib/github';
 
 // The canonical path to the data directory.
 const dataDir = path.join(process.cwd(), 'src/data');
@@ -44,14 +45,17 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
 
 /**
  * Writes data to a JSON file in the local data directory.
+ * This is now an internal function, not exported.
  * @param filePath - The name of the file (e.g., "engine.json").
  * @param data - The data to write to the file.
+ * @returns The stringified content of the file.
  */
-async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
+async function writeJsonFile<T>(filePath: string, data: T): Promise<string> {
     await ensureFileExists(filePath); // Ensure the directory exists before writing
     const fullPath = path.join(dataDir, filePath);
     const content = JSON.stringify(data, null, 2) + '\n';
     await fs.writeFile(fullPath, content, 'utf-8');
+    return content;
 }
 
 
@@ -69,8 +73,8 @@ export async function getAuthor(): Promise<Author> {
 }
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
-    await writeJsonFile('author.json', authorData);
-    // Backup will be handled by the daily cron job.
+    const content = await writeJsonFile('author.json', authorData);
+    await commitFilesToGitHub([{ path: 'src/data/author.json', content }], `feat(author): update author profile`);
     return authorData;
 }
 
@@ -141,8 +145,13 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     }
 
     articles.unshift(newArticle); // Add to the beginning of the list
-    await writeJsonFile(`${categorySlug}.json`, articles);
-    // Backup will be handled by the daily cron job.
+    const content = await writeJsonFile(`${categorySlug}.json`, articles);
+
+    await commitFilesToGitHub(
+        [{ path: `src/data/${categorySlug}.json`, content }],
+        `feat(article): add "${newArticle.title}"`
+    );
+
     return newArticle;
 }
 
@@ -151,38 +160,50 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
     if (!originalArticle) throw new Error(`Article with slug "${slug}" not found.`);
 
     const updatedArticle = { ...originalArticle, ...articleData };
-
+    const hasCategoryChanged = articleData.category && articleData.category !== originalArticle.category;
+    
     // If changing status from draft to published, update the published date
     if (articleData.status === 'published' && originalArticle.status === 'draft') {
         updatedArticle.publishedAt = new Date().toISOString();
     }
 
-    const hasCategoryChanged = articleData.category && articleData.category !== originalArticle.category;
+    const filesToCommit: { path: string, content: string }[] = [];
 
+    // If category has changed, we need to update two files.
     if (hasCategoryChanged) {
-        // Remove from old category file
+        // 1. Remove from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
         const oldArticles = await readJsonFile<Article[]>(`${oldCategorySlug}.json`);
         const filteredOldArticles = oldArticles.filter(a => a.id !== originalArticle.id);
-        await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
+        const oldFileContent = await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
+        filesToCommit.push({ path: `src/data/${oldCategorySlug}.json`, content: oldFileContent });
+
+        // 2. Add to new category file (logic continues below)
+        const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
+        const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`);
+        newArticles.unshift(updatedArticle);
+        newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        const newFileContent = await writeJsonFile(`${newCategorySlug}.json`, newArticles);
+        filesToCommit.push({ path: `src/data/${newCategorySlug}.json`, content: newFileContent });
+
+    } else {
+        // Category is the same, just update the single file.
+        const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
+        const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
+        const articleIndex = articles.findIndex(a => a.id === updatedArticle.id);
+        
+        if (articleIndex !== -1) {
+            articles[articleIndex] = updatedArticle;
+        } else {
+            articles.unshift(updatedArticle); // Should not happen in update, but safe fallback
+        }
+        
+        articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        const fileContent = await writeJsonFile(`${categorySlug}.json`, articles);
+        filesToCommit.push({ path: `src/data/${categorySlug}.json`, content: fileContent });
     }
-
-    const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
-    const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`);
     
-    const articleIndexInNewList = newArticles.findIndex(a => a.id === updatedArticle.id);
-
-    if (articleIndexInNewList === -1) { // Article is moving to a new category
-        newArticles.unshift(updatedArticle); // Add to the top
-    } else { // Article is being updated in the same category
-        newArticles[articleIndexInNewList] = updatedArticle;
-    }
-    
-    // Sort by date to maintain order
-    newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-    await writeJsonFile(`${newCategorySlug}.json`, newArticles);
-    // Backup will be handled by the daily cron job.
+    await commitFilesToGitHub(filesToCommit, `feat(article): update "${updatedArticle.title}"`);
     
     return updatedArticle;
 }
@@ -190,7 +211,6 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
 export async function deleteArticle(slug: string): Promise<void> {
     const article = await getArticleBySlug(slug, { includeDrafts: true });
     if (!article) {
-        // It might have been deleted already, so don't throw an error.
         console.warn(`Article with slug "${slug}" not found for deletion, it might have been deleted already.`);
         return;
     }
@@ -199,6 +219,10 @@ export async function deleteArticle(slug: string): Promise<void> {
     const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
     const updatedArticles = articles.filter(a => a.id !== article.id);
     
-    await writeJsonFile(`${categorySlug}.json`, updatedArticles);
-    // Backup will be handled by the daily cron job.
+    const content = await writeJsonFile(`${categorySlug}.json`, updatedArticles);
+    
+    await commitFilesToGitHub(
+        [{ path: `src/data/${categorySlug}.json`, content }],
+        `feat(article): delete "${article.title}"`
+    );
 }
