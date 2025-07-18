@@ -129,10 +129,15 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
         } catch (err) {
             console.error("Image Generation Failed:", err);
+            toast({
+                variant: "destructive",
+                title: "Image Generation Failed",
+                description: "An error occurred while generating the featured image. Please try again.",
+            });
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
-    }, [category, isGeneratingFeaturedImage]);
+    }, [category, isGeneratingFeaturedImage, toast]);
 
     const handleContentChange = (newContent: string) => {
         setContent(newContent);
@@ -243,6 +248,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             let tempContent = content;
             const parser = new DOMParser();
             const doc = parser.parseFromString(tempContent, 'text/html');
+            let imagesInserted = 0;
 
             for (const placement of result.placements) {
                 const { prompt, subheading } = placement;
@@ -251,22 +257,22 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
                 if (targetH2) {
                     const fullPrompt = `${prompt}, related to ${title}, professional automotive photography, high detail, photorealistic`;
-                    const encodedPrompt = encodeURIComponent(fullPrompt);
-                    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true`;
-                    
+                    const imageResult = await generateImage({ prompt: fullPrompt });
+
                     const imageAlt = `${title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.style.display = 'flex';
                     imageDiv.style.justifyContent = 'center';
                     imageDiv.style.margin = '1rem 0';
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${title} ${category}" />`;
+                    imageDiv.innerHTML = `<img src="${imageResult.imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${title} ${category}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
+                    imagesInserted++;
                 }
             }
             
             setContent(doc.body.innerHTML);
-            toast({ title: "Images Inserted!", description: `${result.placements.length} images have been generated and placed in the article.` });
+            toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
@@ -516,7 +522,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         </Select>
                                         <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !content || !title}>
                                             {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                            Generate & Insert
+                                            Generate &amp; Insert
                                         </Button>
                                     </div>
                                     <Button variant="secondary" size="sm" className="w-full" onClick={handleResetBodyImages}>

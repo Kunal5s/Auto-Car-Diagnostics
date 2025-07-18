@@ -118,11 +118,16 @@ export default function PublishArticlePage() {
             setImageHint(titleToGenerate);
 
         } catch (err) {
-             console.error("Image Generation Failed:", err);
+            console.error("Image Generation Failed:", err);
+            toast({
+                variant: "destructive",
+                title: "Image Generation Failed",
+                description: "An error occurred while generating the featured image. Please try again.",
+            });
         } finally {
             setIsGeneratingFeaturedImage(false);
         }
-    }, [editorState.category, isGeneratingFeaturedImage]);
+    }, [editorState.category, isGeneratingFeaturedImage, toast]);
 
 
     const handleContentChange = (newContent: string) => {
@@ -231,8 +236,10 @@ export default function PublishArticlePage() {
                 throw new Error("AI could not determine where to place images.");
             }
 
+            let tempContent = editorState.content;
             const parser = new DOMParser();
-            const doc = parser.parseFromString(editorState.content, 'text/html');
+            const doc = parser.parseFromString(tempContent, 'text/html');
+            let imagesInserted = 0;
 
             for (const placement of result.placements) {
                 const { prompt, subheading } = placement;
@@ -241,22 +248,22 @@ export default function PublishArticlePage() {
 
                 if (targetH2) {
                     const fullPrompt = `${prompt}, related to ${editorState.title}, professional automotive photography, high detail, photorealistic`;
-                    const encodedPrompt = encodeURIComponent(fullPrompt);
-                    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true`;
+                    const imageResult = await generateImage({ prompt: fullPrompt });
                     
                     const imageAlt = `${editorState.title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.style.display = 'flex';
                     imageDiv.style.justifyContent = 'center';
                     imageDiv.style.margin = '1rem 0';
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" />`;
+                    imageDiv.innerHTML = `<img src="${imageResult.imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
+                    imagesInserted++;
                 }
             }
             
             handleStateChange('content', doc.body.innerHTML);
-            toast({ title: "Images Inserted!", description: `${result.placements.length} images have been generated and placed in the article.` });
+            toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
             console.error("Failed to generate body images:", error);
@@ -524,7 +531,7 @@ export default function PublishArticlePage() {
                                         </Select>
                                         <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content || !editorState.title}>
                                             {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                            Generate & Insert
+                                            Generate &amp; Insert
                                         </Button>
                                     </div>
                                     <Button variant="secondary" size="sm" className="w-full" onClick={handleResetBodyImages}>
@@ -545,7 +552,7 @@ export default function PublishArticlePage() {
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isSavingDraft}>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isSavingDraft || isPublishing}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Article
                                 </Button>

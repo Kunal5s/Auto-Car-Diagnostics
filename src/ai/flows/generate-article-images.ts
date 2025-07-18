@@ -34,7 +34,6 @@ export async function generateArticleImages(input: GenerateArticleImagesInput): 
   return generateArticleImagesFlow(input);
 }
 
-
 const placementPrompt = ai.definePrompt({
     name: 'generateImagePlacements',
     input: { schema: GenerateArticleImagesInputSchema },
@@ -57,7 +56,6 @@ Article HTML Content:
 Generate exactly {{{imageCount}}} placement instructions.
     `,
 });
-
 
 const generateArticleImagesFlow = ai.defineFlow(
   {
