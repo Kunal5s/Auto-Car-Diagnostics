@@ -2,6 +2,10 @@
 import { sign } from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import dotenv from 'dotenv';
+
+// Load environment variables directly from .env file
+dotenv.config();
 
 const JWT_SECRET = process.env.AUTH_SECRET || 'fallback-secret-for-local-dev-if-not-set';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
@@ -12,7 +16,7 @@ export async function POST(request: Request) {
   const { email, password } = body;
 
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-    console.error('Admin credentials not configured on the server.');
+    console.error('Admin credentials not configured on the server. Please check your .env file.');
     return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
   }
 
