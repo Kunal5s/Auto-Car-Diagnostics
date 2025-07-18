@@ -16,8 +16,7 @@ import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
-import { generateImage as generateGeminiImage } from '@/ai/flows/generate-image';
-import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
+import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import {
@@ -51,7 +50,7 @@ export default function PublishArticlePage() {
     const router = useRouter();
     const [editorState, setEditorState] = useState<EditorState>(initialEditorState);
     
-    const [isGenerating, setIsGenerating] = useState<null | 'gemini' | 'pollinations'>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -108,33 +107,28 @@ export default function PublishArticlePage() {
         setEditorState(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleGenerateFeaturedImage = useCallback(async (generator: 'gemini' | 'pollinations') => {
-        const { title, category } = editorState;
+    const handleGenerateFeaturedImage = useCallback(async () => {
+        const { title } = editorState;
         if (!title || isGenerating) return;
         
-        setIsGenerating(generator);
+        setIsGenerating(true);
         try {
-            const prompt = `photorealistic image of ${title}, professional automotive photography, high detail, in the style of ${category || 'repair'}`;
-            let result;
-
-            if (generator === 'gemini') {
-                result = await generateGeminiImage({ prompt });
-            } else {
-                result = await generatePollinationsImage({ prompt });
-            }
+            const result = await generateAltText({ articleTitle: title });
             
-            setImageUrl(result.imageUrl);
-            setImageHint(title);
+            setImageUrl(`https://placehold.co/600x400.png`);
+            setAltText(result.altText);
+            // Use the first few words of the title as a hint.
+            setImageHint(title.split(' ').slice(0, 2).join(' '));
 
         } catch (err) {
-            console.error(`Image Generation Failed with ${generator}:`, err);
+            console.error(`Image Generation Failed:`, err);
             toast({
                 variant: "destructive",
                 title: "Image Generation Failed",
-                description: `An error occurred while generating the featured image with ${generator}. Please try again.`,
+                description: `An error occurred while generating the featured image. Please try again.`,
             });
         } finally {
-            setIsGenerating(null);
+            setIsGenerating(false);
         }
     }, [editorState, isGenerating, toast]);
 
@@ -154,17 +148,17 @@ export default function PublishArticlePage() {
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         event.preventDefault();
         const clipboardData = event.clipboardData;
-        let pastedData;
-
-        if (clipboardData.types.includes('text/html')) {
-            pastedData = clipboardData.getData('text/html');
-        } else {
-            let text = clipboardData.getData('text/plain');
-            text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-            text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-            text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-            pastedData = text.replace(/\n/g, '<br />');
-        }
+        let pastedData = clipboardData.getData('text/plain');
+        
+        // Convert Markdown to HTML before inserting
+        pastedData = pastedData
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Bold
+            .replace(/\*(.*?)\*/g, '<i>$1</i>')     // Italic
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>') // Basic list item
+            .replace(/\n/g, '<br />'); // Newlines
         
         document.execCommand('insertHTML', false, pastedData);
         
@@ -219,7 +213,8 @@ export default function PublishArticlePage() {
 
 
     const handleGenerateBodyImages = async () => {
-        if (!editorState.content || !editorState.title) {
+        const { content, title, category } = editorState;
+        if (!content || !title) {
             toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
             return;
         }
@@ -227,9 +222,9 @@ export default function PublishArticlePage() {
         
         try {
             const result = await generateArticleImages({ 
-                articleContent: editorState.content, 
-                articleTitle: editorState.title,
-                category: editorState.category,
+                articleContent: content, 
+                articleTitle: title,
+                category: category,
                 imageCount: bodyImageCount 
             });
 
@@ -237,23 +232,22 @@ export default function PublishArticlePage() {
                 throw new Error("AI could not determine where to place images.");
             }
 
-            let tempContent = editorState.content;
             const parser = new DOMParser();
-            const doc = parser.parseFromString(tempContent, 'text/html');
+            const doc = parser.parseFromString(content, 'text/html');
             let imagesInserted = 0;
 
             for (const placement of result.placements) {
-                const { imageUrl, subheading } = placement;
+                const { imageUrl, imageHint, subheading } = placement;
                 const h2s = Array.from(doc.querySelectorAll('h2'));
                 const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
 
                 if (targetH2) {
-                    const imageAlt = `${editorState.title} - ${subheading}`;
+                    const imageAlt = `${title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.style.display = 'flex';
                     imageDiv.style.justifyContent = 'center';
                     imageDiv.style.margin = '1rem 0';
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${editorState.title} ${editorState.category}" />`;
+                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${imageHint}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
                     imagesInserted++;
@@ -474,7 +468,7 @@ export default function PublishArticlePage() {
                                     {isGenerating ? (
                                         <div className="flex flex-col items-center text-center p-4">
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-                                            <p className="text-sm text-muted-foreground mt-2">Generating with {isGenerating}...</p>
+                                            <p className="text-sm text-muted-foreground mt-2">Generating...</p>
                                         </div>
                                     ) : imageUrl ? (
                                         <Image src={imageUrl} alt={altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
@@ -485,9 +479,9 @@ export default function PublishArticlePage() {
                                         </>
                                     )}
                                 </div>
-                                <Button onClick={() => handleGenerateFeaturedImage('pollinations')} disabled={!!isGenerating || !editorState.title} className="w-full">
+                                <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !editorState.title} className="w-full">
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate with Pollinations
+                                    Generate Placeholder Image
                                 </Button>
                                 <div className="flex gap-2">
                                     <Button asChild variant="outline" className="flex-1">
@@ -496,10 +490,6 @@ export default function PublishArticlePage() {
                                             Upload
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
-                                    </Button>
-                                    <Button onClick={() => handleGenerateFeaturedImage('gemini')} disabled={!!isGenerating || !editorState.title} variant="outline" className="flex-1">
-                                        <Sparkles className="mr-2 h-4 w-4" />
-                                        Gemini
                                     </Button>
                                 </div>
                                 <div className="space-y-2">
@@ -515,7 +505,7 @@ export default function PublishArticlePage() {
                             </div>
 
                              <div className="space-y-4 pt-4 border-t">
-                                <Label>Generate Body Images (with Pollinations)</Label>
+                                <Label>Generate Body Images (Placeholders)</Label>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Select
@@ -540,7 +530,7 @@ export default function PublishArticlePage() {
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Reset Body Images
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">Generates images and places them under relevant subheadings in your article.</p>
+                                    <p className="text-xs text-muted-foreground">Generates placeholder images and places them under relevant subheadings in your article.</p>
                                 </div>
                             </div>
 
