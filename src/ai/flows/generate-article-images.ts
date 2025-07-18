@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview A flow for generating multiple, contextually relevant images for an article and determining their optimal placement.
+ * This version uses reliable placeholder images.
  *
  * - generateArticleImages - A function that analyzes article content and generates images with placement instructions.
  * - GenerateArticleImagesInput - The input type for the function.
@@ -11,7 +12,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { generatePollinationsImage } from './generate-pollinations-image';
 
 const GenerateArticleImagesInputSchema = z.object({
   articleContent: z.string().describe('The full HTML content of the article.'),
@@ -22,7 +22,7 @@ const GenerateArticleImagesInputSchema = z.object({
 export type GenerateArticleImagesInput = z.infer<typeof GenerateArticleImagesInputSchema>;
 
 const ImagePlacementInstructionSchema = z.object({
-  imageUrl: z.string().url().describe('The URL of the generated image.'),
+  imageUrl: z.string().url().describe('The URL of the generated placeholder image.'),
   subheading: z.string().describe("The exact text content of the H2 subheading the image should be placed under."),
 });
 
@@ -40,16 +40,14 @@ const placementPrompt = ai.definePrompt({
     name: 'generateImagePlacementsWithPrompts',
     input: { schema: GenerateArticleImagesInputSchema },
     output: { schema: z.object({ placements: z.array(z.object({
-        imagePrompt: z.string().max(40).describe('A short, descriptive prompt for a photorealistic image relevant to the subheading. E.g., "a mechanic inspecting an engine sensor" or "a glowing check engine light on a dashboard".'),
+        // The imagePrompt is no longer needed as we use placeholders, but we keep the structure for subheading targeting.
         subheading: z.string().describe("The exact text content of the H2 subheading the image should be placed under."),
     })) })},
     prompt: `You are an expert content strategist. Your task is to analyze an HTML article and decide where to best place a specified number of images to break up the text and add visual interest.
 
 You will be given the article's HTML content. First, identify all of the H2 subheadings in the text. From that list of H2s, select the best {{{imageCount}}} subheadings to have an image placed directly after them.
 
-For each selected subheading, you must generate a unique, descriptive prompt for a photorealistic image that is directly relevant to the content in the section following that subheading.
-
-Return an array of placement objects, each containing the exact text of the H2 subheading and the corresponding image prompt you created.
+Return an array of placement objects, each containing the exact text of the H2 subheading.
 
 Article Title: {{{articleTitle}}}
 Category: {{{category}}}
@@ -69,23 +67,18 @@ const generateArticleImagesFlow = ai.defineFlow(
     outputSchema: GenerateArticleImagesOutputSchema,
   },
   async (input) => {
-    // 1. Generate the placement instructions (prompts and subheadings) using Gemini
+    // 1. Generate the placement instructions (subheadings) using Gemini
     const { output } = await placementPrompt(input);
     
     if (!output || !output.placements || output.placements.length === 0) {
         throw new Error('Could not generate image placement instructions from the article content.');
     }
     
-    // 2. For each generated instruction, generate an image with Pollinations
-    const imageGenerationPromises = output.placements.map(async (placement) => {
-        const { imageUrl } = await generatePollinationsImage({ prompt: placement.imagePrompt });
-        return {
-            imageUrl,
-            subheading: placement.subheading,
-        };
-    });
-
-    const placementsWithUrls = await Promise.all(imageGenerationPromises);
+    // 2. For each placement, create a placeholder image URL
+    const placementsWithUrls = output.placements.map(placement => ({
+        imageUrl: `https://placehold.co/600x400.png`,
+        subheading: placement.subheading,
+    }));
 
     return {
         placements: placementsWithUrls,

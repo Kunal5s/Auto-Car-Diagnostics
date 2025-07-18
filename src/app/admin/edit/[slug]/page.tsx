@@ -135,10 +135,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
         } catch (err) {
             console.error(`Image Generation Failed:`, err);
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
             toast({
                 variant: "destructive",
                 title: "Image Generation Failed",
-                description: `An error occurred while generating the featured image. Please try again.`,
+                description: `An error occurred while generating the featured image. Please try again. ${errorMessage}`,
             });
         } finally {
             setIsGenerating(false);
@@ -321,7 +322,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai[^>]*><\/div>/g, '');
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/placehold\.co\/[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
             handleStateChange('content', newContent);
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
@@ -525,7 +526,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                 </div>
                                 <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !article.title} className="w-full">
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate with Pollinations
+                                    Generate Image
                                 </Button>
                                 <div className="flex gap-2">
                                      <Button asChild variant="outline" className="flex-1">

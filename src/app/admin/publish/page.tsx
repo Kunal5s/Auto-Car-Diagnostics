@@ -111,7 +111,7 @@ export default function PublishArticlePage() {
             toast({
                 variant: "destructive",
                 title: "Image Generation Failed",
-                description: errorMessage,
+                description: `${errorMessage}. Please try again.`,
             });
         } finally {
             setIsGenerating(false);
@@ -287,7 +287,7 @@ export default function PublishArticlePage() {
 
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai[^>]*><\/div>/g, '');
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/placehold\.co\/[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
             handleContentChange();
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
@@ -508,7 +508,7 @@ export default function PublishArticlePage() {
                                 </div>
                                 <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !editorState.title} className="w-full">
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate with Pollinations
+                                    Generate Image
                                 </Button>
                                 <div className="flex gap-2">
                                     <Button asChild variant="outline" className="flex-1">
