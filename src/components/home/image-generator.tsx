@@ -62,7 +62,7 @@ export function ImageGenerator() {
             const imagePromises = Array.from({ length: 4 }).map((_, i) =>
                 generatePollinationsImage({
                     prompt: fullPrompt,
-                    seed: Math.random() * 10000 + i
+                    seed: Math.floor(Math.random() * 10000) + i
                 })
             );
             
@@ -88,29 +88,12 @@ export function ImageGenerator() {
         toast({ title: 'Prompt Copied!', description: 'The full prompt has been copied to your clipboard.' });
     };
 
-    const handleDownload = async (imageUrl: string) => {
+    const handleDownload = (imageUrl: string) => {
         if (!imageUrl) return;
-        try {
-            // Using a CORS proxy to fetch the image data as a blob
-            const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(imageUrl)}`);
-            if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            const filename = `${prompt.substring(0, 30).replace(/\s/g, '_') || 'generated_image'}.png`;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            toast({ title: 'Download Started!', description: 'Your image is being downloaded.' });
-        } catch (error) {
-            console.error('Download failed:', error);
-            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not download the image. The server may be blocking direct downloads.' });
-        }
+        // Open the image in a new tab, bypassing CORS issues.
+        // The user can then save the image from the new tab.
+        window.open(imageUrl, '_blank');
+        toast({ title: 'Opening Image', description: 'Your image has been opened in a new tab for you to save.' });
     };
 
     return (

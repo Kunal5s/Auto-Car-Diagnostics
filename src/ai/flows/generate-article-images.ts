@@ -79,8 +79,10 @@ const generateArticleImagesFlow = ai.defineFlow(
     
     // 2. For each placement, create an image URL using the generated prompt.
     const placementsWithUrls = output.placements.map(placement => {
-        const sanitizedPrompt = encodeURIComponent(placement.imagePrompt.trim().replace(/\s+/g, " "));
-        const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&negative_prompt=text%2C+watermark`;
+        const enhancedPrompt = `${placement.imagePrompt}, 4k, photorealistic`;
+        const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
+        // We add a negative prompt to the URL to avoid text, watermarks, logos, and malformed features.
+        const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&negative_prompt=text%2C+logo%2C+watermark%2C+deformed%2C+ugly`;
         
         return {
             imageUrl,

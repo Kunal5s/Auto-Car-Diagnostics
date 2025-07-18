@@ -41,8 +41,8 @@ const generatePollinationsImageFlow = ai.defineFlow(
     const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
     
     // Construct the base URL
-    // We add a negative prompt to the URL to avoid text, watermarks, and malformed features.
-    let imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?negative_prompt=text%2C+watermark%2C+deformed%2C+ugly&`;
+    // We add a negative prompt to the URL to avoid text, watermarks, logos, and malformed features.
+    let imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?negative_prompt=text%2C+logo%2C+watermark%2C+deformed%2C+ugly&`;
     
     // Append the seed if provided
     if (seed) {

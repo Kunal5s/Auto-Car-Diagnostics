@@ -610,5 +610,3 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
-
-    

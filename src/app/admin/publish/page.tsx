@@ -596,5 +596,3 @@ export default function PublishArticlePage() {
         </div>
     );
 }
-
-    
