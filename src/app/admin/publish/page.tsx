@@ -100,7 +100,7 @@ export default function PublishArticlePage() {
             
             setEditorState(prev => ({
                 ...prev,
-                imageUrl: imgResult.imageUrl,
+                imageUrl: `${imgResult.imageUrl}width=600&height=400`,
                 altText: altResult.altText,
                 imageHint: title.split(' ').slice(0, 2).join(' ')
             }));
@@ -287,9 +287,9 @@ export default function PublishArticlePage() {
 
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/placehold\.co\/[^>]*><\/div>/g, '');
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai\/[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
-            handleContentChange();
+            handleStateChange('content', newContent);
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
         }
     };
@@ -596,3 +596,5 @@ export default function PublishArticlePage() {
         </div>
     );
 }
+
+    
