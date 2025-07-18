@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, Image as ImageIcon, Copy, RefreshCcw, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const imageStyles = ["photorealistic", "anime", "fantasy art", "pixel art", "cyberpunk", "steampunk", "watercolor"];
 const colorProfiles = ["vibrant colors", "monochromatic", "pastel colors", "black and white", "neon"];
@@ -32,8 +33,16 @@ export function ImageGenerator() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
-    const constructPrompt = () => {
+    const constructFullPrompt = () => {
         return `${prompt}, ${style}, ${color}, ${mood}`;
+    };
+
+    const generateImageUrl = (fullPrompt: string, seed?: number) => {
+        const sanitizedPrompt = encodeURIComponent(fullPrompt.trim().replace(/\s+/g, " "));
+        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed, blurry');
+        const { width, height } = aspectRatios[ratio as keyof typeof aspectRatios];
+        const randomSeed = seed || Math.floor(Math.random() * 1000000);
+        return `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=${width}&height=${height}&negative_prompt=${negativePrompt}&seed=${randomSeed}`;
     };
 
     const handleGenerate = async () => {
@@ -42,46 +51,86 @@ export function ImageGenerator() {
             return;
         }
         setIsLoading(true);
-        setImageUrls([]);
+        setImageUrls(Array(numImages).fill('')); // Reset with placeholders
 
-        const fullPrompt = constructPrompt();
-        const sanitizedPrompt = encodeURIComponent(fullPrompt.trim().replace(/\s+/g, " "));
-        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed, blurry');
-        
-        const { width, height } = aspectRatios[ratio as keyof typeof aspectRatios];
+        const fullPrompt = constructFullPrompt();
 
-        const urls = Array(numImages).fill(null).map(() => {
-            const seed = Math.floor(Math.random() * 100000); // Generate a random seed for variation
-            return `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=${width}&height=${height}&negative_prompt=${negativePrompt}&seed=${seed}`;
+        // Generate images one by one
+        for (let i = 0; i < numImages; i++) {
+            try {
+                const url = generateImageUrl(fullPrompt);
+                await new Promise<void>((resolve, reject) => {
+                    const img = new window.Image();
+                    img.src = url;
+                    img.onload = () => {
+                        setImageUrls(prev => {
+                            const newUrls = [...prev];
+                            newUrls[i] = url;
+                            return newUrls;
+                        });
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.error(`Failed to load image: ${url}`);
+                        reject(new Error(`Failed to load image ${i + 1}`));
+                    };
+                });
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Image Generation Failed', description: 'Could not load one of the images. Please try again.' });
+                 // Stop if one fails, or continue? Let's continue for now.
+            }
+        }
+        setIsLoading(false);
+    };
+
+    const handleRegenerateSingle = async (index: number) => {
+        if (!prompt) {
+             toast({ variant: 'destructive', title: 'Prompt is required', description: 'Please enter a prompt to regenerate the image.' });
+            return;
+        }
+
+        // Set just the specific image to a loading state
+        setImageUrls(prev => {
+            const newUrls = [...prev];
+            newUrls[index] = 'loading';
+            return newUrls;
         });
-        
-        // This preloads the images in the background to make them appear faster
-        const imagePromises = urls.map(url => new Promise((resolve, reject) => {
-            const img = new window.Image();
-            img.src = url;
-            img.onload = resolve;
-            img.onerror = reject;
-        }));
+
+        const fullPrompt = constructFullPrompt();
+        const url = generateImageUrl(fullPrompt);
 
         try {
-            await Promise.all(imagePromises);
-            setImageUrls(urls);
+            await new Promise<void>((resolve, reject) => {
+                const img = new window.Image();
+                img.src = url;
+                img.onload = () => {
+                    setImageUrls(prev => {
+                        const newUrls = [...prev];
+                        newUrls[index] = url;
+                        return newUrls;
+                    });
+                    resolve();
+                };
+                img.onerror = reject;
+            });
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Image Loading Failed', description: 'Could not load images from the generator. Please try again.' });
-        } finally {
-            setIsLoading(false);
+            toast({ variant: 'destructive', title: 'Image Regeneration Failed', description: 'Could not regenerate the image.' });
+             setImageUrls(prev => {
+                const newUrls = [...prev];
+                newUrls[index] = ''; // Reset on failure
+                return newUrls;
+            });
         }
     };
     
     const copyPrompt = () => {
-        navigator.clipboard.writeText(constructPrompt());
+        navigator.clipboard.writeText(constructFullPrompt());
         toast({ title: 'Prompt Copied!', description: 'The full prompt has been copied to your clipboard.' });
     };
 
     const handleDownload = async (imageUrl: string) => {
         if (!imageUrl) return;
         try {
-            // Using fetch to get the image as a blob to bypass CORS issues for direct download
             const response = await fetch(imageUrl);
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -171,39 +220,44 @@ export function ImageGenerator() {
 
                         <Button onClick={handleGenerate} disabled={isLoading} size="lg" className="w-full !mt-6">
                             {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                            Generate Images
+                            {isLoading ? 'Generating...' : 'Generate Images'}
                         </Button>
                     </CardContent>
                 </Card>
                 
                 <Card className="p-1.5 bg-gradient-to-bl from-primary/20 to-secondary/20 rounded-xl shadow-lg transition-all hover:shadow-2xl h-full">
                     <CardContent className="bg-background rounded-lg p-6 flex flex-col justify-center items-center min-h-[500px] h-full space-y-4">
-                        {isLoading ? (
-                            <div className='flex flex-col items-center justify-center text-muted-foreground'>
-                                <Loader2 className="h-20 w-20 animate-spin text-primary" />
-                                <p className="mt-4 text-lg font-medium">Generating your masterpieces...</p>
-                                <p className="text-sm">This can take a few moments.</p>
-                            </div>
-                        ) : imageUrls.length > 0 ? (
+                        {imageUrls.length > 0 ? (
                             <>
                                 <div className={cn(
                                     "w-full grid gap-2",
                                     numImages === 1 ? "grid-cols-1" : "grid-cols-2",
                                 )}>
                                     {imageUrls.map((url, index) => (
-                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group aspect-square">
-                                            <Image src={url} alt={`Generated image ${index + 1} for prompt: ${prompt}`} layout="fill" objectFit="cover" />
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="secondary" size="icon" onClick={() => handleDownload(url)}>
-                                                    <Download className="h-5 w-5" />
-                                                </Button>
-                                            </div>
+                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group aspect-square bg-muted">
+                                            {url && url !== 'loading' ? (
+                                                <>
+                                                    <Image src={url} alt={`Generated image ${index + 1} for prompt: ${prompt}`} layout="fill" objectFit="cover" />
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Button variant="secondary" size="icon" onClick={() => handleDownload(url)} title="Download Image">
+                                                            <Download className="h-5 w-5" />
+                                                        </Button>
+                                                         <Button variant="secondary" size="icon" onClick={() => handleRegenerateSingle(index)} title="Regenerate Image">
+                                                            <RefreshCcw className="h-5 w-5" />
+                                                        </Button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center justify-center h-full">
+                                                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                                 <div className="flex flex-wrap gap-2 justify-center">
-                                    <Button variant="outline" onClick={handleGenerate}><RefreshCcw className="mr-2 h-4 w-4" />Regenerate</Button>
-                                    <Button variant="outline" onClick={copyPrompt}><Copy className="mr-2 h-4 w-4" />Copy Prompt</Button>
+                                    <Button variant="outline" onClick={handleGenerate} disabled={isLoading}><RefreshCcw className="mr-2 h-4 w-4" />Regenerate All</Button>
+                                    <Button variant="outline" onClick={copyPrompt} disabled={isLoading}><Copy className="mr-2 h-4 w-4" />Copy Prompt</Button>
                                 </div>
                             </>
                         ) : (
