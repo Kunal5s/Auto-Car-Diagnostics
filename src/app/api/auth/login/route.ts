@@ -3,7 +3,7 @@ import { sign } from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'a-very-strong-and-secret-key-that-is-at-least-32-chars-long';
+const JWT_SECRET = process.env.AUTH_SECRET || 'fallback-secret-for-local-dev-if-not-set';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   const { email, password } = body;
 
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    console.error('Admin credentials not configured on the server.');
     return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
   }
 
