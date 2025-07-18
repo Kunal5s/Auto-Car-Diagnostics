@@ -107,30 +107,37 @@ export default function PublishArticlePage() {
         }
     }, [toast]);
 
-    // Save draft to local storage on change
-    useEffect(() => {
-        const draftData = {
-            editorState,
-            imageUrl,
-            altText,
-            imageHint,
-            summaryHtml: summaryHtml.current,
-            contentHtml: contentHtml.current,
-        };
-        const timer = setTimeout(() => {
-            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
-        }, 1000); // Save every second
-
-        return () => clearTimeout(timer);
-    }, [editorState, imageUrl, altText, imageHint]);
-
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
         setEditorState(prev => ({ ...prev, [key]: value }));
     };
 
+    // Auto-save logic
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            const draftData = {
+                editorState,
+                imageUrl,
+                altText,
+                imageHint,
+                summaryHtml: summaryHtml.current,
+                contentHtml: contentHtml.current,
+            };
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        }, 1000); // Debounce time
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [editorState, imageUrl, altText, imageHint]); // Only trigger on these state changes
+
+
     const handleGenerateFeaturedImage = useCallback(async () => {
         const { title } = editorState;
-        if (!title || isGenerating) return;
+        if (!title) {
+             toast({ variant: "destructive", title: "Title is required", description: "Please enter an article title before generating an image." });
+             return;
+        }
+        if (isGenerating) return;
         
         setIsGenerating(true);
         try {
@@ -145,10 +152,11 @@ export default function PublishArticlePage() {
 
         } catch (err) {
             console.error(`Image Generation Failed:`, err);
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
             toast({
                 variant: "destructive",
                 title: "Image Generation Failed",
-                description: `An error occurred while generating the featured image. Please try again.`,
+                description: errorMessage,
             });
         } finally {
             setIsGenerating(false);
@@ -320,18 +328,18 @@ export default function PublishArticlePage() {
         }
     };
 
-    const handleSave = async (status: 'published' | 'draft'): Promise<string | null> => {
+    const handleSave = async (status: 'published' | 'draft'): Promise<{slug: string | null, success: boolean}> => {
         const { title, category, keyTakeaways } = editorState;
         const summary = summaryHtml.current;
         const content = contentHtml.current;
 
-        if (!title || !summary || !content || !category || !imageUrl) {
+        if (status === 'published' && (!title || !summary || !content || !category || !imageUrl)) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "Please fill in all fields and ensure a featured image is generated before saving.",
+                description: "To publish, please fill in all fields and generate a featured image.",
             });
-            return null;
+            return { slug: null, success: false };
         }
 
         const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -357,13 +365,12 @@ export default function PublishArticlePage() {
                 description: `Your article has been successfully saved.`,
             });
             
-            localStorage.removeItem(DRAFT_STORAGE_KEY);
-            
             if (status === 'published') {
-                router.push(`/admin/edit/${newSlug}`);
+                 localStorage.removeItem(DRAFT_STORAGE_KEY);
+                 router.push(`/admin/edit/${newSlug}`);
             }
 
-            return newSlug;
+            return { slug: newSlug, success: true };
 
         } catch(error) {
             console.error("Failed to save article", error);
@@ -373,7 +380,7 @@ export default function PublishArticlePage() {
                 title: "Saving Failed",
                 description: errorMessage,
             });
-            return null;
+            return { slug: null, success: false };
         } finally {
             if (status === 'published') setIsPublishing(false);
             else setIsSavingDraft(false);
@@ -381,9 +388,9 @@ export default function PublishArticlePage() {
     }
 
     const handlePreview = async () => {
-        const draftSlug = await handleSave('draft');
-        if (draftSlug) {
-             window.open(`/api/draft?slug=${draftSlug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
+        const { slug, success } = await handleSave('draft');
+        if (success && slug) {
+             window.open(`/api/draft?slug=${slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         }
     }
 
