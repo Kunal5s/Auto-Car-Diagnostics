@@ -2,7 +2,8 @@
 'use server';
 
 /**
- * @fileOverview Provides an explanation for a selected car dashboard warning light.
+ * @fileOverview Provides an explanation for a selected car dashboard warning light using a static data map.
+ * This removes the dependency on an external AI model.
  *
  * - getWarningLightExplanation - A function that returns details about a warning light.
  * - WarningLightInput - The input type for the function.
@@ -24,25 +25,49 @@ const WarningLightOutputSchema = z.object({
 });
 export type WarningLightOutput = z.infer<typeof WarningLightOutputSchema>;
 
-export async function getWarningLightExplanation(input: WarningLightInput): Promise<WarningLightOutput> {
-  return warningLightGuideFlow(input);
-}
+const lightData: Record<string, WarningLightOutput> = {
+    "Check Engine Light": {
+        meaning: "Indicates a problem with the engine's management system. It could be a simple issue like a loose gas cap or something more serious.",
+        severity: "Medium",
+        action: "The vehicle should be scanned for OBD2 trouble codes. While the car is usually safe to drive, you should get it checked by a professional soon to avoid potential damage."
+    },
+    "Oil Pressure Light": {
+        meaning: "Indicates a loss of oil pressure, which is critical for engine lubrication. This could be due to low oil level or a failing oil pump.",
+        severity: "High",
+        action: "Pull over and stop the engine immediately to prevent catastrophic engine damage. Check the oil level and do not drive until the issue is resolved."
+    },
+    "Engine Temperature Warning Light": {
+        meaning: "The engine is overheating. This could be due to low coolant, a leak in the cooling system, or a faulty water pump or thermostat.",
+        severity: "High",
+        action: "Pull over and turn off the engine as soon as it is safe to do so. Let the engine cool down completely before checking coolant levels. Do not open the radiator cap while hot."
+    },
+    "Battery or Charging System Light": {
+        meaning: "Indicates that the battery is not charging properly. This is usually due to a problem with the alternator or the battery itself.",
+        severity: "Medium",
+        action: "Turn off all non-essential electronics (radio, AC). The car may run for a short time on battery power, but you should drive directly to a mechanic to get it tested."
+    },
+    "Brake System Warning Light": {
+        meaning: "Indicates a problem with the brake system, such as low brake fluid or an issue with the anti-lock braking system (ABS). It may also mean the parking brake is engaged.",
+        severity: "High",
+        action: "Check if the parking brake is fully released. If it is and the light remains on, pull over safely. Test your brakes cautiously. The vehicle may not be safe to drive."
+    },
+    "Tire Pressure Monitoring System (TPMS) Light": {
+        meaning: "Indicates that the pressure in one or more of your tires is significantly low.",
+        severity: "Low",
+        action: "Find a safe place to pull over and check your tire pressures with a gauge. Inflate any low tires to the recommended PSI found on the sticker inside your driver's door jamb."
+    },
+    "Washer Fluid Low Light": {
+        meaning: "Indicates the windshield washer fluid reservoir is low.",
+        severity: "Low",
+        action: "Refill the washer fluid reservoir at your earliest convenience. This is not an urgent mechanical issue."
+    },
+    "Exterior Light Fault": {
+        meaning: "Indicates that one of your exterior lights, such as a headlight, taillight, or turn signal, has burned out.",
+        severity: "Low",
+        action: "Visually inspect all your exterior lights to identify which one is out and replace the bulb as soon as possible for safety."
+    },
+};
 
-const prompt = ai.definePrompt({
-  name: 'warningLightPrompt',
-  input: { schema: WarningLightInputSchema },
-  output: { schema: WarningLightOutputSchema },
-  prompt: `You are an expert automotive mechanic. A user has selected a dashboard warning light and needs to understand it.
-
-Warning Light: {{{lightName}}}
-
-Please provide the following information in a clear and easy-to-understand manner for a non-expert:
-1.  **Meaning**: What does this light indicate?
-2.  **Severity**: How serious is this warning? Choose from: 'Low' (e.g., info, washer fluid low), 'Medium' (e.g., check soon, service required), or 'High' (e.g., potential damage, stop driving safely).
-3.  **Action**: What should the driver do immediately and in the near future?
-
-Generate the response now.`,
-});
 
 const warningLightGuideFlow = ai.defineFlow(
   {
@@ -50,12 +75,15 @@ const warningLightGuideFlow = ai.defineFlow(
     inputSchema: WarningLightInputSchema,
     outputSchema: WarningLightOutputSchema,
   },
-  async (input) => {
-    const { output } = await prompt(input);
+  async ({ lightName }) => {
+    const output = lightData[lightName];
     if (!output) {
-        throw new Error("Could not generate an explanation for the warning light.");
+        throw new Error(`Could not find an explanation for the light: ${lightName}`);
     }
     return output;
   }
 );
 
+export async function getWarningLightExplanation(input: WarningLightInput): Promise<WarningLightOutput> {
+  return warningLightGuideFlow(input);
+}

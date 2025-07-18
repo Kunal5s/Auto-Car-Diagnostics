@@ -1,7 +1,7 @@
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
 
+// Initialize Genkit with no plugins. This allows us to define flows
+// without requiring any external AI service or API keys.
 export const ai = genkit({
-  plugins: [googleAI({apiKey: process.env.GOOGLE_API_KEY})],
-  model: 'googleai/gemini-2.0-flash',
+  plugins: [],
 });
