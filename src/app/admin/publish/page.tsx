@@ -30,17 +30,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { Article } from '@/lib/types';
 
-type EditorState = {
-    title: string;
-    category: string;
-    keyTakeaways: string[];
-}
+type EditorState = Omit<Article, 'id' | 'publishedAt'>
 
 const initialEditorState: EditorState = {
+    slug: '',
     title: '',
+    summary: '',
+    content: '',
     category: '',
     keyTakeaways: [''],
+    imageUrl: '',
+    altText: '',
+    imageHint: '',
+    status: 'draft',
 };
 
 export default function PublishArticlePage() {
@@ -51,9 +55,7 @@ export default function PublishArticlePage() {
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
-    const [imageUrl, setImageUrl] = useState('');
-    const [altText, setAltText] = useState('');
-    const [imageHint, setImageHint] = useState('');
+    
     const [bodyImageCount, setBodyImageCount] = useState(3);
     const [wordCount, setWordCount] = useState(0);
     const [imageSuggestion, setImageSuggestion] = useState('');
@@ -63,25 +65,22 @@ export default function PublishArticlePage() {
 
     const contentRef = useRef<HTMLDivElement>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
-    const contentHtml = useRef('');
-    const summaryHtml = useRef('');
 
     const resetArticle = () => {
         setEditorState(initialEditorState);
-        setImageUrl('');
-        setAltText('');
-        setImageHint('');
-        setWordCount(0);
-        setImageSuggestion('');
         if (summaryRef.current) summaryRef.current.innerHTML = '';
         if (contentRef.current) contentRef.current.innerHTML = '';
-        summaryHtml.current = '';
-        contentHtml.current = '';
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
 
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
-        setEditorState(prev => ({ ...prev, [key]: value }));
+        setEditorState(prev => {
+            const newState = { ...prev, [key]: value };
+            if (key === 'title') {
+                newState.slug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            }
+            return newState;
+        });
     };
 
     const handleGenerateFeaturedImage = useCallback(async () => {
@@ -99,9 +98,12 @@ export default function PublishArticlePage() {
                 generatePollinationsImage({ prompt: `Photorealistic image for an article titled: ${title}` }),
             ]);
             
-            setImageUrl(imgResult.imageUrl);
-            setAltText(altResult.altText);
-            setImageHint(title.split(' ').slice(0, 2).join(' '));
+            setEditorState(prev => ({
+                ...prev,
+                imageUrl: imgResult.imageUrl,
+                altText: altResult.altText,
+                imageHint: title.split(' ').slice(0, 2).join(' ')
+            }));
 
         } catch (err) {
             console.error(`Image Generation Failed:`, err);
@@ -114,14 +116,14 @@ export default function PublishArticlePage() {
         } finally {
             setIsGenerating(false);
         }
-    }, [editorState, isGenerating, toast]);
+    }, [editorState.title, isGenerating, toast]);
     
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
-            contentHtml.current = contentRef.current.innerHTML;
+            handleStateChange('content', contentRef.current.innerHTML);
         }
         if(summaryRef.current) {
-            summaryHtml.current = summaryRef.current.innerHTML;
+            handleStateChange('summary', summaryRef.current.innerHTML);
         }
     }, []);
 
@@ -175,7 +177,7 @@ export default function PublishArticlePage() {
             reader.onloadend = () => {
                 const dataUrl = reader.result as string;
                 if (isFeatured) {
-                    setImageUrl(dataUrl);
+                    handleStateChange('imageUrl', dataUrl);
                 } else {
                      const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
@@ -230,8 +232,7 @@ export default function PublishArticlePage() {
     };
 
     const handleGenerateBodyImages = async () => {
-        const { title, category } = editorState;
-        const content = contentHtml.current;
+        const { title, category, content } = editorState;
         if (!content || !title) {
             toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
             return;
@@ -294,15 +295,13 @@ export default function PublishArticlePage() {
     };
 
     const handleSave = async (status: 'published' | 'draft'): Promise<{slug: string | null, success: boolean}> => {
-        const { title, category, keyTakeaways } = editorState;
-        const summary = summaryHtml.current;
-        const content = contentHtml.current;
+        const { title, category, summary, content, imageUrl } = editorState;
 
         if (status === 'published' && (!title || !summary || !content || !category || !imageUrl)) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "To publish, please fill in all fields and generate a featured image.",
+                description: "To publish, please fill in all fields (Title, Summary, Content, Category) and generate a featured image.",
             });
             return { slug: null, success: false };
         }
@@ -312,22 +311,13 @@ export default function PublishArticlePage() {
             return { slug: null, success: false };
         }
 
-        const newSlug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
         if (status === 'published') setIsPublishing(true);
         else setIsSavingDraft(true);
         
         try {
-            await addArticle({
-                title,
-                summary,
-                content,
-                category,
-                keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''),
-                imageUrl,
-                altText,
-                imageHint,
-                slug: newSlug,
+            const newArticle = await addArticle({
+                ...editorState,
+                keyTakeaways: editorState.keyTakeaways.filter(t => t.trim() !== ''),
                 status,
             });
             toast({
@@ -337,10 +327,12 @@ export default function PublishArticlePage() {
             
             if (status === 'published') {
                  resetArticle();
+                 router.push(`/admin/manage`);
+            } else {
+                 router.push(`/admin/edit/${newArticle.slug}`);
             }
-            router.push(`/admin/edit/${newSlug}`);
 
-            return { slug: newSlug, success: true };
+            return { slug: newArticle.slug, success: true };
 
         } catch(error) {
             console.error("Failed to save article", error);
@@ -364,6 +356,7 @@ export default function PublishArticlePage() {
             return;
         }
 
+        // For preview, we always save as a draft.
         const { slug, success } = await handleSave('draft');
         if (success && slug) {
              window.open(`/api/draft?slug=${slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
@@ -504,8 +497,8 @@ export default function PublishArticlePage() {
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
                                             <p className="text-sm text-muted-foreground mt-2">Generating...</p>
                                         </div>
-                                    ) : imageUrl ? (
-                                        <Image src={imageUrl} alt={altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
+                                    ) : editorState.imageUrl ? (
+                                        <Image src={editorState.imageUrl} alt={editorState.altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={editorState.imageHint || ''} />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
@@ -525,7 +518,7 @@ export default function PublishArticlePage() {
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button variant="outline" className="flex-1" onClick={() => setImageUrl('')}>
+                                    <Button variant="outline" className="flex-1" onClick={() => handleStateChange('imageUrl', '')}>
                                         <RefreshCcw className="mr-2 h-4 w-4" />
                                         Reset
                                     </Button>
@@ -535,8 +528,8 @@ export default function PublishArticlePage() {
                                     <Input
                                         id="alt-text"
                                         placeholder="Descriptive alt text for the image..."
-                                        value={altText}
-                                        onChange={(e) => setAltText(e.target.value)}
+                                        value={editorState.altText}
+                                        onChange={(e) => handleStateChange('altText', e.target.value)}
                                         disabled={!!isGenerating}
                                     />
                                 </div>
@@ -569,7 +562,7 @@ export default function PublishArticlePage() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !contentHtml.current || !editorState.title}>
+                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content || !editorState.title}>
                                             {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                             Generate &amp; Insert
                                         </Button>

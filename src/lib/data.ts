@@ -5,9 +5,9 @@ import type { Article, Author } from "@/lib/types";
 import { categories } from '@/lib/config';
 import fs from 'fs/promises';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 // --- GitHub API Configuration ---
-// Corrected to match the environment variables provided by the user.
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_OWNER = process.env.GITHUB_REPO_OWNER;
 const GITHUB_REPO = process.env.GITHUB_REPO_NAME;
@@ -21,8 +21,13 @@ async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<
     try {
         await fs.access(fullPath);
         const fileContent = await fs.readFile(fullPath, 'utf-8');
+        // Handle empty file case
+        if (fileContent.trim() === '') {
+            return defaultValue;
+        }
         return JSON.parse(fileContent) as T;
     } catch (error) {
+        // If file doesn't exist or other error, return default
         return defaultValue;
     }
 }
@@ -41,8 +46,8 @@ async function writeJsonToLocal<T>(filePath: string, data: T): Promise<void> {
 
 // --- GitHub Data Functions ---
 
-async function getFileFromGithub(filePath: string): Promise<{ content?: string; sha?: string }> {
-    if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) return {};
+async function getFileShaFromGithub(filePath: string): Promise<string | undefined> {
+    if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) return undefined;
     
     try {
         const response = await fetch(`${GITHUB_API_URL}/contents/${filePath}?ref=${GITHUB_BRANCH}`, {
@@ -50,23 +55,21 @@ async function getFileFromGithub(filePath: string): Promise<{ content?: string; 
             cache: 'no-store'
         });
         if (!response.ok) {
-            if (response.status === 404) return {}; // File doesn't exist, which is a valid case
-            throw new Error(`GitHub API error getting file: ${response.statusText}`);
+            if (response.status === 404) return undefined; // File doesn't exist
+            throw new Error(`GitHub API error getting file SHA: ${response.statusText}`);
         }
         const data = await response.json();
-        const content = Buffer.from(data.content, 'base64').toString('utf-8');
-        return { content, sha: data.sha };
+        return data.sha;
     } catch (error) {
-        console.error(`Failed to get file from GitHub: ${filePath}`, error);
-        return {}; // Return empty on error to avoid breaking read operations
+        console.error(`Failed to get file SHA from GitHub: ${filePath}`, error);
+        return undefined;
     }
 }
 
-
 async function commitFileToGithub(filePath: string, content: string, commitMessage: string, sha?: string): Promise<void> {
     if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) {
-        // This check ensures we don't proceed if credentials are not found.
-        throw new Error("GitHub repository details are not configured in environment variables.");
+        console.warn("GitHub credentials not configured. Skipping commit to GitHub.");
+        return; // Don't throw an error, just skip the GitHub part
     }
 
     const encodedContent = Buffer.from(content).toString('base64');
@@ -75,7 +78,7 @@ async function commitFileToGithub(filePath: string, content: string, commitMessa
         message: commitMessage,
         content: encodedContent,
         branch: GITHUB_BRANCH,
-        sha: sha, // Include SHA if updating an existing file
+        sha: sha,
     });
 
     const response = await fetch(`${GITHUB_API_URL}/contents/${filePath}`, {
@@ -91,13 +94,8 @@ async function commitFileToGithub(filePath: string, content: string, commitMessa
     if (!response.ok) {
         const errorData = await response.json();
         console.error("GitHub API commit failed:", errorData);
-        throw new Error(`Failed to commit file to GitHub: ${errorData.message}`);
+        // Don't throw, just log the error. The local save is the primary source of truth for the app.
     }
-}
-
-// Unified Read Function
-async function readJson<T>(filePath: string, defaultValue: T): Promise<T> {
-    return await readJsonFromLocal<T>(filePath, defaultValue);
 }
 
 // Unified Write Function (writes to local AND GitHub)
@@ -105,30 +103,24 @@ async function writeJson<T>(filePath: string, data: T, commitMessage: string): P
     // Write to local file system first for speed and reliability of the live app
     await writeJsonToLocal(filePath, data);
 
-    // Then, write to GitHub for permanent backup
-    try {
-        const githubFilePath = `src/data/${path.basename(filePath)}`;
-        const { sha } = await getFileFromGithub(githubFilePath); // Get latest SHA before committing
-        const content = JSON.stringify(data, null, 2) + '\n';
-        await commitFileToGithub(githubFilePath, content, commitMessage, sha);
-    } catch (error) {
-        // Log the error but don't block the user operation.
-        // The primary action (saving to local) has already succeeded.
-        console.error("Failed to commit backup to GitHub, but local save succeeded:", error);
-    }
+    // Then, attempt to write to GitHub for permanent backup
+    const githubFilePath = `src/data/${path.basename(filePath)}`;
+    const sha = await getFileShaFromGithub(githubFilePath);
+    const content = JSON.stringify(data, null, 2) + '\n';
+    await commitFileToGithub(githubFilePath, content, commitMessage, sha);
 }
 
 
 // --- Author Data Functions ---
 
 export async function getAuthor(): Promise<Author> {
-    const filePath = 'src/data/author.json';
+    const filePath = 'author.json';
     const defaultAuthor: Author = { name: 'Author', role: 'Writer', bio: '', imageUrl: '' };
-    return await readJson<Author>(filePath, defaultAuthor);
+    return await readJsonFromLocal<Author>(filePath, defaultAuthor);
 }
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
-    const filePath = 'src/data/author.json';
+    const filePath = 'author.json';
     await writeJson(filePath, authorData, `docs: update author profile`);
     return authorData;
 }
@@ -137,17 +129,19 @@ export async function updateAuthor(authorData: Author): Promise<Author> {
 // --- Article Data Functions ---
 
 export async function getArticles(options: { includeDrafts?: boolean } = {}): Promise<Article[]> {
-  const allCategoryNames = categories.map(c => c.name);
+  const allCategorySlugs = categories.map(c => c.name.toLowerCase().replace(/ /g, '-'));
   let allArticles: Article[] = [];
 
-  for (const categoryName of allCategoryNames) {
-    const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
-    const filePath = `src/data/${categorySlug}.json`;
-    const categoryArticles = await readJson<Article[]>(filePath, []);
+  for (const categorySlug of allCategorySlugs) {
+    const filePath = `${categorySlug}.json`;
+    const categoryArticles = await readJsonFromLocal<Article[]>(filePath, []);
     allArticles.push(...categoryArticles);
   }
 
-  const sortedArticles = allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  // Deduplicate articles based on ID, in case an article was moved but the old file wasn't cleaned up
+  const uniqueArticles = Array.from(new Map(allArticles.map(article => [article.id, article])).values());
+
+  const sortedArticles = uniqueArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
   if (options.includeDrafts) {
     return sortedArticles;
@@ -158,33 +152,39 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
 
 export async function getArticlesByCategory(categoryName: string): Promise<Article[]> {
   const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
-  const filePath = `src/data/${categorySlug}.json`;
-  const articles = await readJson<Article[]>(filePath, []);
+  const filePath = `${categorySlug}.json`;
+  const articles = await readJsonFromLocal<Article[]>(filePath, []);
   
-  // Always sort before filtering
   const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-  const publishedArticles = sortedArticles.filter(a => a.status === 'published');
   
-  return publishedArticles;
+  return sortedArticles.filter(a => a.status === 'published');
 }
 
 export async function getArticleBySlug(slug: string, options: { includeDrafts?: boolean } = {}): Promise<Article | undefined> {
   const allArticles = await getArticles({ includeDrafts: true });
   const article = allArticles.find(article => article.slug === slug);
+  
   if (!article) return undefined;
+  
   if (!options.includeDrafts && article.status !== 'published') return undefined;
+  
   return article;
 }
 
-export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise<Article> {
-    const newArticle: Article = { ...article, publishedAt: new Date().toISOString() };
+export async function addArticle(article: Omit<Article, 'publishedAt' | 'id'>): Promise<Article> {
+    const newArticle: Article = { 
+        ...article, 
+        id: uuidv4(), // Assign a new unique ID
+        publishedAt: new Date().toISOString() 
+    };
+    
     const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
-    const filePath = `src/data/${categorySlug}.json`;
-    const articles = await readJson<Article[]>(filePath, []);
+    const filePath = `${categorySlug}.json`;
+    const articles = await readJsonFromLocal<Article[]>(filePath, []);
     
     const existingIndex = articles.findIndex(a => a.slug === newArticle.slug);
     if (existingIndex !== -1) {
-        throw new Error(`Article with slug "${newArticle.slug}" already exists in category "${newArticle.category}".`);
+        throw new Error(`Article with slug "${newArticle.slug}" already exists in category "${newArticle.category}". Please use a unique title.`);
     }
 
     articles.unshift(newArticle);
@@ -192,44 +192,47 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
     return newArticle;
 }
 
-export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'slug'>>): Promise<Article> {
+export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'slug' | 'id'>>): Promise<Article> {
     const originalArticle = await getArticleBySlug(slug, { includeDrafts: true });
     if (!originalArticle) throw new Error(`Article with slug "${slug}" not found.`);
 
     const updatedArticle = { ...originalArticle, ...articleData };
-    if (articleData.status && articleData.status !== originalArticle.status) {
+
+    // If status changes from draft to published, update the timestamp
+    if (articleData.status === 'published' && originalArticle.status === 'draft') {
         updatedArticle.publishedAt = new Date().toISOString();
     }
 
-    if (articleData.category && articleData.category !== originalArticle.category) {
-        // Move article: Remove from old category file
+    const hasCategoryChanged = articleData.category && articleData.category !== originalArticle.category;
+
+    if (hasCategoryChanged) {
+        // Remove from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
-        const oldFilePath = `src/data/${oldCategorySlug}.json`;
-        const oldArticles = await readJson<Article[]>(oldFilePath, []);
-        const filteredArticles = oldArticles.filter(a => a.slug !== slug);
+        const oldFilePath = `${oldCategorySlug}.json`;
+        const oldArticles = await readJsonFromLocal<Article[]>(oldFilePath, []);
+        const filteredArticles = oldArticles.filter(a => a.id !== originalArticle.id);
         await writeJson(oldFilePath, filteredArticles, `refactor: move article '${slug}' from ${originalArticle.category}`);
-
-        // Add to new category file
-        const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
-        const newFilePath = `src/data/${newCategorySlug}.json`;
-        const newArticles = await readJson<Article[]>(newFilePath, []);
-        newArticles.unshift(updatedArticle);
-        await writeJson(newFilePath, newArticles, `refactor: move article '${slug}' to ${updatedArticle.category}`);
-    } else {
-        // Update article in the same category
-        const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
-        const filePath = `src/data/${categorySlug}.json`;
-        const articles = await readJson<Article[]>(filePath, []);
-        const articleIndex = articles.findIndex(a => a.slug === slug);
-
-        if (articleIndex === -1) {
-            articles.unshift(updatedArticle);
-        } else {
-            articles[articleIndex] = updatedArticle;
-        }
-
-        await writeJson(filePath, articles, `docs: update article '${slug}'`);
     }
+
+    // Add to new category file (or update in the same file)
+    const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
+    const newFilePath = `${newCategorySlug}.json`;
+    const newArticles = await readJsonFromLocal<Article[]>(newFilePath, []);
+    const articleIndex = newArticles.findIndex(a => a.id === updatedArticle.id);
+
+    if (articleIndex === -1) {
+        // This happens when the category has changed, or if it was missing before
+        newArticles.unshift(updatedArticle);
+    } else {
+        // This happens when updating an article in the same category
+        newArticles[articleIndex] = updatedArticle;
+    }
+
+    const commitMessage = hasCategoryChanged 
+        ? `refactor: move article '${slug}' to ${updatedArticle.category}`
+        : `docs: update article '${slug}'`;
+
+    await writeJson(newFilePath, newArticles, commitMessage);
     
     return updatedArticle;
 }
@@ -242,14 +245,15 @@ export async function deleteArticle(slug: string): Promise<void> {
     }
 
     const categorySlug = article.category.toLowerCase().replace(/ /g, '-');
-    const filePath = `src/data/${categorySlug}.json`;
-    const articles = await readJson<Article[]>(filePath, []);
-    const updatedArticles = articles.filter(a => a.slug !== slug);
+    const filePath = `${categorySlug}.json`;
+    const articles = await readJsonFromLocal<Article[]>(filePath, []);
+    const updatedArticles = articles.filter(a => a.id !== article.id);
 
     if (articles.length === updatedArticles.length) {
-        console.warn(`Article with slug "${slug}" not found in its category file.`);
+        // This might happen if the article was found in the global list but not its own category file (e.g., after a failed move)
+        console.warn(`Article with slug "${slug}" not found in its category file '${filePath}'. No deletion performed from this file.`);
         return;
     }
 
-    await writeJson(filePath, updatedArticles, `feat: delete article '${slug}'`);
+    await writeJson(filePath, updatedArticles, `feat: delete article '${article.title}'`);
 }

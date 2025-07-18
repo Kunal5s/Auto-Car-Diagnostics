@@ -69,7 +69,7 @@ export default async function ArticlePage({
     notFound();
   }
   
-  const readingTime = Math.ceil(article.content.split(/\s+/).length / 200);
+  const readingTime = Math.ceil((article.content || '').split(/\s+/).length / 200);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -134,5 +134,3 @@ export default async function ArticlePage({
     </div>
   );
 }
-
-    

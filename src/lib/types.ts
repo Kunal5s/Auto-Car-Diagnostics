@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 export interface Article {
+  id: string; // Unique identifier
   slug: string;
   title: string;
   summary: string;

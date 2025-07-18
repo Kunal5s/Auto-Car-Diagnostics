@@ -72,12 +72,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const { slug } = params;
     
     const [article, setArticle] = useState<Article | null>(null);
-    const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('');
-    const [keyTakeaways, setKeyTakeaways] = useState<string[]>([]);
-    const [imageUrl, setImageUrl] = useState('');
-    const [altText, setAltText] = useState('');
-    const [imageHint, setImageHint] = useState('');
+    
     const [bodyImageCount, setBodyImageCount] = useState(3);
     const [wordCount, setWordCount] = useState(0);
     const [imageSuggestion, setImageSuggestion] = useState('');
@@ -89,8 +84,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
 
     const contentRef = useRef<HTMLDivElement>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
-    const contentHtml = useRef('');
-    const summaryHtml = useRef('');
 
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
@@ -98,15 +91,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             const fetchedArticle = await getArticleBySlug(slug, { includeDrafts: true });
             if (fetchedArticle) {
                 setArticle(fetchedArticle);
-                setTitle(fetchedArticle.title);
-                summaryHtml.current = fetchedArticle.summary;
-                contentHtml.current = fetchedArticle.content;
-                setCategory(fetchedArticle.category);
-                setKeyTakeaways(fetchedArticle.keyTakeaways || []);
-                setImageUrl(fetchedArticle.imageUrl);
-                setAltText(fetchedArticle.altText || '');
-                setImageHint(fetchedArticle.imageHint);
-
                 if (summaryRef.current) summaryRef.current.innerHTML = fetchedArticle.summary;
                 if (contentRef.current) contentRef.current.innerHTML = fetchedArticle.content;
             } else {
@@ -126,20 +110,28 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             loadArticle();
         }
     }, [slug, loadArticle]);
+    
+    const handleStateChange = <K extends keyof Article>(key: K, value: Article[K]) => {
+        if (!article) return;
+        setArticle(prev => prev ? ({ ...prev, [key]: value }) : null);
+    };
 
     const handleGenerateFeaturedImage = useCallback(async () => {
-        if (!title || isGenerating) return;
+        if (!article || !article.title || isGenerating) return;
         
         setIsGenerating(true);
         try {
             const [altResult, imgResult] = await Promise.all([
-                generateAltText({ articleTitle: title }),
-                generatePollinationsImage({ prompt: `Photorealistic image for an article titled: ${title}` }),
+                generateAltText({ articleTitle: article.title }),
+                generatePollinationsImage({ prompt: `Photorealistic image for an article titled: ${article.title}` }),
             ]);
             
-            setImageUrl(imgResult.imageUrl);
-            setAltText(altResult.altText);
-            setImageHint(title.split(' ').slice(0, 2).join(' '));
+            setArticle(prev => prev ? ({
+                ...prev,
+                imageUrl: imgResult.imageUrl,
+                altText: altResult.altText,
+                imageHint: prev.title.split(' ').slice(0, 2).join(' ')
+            }) : null);
 
         } catch (err) {
             console.error(`Image Generation Failed:`, err);
@@ -151,16 +143,17 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         } finally {
             setIsGenerating(false);
         }
-    }, [title, isGenerating, toast]);
+    }, [article, isGenerating, toast]);
 
     const handleContentChange = useCallback(() => {
+        if (!article) return;
         if (contentRef.current) {
-            contentHtml.current = contentRef.current.innerHTML;
+            handleStateChange('content', contentRef.current.innerHTML);
         }
         if(summaryRef.current) {
-            summaryHtml.current = summaryRef.current.innerHTML;
+            handleStateChange('summary', summaryRef.current.innerHTML);
         }
-    }, []);
+    }, [article]);
 
 
     const handleExecCommand = (command: string, value?: string) => {
@@ -184,21 +177,25 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
-        const newTakeaways = [...keyTakeaways];
+        if (!article) return;
+        const newTakeaways = [...article.keyTakeaways];
         newTakeaways[index] = value;
-        setKeyTakeaways(newTakeaways);
+        handleStateChange('keyTakeaways', newTakeaways);
     };
 
     const addKeyTakeaway = () => {
-        setKeyTakeaways([...keyTakeaways, '']);
+        if (!article) return;
+        handleStateChange('keyTakeaways', [...article.keyTakeaways, '']);
     };
 
     const removeKeyTakeaway = (index: number) => {
-        const newTakeaways = keyTakeaways.filter((_, i) => i !== index);
-        setKeyTakeaways(newTakeaways);
+        if (!article) return;
+        const newTakeaways = article.keyTakeaways.filter((_, i) => i !== index);
+        handleStateChange('keyTakeaways', newTakeaways);
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
+        if (!article) return;
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 2 * 1024 * 1024) { // 2MB limit
@@ -213,9 +210,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             reader.onloadend = () => {
                 const dataUrl = reader.result as string;
                 if (isFeatured) {
-                    setImageUrl(dataUrl);
+                    handleStateChange('imageUrl', dataUrl);
                 } else {
-                    const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                    const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${article.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
                     handleContentChange();
                     toast({ title: "Image inserted into content." });
@@ -270,7 +267,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     };
 
     const handleGenerateBodyImages = async () => {
-        if (!contentHtml.current || !title) {
+        if (!article || !article.content || !article.title) {
             toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
             return;
         }
@@ -278,9 +275,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         
         try {
             const result = await generateArticleImages({ 
-                articleContent: contentHtml.current, 
-                articleTitle: title,
-                category: category,
+                articleContent: article.content, 
+                articleTitle: article.title,
+                category: article.category,
                 imageCount: bodyImageCount 
             });
 
@@ -289,7 +286,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             }
 
             const parser = new DOMParser();
-            const doc = parser.parseFromString(contentHtml.current, 'text/html');
+            const doc = parser.parseFromString(article.content, 'text/html');
             let imagesInserted = 0;
 
             for (const placement of result.placements) {
@@ -298,7 +295,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
 
                 if (targetH2) {
-                    const imageAlt = `${title} - ${subheading}`;
+                    const imageAlt = `${article.title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
                     imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" />`;
@@ -309,9 +306,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             }
             
             const newContent = doc.body.innerHTML;
-            contentHtml.current = newContent;
             if (contentRef.current) contentRef.current.innerHTML = newContent;
-            handleContentChange();
+            handleStateChange('content', newContent);
             toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
@@ -327,14 +323,15 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         if (contentRef.current) {
             const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
-            handleContentChange();
+            handleStateChange('content', newContent);
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
         }
     };
 
     const handleUpdate = async () => {
-        const summary = summaryHtml.current;
-        const content = contentHtml.current;
+        if (!article) return false;
+        
+        const { title, summary, content, category, imageUrl, keyTakeaways } = article;
 
         if (!title || !summary || !content || !category || !imageUrl) {
             toast({
@@ -354,8 +351,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 category,
                 keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''),
                 imageUrl,
-                altText,
-                imageHint,
+                altText: article.altText,
+                imageHint: article.imageHint,
             });
             toast({
                 title: "Article Updated!",
@@ -385,7 +382,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     }
 
-    if (isLoading) {
+    if (isLoading || !article) {
         return (
              <div className="container mx-auto py-8">
                 <div className="mb-6">
@@ -424,8 +421,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                         <Input 
                             id="article-title" 
                             placeholder="Your engaging article title..." 
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            value={article.title}
+                            onChange={(e) => handleStateChange('title', e.target.value)}
                         />
                     </div>
 
@@ -438,7 +435,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             contentEditable
                             onInput={handleContentChange}
                             onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: summaryHtml.current }}
+                            dangerouslySetInnerHTML={{ __html: article.summary }}
                              className={cn(
                                 'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                                 '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg'
@@ -449,7 +446,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                     <div className="space-y-4">
                         <Label>Key Takeaways</Label>
                         <div className="space-y-2">
-                            {keyTakeaways.map((takeaway, index) => (
+                            {article.keyTakeaways.map((takeaway, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <Input
                                         placeholder={`Takeaway #${index + 1}`}
@@ -477,7 +474,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             contentEditable
                             onInput={handleContentChange}
                             onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: contentHtml.current }}
+                            dangerouslySetInnerHTML={{ __html: article.content }}
                             className={cn(
                                 'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                                 '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl'
@@ -495,7 +492,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
                                 <Label htmlFor="category">Category</Label>
-                                <Select onValueChange={setCategory} value={category}>
+                                <Select onValueChange={(value) => handleStateChange('category', value)} value={article.category}>
                                     <SelectTrigger id="category">
                                         <SelectValue placeholder="Select a category" />
                                     </SelectTrigger>
@@ -517,8 +514,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                             <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
                                             <p className="text-sm text-muted-foreground mt-2">Generating...</p>
                                         </div>
-                                    ) : imageUrl ? (
-                                        <Image src={imageUrl} alt={altText || title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={imageHint || ''} />
+                                    ) : article.imageUrl ? (
+                                        <Image src={article.imageUrl} alt={article.altText || article.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={article.imageHint || ''} />
                                     ) : (
                                         <>
                                             <ImageIcon className="h-12 w-12 text-muted-foreground" />
@@ -526,7 +523,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         </>
                                     )}
                                 </div>
-                                <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !title} className="w-full">
+                                <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !article.title} className="w-full">
                                     <Sparkles className="mr-2 h-4 w-4" />
                                     Generate with Pollinations
                                 </Button>
@@ -538,7 +535,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button variant="outline" className="flex-1" onClick={() => setImageUrl('')}>
+                                    <Button variant="outline" className="flex-1" onClick={() => handleStateChange('imageUrl', '')}>
                                         <RefreshCcw className="mr-2 h-4 w-4" />
                                         Reset
                                     </Button>
@@ -548,8 +545,8 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                     <Input
                                         id="alt-text"
                                         placeholder="Descriptive alt text for the image..."
-                                        value={altText}
-                                        onChange={(e) => setAltText(e.target.value)}
+                                        value={article.altText}
+                                        onChange={(e) => handleStateChange('altText', e.target.value)}
                                         disabled={!!isGenerating}
                                     />
                                 </div>
@@ -582,7 +579,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !contentHtml.current || !title}>
+                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !article.content || !article.title}>
                                             {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                             Generate &amp; Insert
                                         </Button>

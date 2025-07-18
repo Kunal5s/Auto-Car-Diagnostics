@@ -99,9 +99,8 @@ export default function ManageArticlesPage() {
     startTransition(async () => {
       try {
         const newStatus = article.status === 'published' ? 'draft' : 'published';
-        const newPublishedAt = new Date().toISOString(); // Always update to current time on status change
-
-        await updateArticle(article.slug, { status: newStatus, publishedAt: newPublishedAt });
+        
+        await updateArticle(article.slug, { status: newStatus });
         
         toast({
           title: `Article ${newStatus === 'published' ? 'Published' : 'Unpublished'}`,
@@ -148,7 +147,7 @@ export default function ManageArticlesPage() {
                 </TableHeader>
                 <TableBody className={cn(isPending && "opacity-50 pointer-events-none")}>
                   {articles.map((article) => (
-                    <TableRow key={article.slug}>
+                    <TableRow key={article.id}>
                       <TableCell className="font-medium">{article.title}</TableCell>
                        <TableCell>
                         <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
