@@ -33,41 +33,23 @@ const generatePollinationsImageFlow = ai.defineFlow(
     name: 'generatePollinationsImageFlow',
     inputSchema: GeneratePollinationsImageInputSchema,
     outputSchema: GeneratePollinationsImageOutputSchema,
-    // Add safety settings to prevent generation of harmful content
-    // This helps avoid errors from the image service for unsafe prompts
-    config: {
-      safetySettings: [
-        {
-          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-          threshold: 'BLOCK_ONLY_HIGH', // Allow some creative prompts but block clearly dangerous ones
-        },
-        {
-          category: 'HARM_CATEGORY_HARASSMENT',
-          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-        },
-        {
-          category: 'HARM_CATEGORY_HATE_SPEECH',
-          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-        },
-        {
-          category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-        },
-      ]
-    }
   },
   async ({ prompt, seed }) => {
     // Sanitize the prompt for the URL
-    const sanitizedPrompt = encodeURIComponent(prompt.trim().replace(/\s+/g, " "));
+    // IMPORTANT: We add common negative prompts to improve image quality and avoid common issues.
+    const enhancedPrompt = `${prompt}, 4k, photorealistic, high quality, sharp focus`;
+    const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
     
     // Construct the base URL
-    let imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}`;
+    // We add a negative prompt to the URL to avoid text, watermarks, and malformed features.
+    let imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?negative_prompt=text%2C+watermark%2C+deformed%2C+ugly&`;
     
     // Append the seed if provided
     if (seed) {
-        imageUrl += `?seed=${seed}`;
+        imageUrl += `seed=${seed}&`;
     }
 
+    // Return the URL without width/height, as they will be added on the client-side
     return { imageUrl };
   }
 );
