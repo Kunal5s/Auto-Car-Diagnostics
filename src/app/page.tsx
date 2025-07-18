@@ -7,7 +7,7 @@ import { Footer } from "@/components/common/footer";
 import { Hero } from "@/components/home/hero";
 import { RecentArticles } from "@/components/home/recent-articles";
 import { QuestionSubmission } from "@/components/home/question-submission";
-import { getArticles, getArticlesByCategory } from "@/lib/data";
+import { getArticles } from "@/lib/data";
 import type { Article } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Testimonials } from "@/components/home/testimonials";
@@ -66,12 +66,8 @@ export default function Home() {
   const loadArticles = useCallback(async () => {
     setIsLoading(true);
     try {
-      let fetchedArticles = await getArticlesByCategory("Homepage");
-      
-      // If no articles are specifically for the homepage, fetch all articles and show the most recent.
-      if (fetchedArticles.length === 0) {
-        fetchedArticles = await getArticles();
-      }
+      // Fetch all articles from every category
+      const fetchedArticles = await getArticles();
       
       setArticles(fetchedArticles);
       setDisplayedArticles(fetchedArticles.slice(0, ARTICLES_PER_PAGE));
@@ -109,10 +105,10 @@ export default function Home() {
           <section id="articles" className="py-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold tracking-tight font-headline">
-                Recently Added Articles
+                Explore All Articles
               </h2>
               <p className="text-muted-foreground mt-2">
-                Our library grows every day with new, in-depth articles. Here are the latest additions.
+                Our library grows every day with new, in-depth articles. Here are the latest additions from all categories.
               </p>
             </div>
             {isLoading ? <ArticlesSkeleton /> : (
