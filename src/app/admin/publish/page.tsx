@@ -1,18 +1,18 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload, RefreshCcw, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { addArticle } from '@/lib/data';
 import { categories } from '@/lib/config';
-import type { Article } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
@@ -58,17 +58,26 @@ export default function PublishArticlePage() {
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
     const [bodyImageCount, setBodyImageCount] = useState(3);
+    const [wordCount, setWordCount] = useState(0);
+    const [imageSuggestion, setImageSuggestion] = useState('');
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     
     const { toast } = useToast();
 
     const DRAFT_STORAGE_KEY = 'article_draft';
 
+    const contentRef = useRef<HTMLDivElement>(null);
+    const summaryRef = useRef<HTMLDivElement>(null);
+
     const resetArticle = () => {
         setEditorState(initialEditorState);
         setImageUrl('');
         setAltText('');
         setImageHint('');
+        setWordCount(0);
+        setImageSuggestion('');
+        if (summaryRef.current) summaryRef.current.innerHTML = '';
+        if (contentRef.current) contentRef.current.innerHTML = '';
         localStorage.removeItem(DRAFT_STORAGE_KEY);
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
@@ -83,7 +92,11 @@ export default function PublishArticlePage() {
                 setImageUrl(draft.imageUrl || '');
                 setAltText(draft.altText || '');
                 setImageHint(draft.imageHint || '');
-                 toast({ title: "Draft Restored", description: "Your previously saved draft has been loaded." });
+
+                if (summaryRef.current) summaryRef.current.innerHTML = draft.editorState.summary;
+                if (contentRef.current) contentRef.current.innerHTML = draft.editorState.content;
+
+                toast({ title: "Draft Restored", description: "Your previously saved draft has been loaded." });
             } catch (error) {
                 console.error("Failed to parse draft from local storage", error);
                 localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -102,7 +115,6 @@ export default function PublishArticlePage() {
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
     }, [editorState, imageUrl, altText, imageHint]);
 
-
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
         setEditorState(prev => ({ ...prev, [key]: value }));
     };
@@ -117,7 +129,6 @@ export default function PublishArticlePage() {
             
             setImageUrl(`https://placehold.co/600x400.png`);
             setAltText(result.altText);
-            // Use the first few words of the title as a hint.
             setImageHint(title.split(' ').slice(0, 2).join(' '));
 
         } catch (err) {
@@ -132,40 +143,36 @@ export default function PublishArticlePage() {
         }
     }, [editorState, isGenerating, toast]);
 
-
-    const handleContentChange = (newContent: string) => {
-        handleStateChange('content', newContent);
-    };
+    const handleContentChange = useCallback((editor: 'summary' | 'content') => {
+        const element = editor === 'content' ? contentRef.current : summaryRef.current;
+        if (element) {
+            const newHtml = element.innerHTML;
+            if (editor === 'content') {
+                handleStateChange('content', newHtml);
+            } else {
+                handleStateChange('summary', newHtml);
+            }
+        }
+    }, []);
 
     const handleExecCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
-        const editor = document.getElementById('content-editor');
-        if (editor) {
-            handleContentChange(editor.innerHTML);
-        }
+        handleContentChange('content');
+        handleContentChange('summary');
     };
     
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         event.preventDefault();
-        const clipboardData = event.clipboardData;
-        let pastedData = clipboardData.getData('text/plain');
-        
-        // Convert Markdown to HTML before inserting
-        pastedData = pastedData
-            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Bold
-            .replace(/\*(.*?)\*/g, '<i>$1</i>')     // Italic
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>') // Basic list item
-            .replace(/\n/g, '<br />'); // Newlines
-        
-        document.execCommand('insertHTML', false, pastedData);
-        
-        const editor = document.getElementById('content-editor');
-        if (editor) {
-            handleContentChange(editor.innerHTML);
-        }
+        const text = event.clipboardData.getData('text/plain');
+        const html = text
+          .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+          .replace(/\*(.*?)\*/g, '<i>$1</i>')
+          .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+          .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+          .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+          .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
+          .replace(/\n/g, '<br />');
+        document.execCommand('insertHTML', false, html);
     };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
@@ -202,8 +209,7 @@ export default function PublishArticlePage() {
                 } else {
                      const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
-                    const editor = document.getElementById('content-editor');
-                    if (editor) handleContentChange(editor.innerHTML);
+                    if(contentRef.current) handleContentChange('content');
                     toast({ title: "Image inserted into content." });
                 }
             };
@@ -211,6 +217,27 @@ export default function PublishArticlePage() {
         }
     };
 
+    const calculateWordCount = useCallback(() => {
+        if (contentRef.current) {
+            const text = contentRef.current.innerText || "";
+            const count = text.trim().split(/\s+/).filter(Boolean).length;
+            setWordCount(count);
+        }
+    }, []);
+
+    useEffect(() => {
+        calculateWordCount();
+    }, [editorState.content, calculateWordCount]);
+
+    const analyzeContentForImages = () => {
+        const words = wordCount;
+        let suggestion = "No suggestion available.";
+        if (words > 0) {
+            const suggestedCount = Math.max(1, Math.round(words / 250));
+            suggestion = `For a ${words}-word article, we suggest ${suggestedCount}-${suggestedCount + 1} images for better engagement.`;
+        }
+        setImageSuggestion(suggestion);
+    };
 
     const handleGenerateBodyImages = async () => {
         const { content, title, category } = editorState;
@@ -244,9 +271,7 @@ export default function PublishArticlePage() {
                 if (targetH2) {
                     const imageAlt = `${title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
-                    imageDiv.style.display = 'flex';
-                    imageDiv.style.justifyContent = 'center';
-                    imageDiv.style.margin = '1rem 0';
+                    imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
                     imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${imageHint}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
@@ -254,7 +279,9 @@ export default function PublishArticlePage() {
                 }
             }
             
-            handleStateChange('content', doc.body.innerHTML);
+            const newContent = doc.body.innerHTML;
+            if(contentRef.current) contentRef.current.innerHTML = newContent;
+            handleStateChange('content', newContent);
             toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
@@ -267,9 +294,12 @@ export default function PublishArticlePage() {
     }
 
     const handleResetBodyImages = () => {
-        const newContent = editorState.content.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
-        handleStateChange('content', newContent);
-        toast({ title: "Images Reset", description: "All body images have been removed from the content." });
+        if (contentRef.current) {
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
+            contentRef.current.innerHTML = newContent;
+            handleStateChange('content', newContent);
+            toast({ title: "Images Reset", description: "All body images have been removed from the content." });
+        }
     };
 
     const handleSave = async (status: 'published' | 'draft'): Promise<string | null> => {
@@ -387,9 +417,10 @@ export default function PublishArticlePage() {
                         <Label>Summary</Label>
                         <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
                         <div
+                            ref={summaryRef}
                             id="summary-editor"
                             contentEditable
-                            onInput={(e) => handleStateChange('summary', e.currentTarget.innerHTML)}
+                            onInput={() => handleContentChange('summary')}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: editorState.summary }}
                              className={cn(
@@ -426,9 +457,10 @@ export default function PublishArticlePage() {
                         <Label>Content</Label>
                         <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
                         <div
+                            ref={contentRef}
                             id="content-editor"
                             contentEditable
-                            onInput={(e) => handleContentChange(e.currentTarget.innerHTML)}
+                            onInput={() => handleContentChange('content')}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: editorState.content }}
                             className={cn(
@@ -505,7 +537,17 @@ export default function PublishArticlePage() {
                             </div>
 
                              <div className="space-y-4 pt-4 border-t">
-                                <Label>Generate Body Images (Placeholders)</Label>
+                                <div className="flex justify-between items-center">
+                                    <Label>Body Images &amp; Word Count</Label>
+                                    <Badge variant="outline">{wordCount} words</Badge>
+                                </div>
+                                <div className="p-2 bg-muted rounded-md text-sm text-muted-foreground">
+                                    {imageSuggestion || 'Click "Analyze" for an image recommendation.'}
+                                </div>
+                                <Button variant="secondary" size="sm" className="w-full" onClick={analyzeContentForImages}>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Analyze Content
+                                </Button>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Select
@@ -526,11 +568,10 @@ export default function PublishArticlePage() {
                                             Generate &amp; Insert
                                         </Button>
                                     </div>
-                                    <Button variant="secondary" size="sm" className="w-full" onClick={handleResetBodyImages}>
+                                    <Button variant="destructive" size="sm" className="w-full" onClick={handleResetBodyImages}>
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Reset Body Images
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">Generates placeholder images and places them under relevant subheadings in your article.</p>
                                 </div>
                             </div>
 

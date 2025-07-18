@@ -1,10 +1,10 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Plus, Trash2, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -79,11 +79,16 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [altText, setAltText] = useState('');
     const [imageHint, setImageHint] = useState('');
     const [bodyImageCount, setBodyImageCount] = useState(3);
+    const [wordCount, setWordCount] = useState(0);
+    const [imageSuggestion, setImageSuggestion] = useState('');
     
     const [isLoading, setIsLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const contentRef = useRef<HTMLDivElement>(null);
+    const summaryRef = useRef<HTMLDivElement>(null);
 
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
@@ -99,6 +104,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 setImageUrl(fetchedArticle.imageUrl);
                 setAltText(fetchedArticle.altText || '');
                 setImageHint(fetchedArticle.imageHint);
+
+                if (summaryRef.current) summaryRef.current.innerHTML = fetchedArticle.summary;
+                if (contentRef.current) contentRef.current.innerHTML = fetchedArticle.content;
             } else {
                 toast({ variant: "destructive", title: "Error", description: "Article not found." });
                 router.push('/admin');
@@ -126,7 +134,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             
             setImageUrl(`https://placehold.co/600x400.png`);
             setAltText(result.altText);
-             // Use the first few words of the title as a hint.
             setImageHint(title.split(' ').slice(0, 2).join(' '));
 
         } catch (err) {
@@ -141,39 +148,36 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     }, [title, isGenerating, toast]);
 
-    const handleContentChange = (newContent: string) => {
-        setContent(newContent);
-    };
+    const handleContentChange = useCallback((editor: 'summary' | 'content') => {
+        const element = editor === 'content' ? contentRef.current : summaryRef.current;
+        if (element) {
+            const newHtml = element.innerHTML;
+            if (editor === 'content') {
+                setContent(newHtml);
+            } else {
+                setSummary(newHtml);
+            }
+        }
+    }, []);
 
     const handleExecCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
-        const editor = document.getElementById('content-editor');
-        if (editor) {
-            handleContentChange(editor.innerHTML);
-        }
+        handleContentChange('content');
+        handleContentChange('summary');
     };
     
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         event.preventDefault();
-        const clipboardData = event.clipboardData;
-        let pastedData = clipboardData.getData('text/plain');
-
-        // Convert Markdown to HTML before inserting
-        pastedData = pastedData
-            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Bold
-            .replace(/\*(.*?)\*/g, '<i>$1</i>')     // Italic
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>') // Basic list item
-            .replace(/\n/g, '<br />'); // Newlines
-
-        document.execCommand('insertHTML', false, pastedData);
-        
-        const editor = document.getElementById('content-editor');
-        if (editor) {
-            handleContentChange(editor.innerHTML);
-        }
+        const text = event.clipboardData.getData('text/plain');
+        const html = text
+          .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+          .replace(/\*(.*?)\*/g, '<i>$1</i>')
+          .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+          .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+          .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+          .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
+          .replace(/\n/g, '<br />');
+        document.execCommand('insertHTML', false, html);
     };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
@@ -210,8 +214,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 } else {
                     const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
-                    const editor = document.getElementById('content-editor');
-                    if (editor) handleContentChange(editor.innerHTML);
+                    if (contentRef.current) handleContentChange('content');
                     toast({ title: "Image inserted into content." });
                 }
             };
@@ -219,6 +222,27 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     };
 
+    const calculateWordCount = useCallback(() => {
+        if (contentRef.current) {
+            const text = contentRef.current.innerText || "";
+            const count = text.trim().split(/\s+/).filter(Boolean).length;
+            setWordCount(count);
+        }
+    }, []);
+
+    useEffect(() => {
+        calculateWordCount();
+    }, [content, calculateWordCount]);
+
+    const analyzeContentForImages = () => {
+        const words = wordCount;
+        let suggestion = "No suggestion available.";
+        if (words > 0) {
+            const suggestedCount = Math.max(1, Math.round(words / 250));
+            suggestion = `For a ${words}-word article, we suggest ${suggestedCount}-${suggestedCount + 1} images for better engagement.`;
+        }
+        setImageSuggestion(suggestion);
+    };
 
     const handleGenerateBodyImages = async () => {
         if (!content || !title) {
@@ -251,9 +275,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 if (targetH2) {
                     const imageAlt = `${title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
-                    imageDiv.style.display = 'flex';
-                    imageDiv.style.justifyContent = 'center';
-                    imageDiv.style.margin = '1rem 0';
+                    imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
                     imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${imageHint}" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
@@ -261,7 +283,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 }
             }
             
-            setContent(doc.body.innerHTML);
+            const newContent = doc.body.innerHTML;
+            setContent(newContent);
+            if (contentRef.current) contentRef.current.innerHTML = newContent;
             toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
@@ -274,9 +298,12 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     }
     
     const handleResetBodyImages = () => {
-        const newContent = content.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
-        setContent(newContent);
-        toast({ title: "Images Reset", description: "All body images have been removed from the content." });
+        if (contentRef.current) {
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
+            contentRef.current.innerHTML = newContent;
+            setContent(newContent);
+            toast({ title: "Images Reset", description: "All body images have been removed from the content." });
+        }
     };
 
     const handleUpdate = async () => {
@@ -377,9 +404,10 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                         <Label>Summary</Label>
                         <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
                         <div
+                            ref={summaryRef}
                             id="summary-editor"
                             contentEditable
-                            onInput={(e) => setSummary(e.currentTarget.innerHTML)}
+                            onInput={() => handleContentChange('summary')}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: summary }}
                              className={cn(
@@ -415,9 +443,10 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                         <Label>Content</Label>
                         <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
                         <div
+                            ref={contentRef}
                             id="content-editor"
                             contentEditable
-                            onInput={(e) => handleContentChange(e.currentTarget.innerHTML)}
+                            onInput={() => handleContentChange('content')}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: content }}
                             className={cn(
@@ -468,7 +497,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         </>
                                     )}
                                 </div>
-                                <Button onClick={() => handleGenerateFeaturedImage()} disabled={!!isGenerating || !title} className="w-full">
+                                <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !title} className="w-full">
                                     <Sparkles className="mr-2 h-4 w-4" />
                                     Generate Placeholder Image
                                 </Button>
@@ -494,7 +523,17 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             </div>
 
                             <div className="space-y-4 pt-4 border-t">
-                                <Label>Generate Body Images (Placeholders)</Label>
+                                <div className="flex justify-between items-center">
+                                    <Label>Body Images &amp; Word Count</Label>
+                                    <Badge variant="outline">{wordCount} words</Badge>
+                                </div>
+                                <div className="p-2 bg-muted rounded-md text-sm text-muted-foreground">
+                                    {imageSuggestion || 'Click "Analyze" for an image recommendation.'}
+                                </div>
+                                <Button variant="secondary" size="sm" className="w-full" onClick={analyzeContentForImages}>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Analyze Content
+                                </Button>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Select
@@ -515,11 +554,10 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                             Generate &amp; Insert
                                         </Button>
                                     </div>
-                                    <Button variant="secondary" size="sm" className="w-full" onClick={handleResetBodyImages}>
+                                    <Button variant="destructive" size="sm" className="w-full" onClick={handleResetBodyImages}>
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Reset Body Images
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">Generates placeholder images and places them under relevant subheadings in your article.</p>
                                 </div>
                             </div>
 
@@ -541,4 +579,3 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
-
