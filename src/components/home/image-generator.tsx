@@ -19,6 +19,7 @@ const aspectRatios = {
     "Square (1:1)": { width: 512, height: 512 },
     "Portrait (2:3)": { width: 512, height: 768 },
     "Landscape (3:2)": { width: 768, height: 512 },
+    "Widescreen (16:9)": { width: 1024, height: 576 },
 };
 
 export function ImageGenerator() {
@@ -39,7 +40,7 @@ export function ImageGenerator() {
 
     const generateImageUrl = (fullPrompt: string, seed?: number) => {
         const sanitizedPrompt = encodeURIComponent(fullPrompt.trim().replace(/\s+/g, " "));
-        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed, blurry');
+        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed, blurry, words, letters');
         const { width, height } = aspectRatios[ratio as keyof typeof aspectRatios];
         const randomSeed = seed || Math.floor(Math.random() * 1000000);
         return `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=${width}&height=${height}&negative_prompt=${negativePrompt}&seed=${randomSeed}`;
@@ -231,10 +232,10 @@ export function ImageGenerator() {
                             <>
                                 <div className={cn(
                                     "w-full grid gap-2",
-                                    numImages === 1 ? "grid-cols-1" : "grid-cols-2",
+                                    numImages <= 2 ? "grid-cols-" + numImages : "grid-cols-2"
                                 )}>
                                     {imageUrls.map((url, index) => (
-                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group aspect-square bg-muted">
+                                        <div key={index} className="relative w-full rounded-lg overflow-hidden group bg-muted" style={{ aspectRatio: aspectRatios[ratio as keyof typeof aspectRatios].width / aspectRatios[ratio as keyof typeof aspectRatios].height }}>
                                             {url && url !== 'loading' ? (
                                                 <>
                                                     <Image src={url} alt={`Generated image ${index + 1} for prompt: ${prompt}`} layout="fill" objectFit="cover" />
@@ -273,3 +274,5 @@ export function ImageGenerator() {
         </section>
     );
 }
+
+    
