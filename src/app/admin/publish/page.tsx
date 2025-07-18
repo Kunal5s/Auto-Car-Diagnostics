@@ -227,7 +227,12 @@ export default function PublishArticlePage() {
 
     useEffect(() => {
         calculateWordCount();
-    }, [editorState.content, calculateWordCount]);
+        const editor = contentRef.current;
+        if(editor) {
+            editor.addEventListener('input', calculateWordCount);
+            return () => editor.removeEventListener('input', calculateWordCount);
+        }
+    }, [calculateWordCount]);
 
     const analyzeContentForImages = () => {
         const words = wordCount;
@@ -295,10 +300,10 @@ export default function PublishArticlePage() {
 
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img[^>]*><\/div>/g, '');
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/placehold\.co\/600x400\.png"[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
             handleStateChange('content', newContent);
-            toast({ title: "Images Reset", description: "All body images have been removed from the content." });
+            toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
         }
     };
 
@@ -425,7 +430,7 @@ export default function PublishArticlePage() {
                             dangerouslySetInnerHTML={{ __html: editorState.summary }}
                              className={cn(
                                 'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
+                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg'
                             )}
                         />
                     </div>
@@ -465,7 +470,7 @@ export default function PublishArticlePage() {
                             dangerouslySetInnerHTML={{ __html: editorState.content }}
                             className={cn(
                                 'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black'
+                                '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl'
                             )}
                         />
                     </div>
@@ -597,3 +602,5 @@ export default function PublishArticlePage() {
         </div>
     );
 }
+
+    

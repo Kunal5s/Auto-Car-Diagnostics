@@ -122,8 +122,8 @@ export default async function ArticlePage({
             <ArticleSummarizer articleContent={article.content} />
 
             <div className={cn(
-              "prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-              "[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-extrabold [&_h2]:font-bold [&_h3]:font-semibold [&_h1]:text-black [&_h2]:text-black [&_h3]:text-black"
+              "prose prose-lg max-w-none prose-headings:font-headline prose-headings:font-semibold prose-headings:text-foreground prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
+              "[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl"
             )} dangerouslySetInnerHTML={{ __html: article.content }} />
             
             <AuthorInfo author={author} />
@@ -134,3 +134,5 @@ export default async function ArticlePage({
     </div>
   );
 }
+
+    
