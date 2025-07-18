@@ -6,65 +6,9 @@ import { categories } from '@/lib/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { Octokit } from '@octokit/rest';
 
 // The canonical path to the data directory.
 const dataDir = path.join(process.cwd(), 'src/data');
-
-/**
- * Backs up a specific data file to GitHub.
- * This function is now called after every article change.
- * @param fileName - The name of the JSON file to back up (e.g., "engine.json").
- */
-async function backupToGitHub(fileName: string): Promise<void> {
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const REPO_OWNER = process.env.GITHUB_REPO_OWNER;
-    const REPO_NAME = process.env.GITHUB_REPO_NAME;
-    const BRANCH = 'main';
-
-    if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
-        console.warn('GitHub credentials for backup are not configured. Skipping immediate backup.');
-        return;
-    }
-
-    try {
-        const octokit = new Octokit({ auth: GITHUB_TOKEN });
-        const filePath = path.join(dataDir, fileName);
-        const fileContent = await fs.readFile(filePath, 'utf-8');
-        const repoFilePath = `src/data/${fileName}`;
-
-        let existingFileSha: string | undefined;
-        try {
-            const { data: existingFile } = await octokit.repos.getContent({
-                owner: REPO_OWNER,
-                repo: REPO_NAME,
-                path: repoFilePath,
-                ref: BRANCH,
-            });
-            if ('sha' in existingFile) {
-                existingFileSha = existingFile.sha;
-            }
-        } catch (error: any) {
-            if (error.status !== 404) throw error;
-        }
-
-        await octokit.repos.createOrUpdateFileContents({
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            path: repoFilePath,
-            message: `feat(content): update ${fileName}`,
-            content: Buffer.from(fileContent).toString('base64'),
-            sha: existingFileSha,
-            branch: BRANCH,
-        });
-        console.log(`Successfully backed up ${fileName} to GitHub.`);
-    } catch (error) {
-        console.error(`Immediate GitHub backup for ${fileName} failed:`, error);
-        // We don't re-throw the error, as the primary operation (saving the file) succeeded.
-        // The cron job will act as a fallback.
-    }
-}
-
 
 /**
  * Ensures a file exists, creating it with default content if it doesn't.
@@ -126,7 +70,7 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     await writeJsonFile('author.json', authorData);
-    await backupToGitHub('author.json'); // Backup author info on change
+    // Backup will be handled by the daily cron job.
     return authorData;
 }
 
@@ -198,7 +142,7 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
 
     articles.unshift(newArticle); // Add to the beginning of the list
     await writeJsonFile(`${categorySlug}.json`, articles);
-    await backupToGitHub(`${categorySlug}.json`); // Immediate backup on add
+    // Backup will be handled by the daily cron job.
     return newArticle;
 }
 
@@ -221,7 +165,6 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const oldArticles = await readJsonFile<Article[]>(`${oldCategorySlug}.json`);
         const filteredOldArticles = oldArticles.filter(a => a.id !== originalArticle.id);
         await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
-        await backupToGitHub(`${oldCategorySlug}.json`); // Backup old category file
     }
 
     const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
@@ -239,7 +182,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
     newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
     await writeJsonFile(`${newCategorySlug}.json`, newArticles);
-    await backupToGitHub(`${newCategorySlug}.json`); // Backup new/current category file
+    // Backup will be handled by the daily cron job.
     
     return updatedArticle;
 }
@@ -257,5 +200,5 @@ export async function deleteArticle(slug: string): Promise<void> {
     const updatedArticles = articles.filter(a => a.id !== article.id);
     
     await writeJsonFile(`${categorySlug}.json`, updatedArticles);
-    await backupToGitHub(`${categorySlug}.json`); // Backup on delete
+    // Backup will be handled by the daily cron job.
 }
