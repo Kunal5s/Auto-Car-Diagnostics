@@ -88,12 +88,25 @@ export function ImageGenerator() {
         toast({ title: 'Prompt Copied!', description: 'The full prompt has been copied to your clipboard.' });
     };
 
-    const handleDownload = (imageUrl: string) => {
+    const handleDownload = async (imageUrl: string) => {
         if (!imageUrl) return;
-        // Open the image in a new tab, bypassing CORS issues.
-        // The user can then save the image from the new tab.
-        window.open(imageUrl, '_blank');
-        toast({ title: 'Opening Image', description: 'Your image has been opened in a new tab for you to save.' });
+        try {
+            // Use a proxy or server-side fetch if CORS is an issue, but for Pollinations, this works.
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${prompt.substring(0, 20).replace(/ /g, '_') || 'generated_image'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast({ title: 'Download Started', description: 'Your image is being downloaded.' });
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not download the image directly. Try right-clicking to save.' });
+             console.error("Download failed:", error);
+        }
     };
 
     return (
