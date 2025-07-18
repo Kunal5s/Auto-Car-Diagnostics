@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload, RefreshCcw, FileText } from 'lucide-react';
@@ -61,8 +61,6 @@ export default function PublishArticlePage() {
     
     const { toast } = useToast();
 
-    const DRAFT_STORAGE_KEY = 'article_draft';
-
     const contentRef = useRef<HTMLDivElement>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
     const contentHtml = useRef('');
@@ -79,57 +77,12 @@ export default function PublishArticlePage() {
         if (contentRef.current) contentRef.current.innerHTML = '';
         summaryHtml.current = '';
         contentHtml.current = '';
-        localStorage.removeItem(DRAFT_STORAGE_KEY);
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
-
-    // Load draft from local storage on mount
-    useEffect(() => {
-        const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
-        if (savedDraft) {
-            try {
-                const draft = JSON.parse(savedDraft);
-                setEditorState(draft.editorState);
-                setImageUrl(draft.imageUrl || '');
-                setAltText(draft.altText || '');
-                setImageHint(draft.imageHint || '');
-                summaryHtml.current = draft.summaryHtml || '';
-                contentHtml.current = draft.contentHtml || '';
-
-                if (summaryRef.current) summaryRef.current.innerHTML = summaryHtml.current;
-                if (contentRef.current) contentRef.current.innerHTML = contentHtml.current;
-
-                toast({ title: "Draft Restored", description: "Your previously saved draft has been loaded." });
-            } catch (error) {
-                console.error("Failed to parse draft from local storage", error);
-                localStorage.removeItem(DRAFT_STORAGE_KEY);
-            }
-        }
-    }, [toast]);
 
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
         setEditorState(prev => ({ ...prev, [key]: value }));
     };
-
-    // Auto-save logic
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            const draftData = {
-                editorState,
-                imageUrl,
-                altText,
-                imageHint,
-                summaryHtml: summaryHtml.current,
-                contentHtml: contentHtml.current,
-            };
-            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
-        }, 1000); // Debounce time
-
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [editorState, imageUrl, altText, imageHint]); // Only trigger on these state changes
-
 
     const handleGenerateFeaturedImage = useCallback(async () => {
         const { title } = editorState;
@@ -162,23 +115,19 @@ export default function PublishArticlePage() {
             setIsGenerating(false);
         }
     }, [editorState, isGenerating, toast]);
-
-    const handleContentChange = useCallback((editor: 'summary' | 'content') => {
-        const element = editor === 'content' ? contentRef.current : summaryRef.current;
-        if (element) {
-            const newHtml = element.innerHTML;
-            if (editor === 'content') {
-                contentHtml.current = newHtml;
-            } else {
-                summaryHtml.current = newHtml;
-            }
+    
+    const handleContentChange = useCallback(() => {
+        if (contentRef.current) {
+            contentHtml.current = contentRef.current.innerHTML;
+        }
+        if(summaryRef.current) {
+            summaryHtml.current = summaryRef.current.innerHTML;
         }
     }, []);
 
     const handleExecCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
-        handleContentChange('content');
-        handleContentChange('summary');
+        handleContentChange();
     };
     
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
@@ -193,6 +142,7 @@ export default function PublishArticlePage() {
           .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
           .replace(/\n/g, '<br />');
         document.execCommand('insertHTML', false, html);
+        handleContentChange();
     };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
@@ -229,7 +179,7 @@ export default function PublishArticlePage() {
                 } else {
                      const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
-                    if(contentRef.current) handleContentChange('content');
+                    handleContentChange();
                     toast({ title: "Image inserted into content." });
                 }
             };
@@ -245,14 +195,29 @@ export default function PublishArticlePage() {
         }
     }, []);
 
-    useEffect(() => {
-        calculateWordCount();
+    const setupContentObserver = useCallback(() => {
         const editor = contentRef.current;
-        if(editor) {
-            editor.addEventListener('input', calculateWordCount);
-            return () => editor.removeEventListener('input', calculateWordCount);
-        }
-    }, [calculateWordCount]);
+        if (!editor) return;
+
+        const observer = new MutationObserver(() => {
+            handleContentChange();
+            calculateWordCount();
+        });
+
+        observer.observe(editor, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+
+        return observer;
+    }, [handleContentChange, calculateWordCount]);
+
+    React.useEffect(() => {
+        const observer = setupContentObserver();
+        return () => observer?.disconnect();
+    }, [setupContentObserver]);
+
 
     const analyzeContentForImages = () => {
         const words = wordCount;
@@ -307,7 +272,7 @@ export default function PublishArticlePage() {
             
             const newContent = doc.body.innerHTML;
             if(contentRef.current) contentRef.current.innerHTML = newContent;
-            contentHtml.current = newContent;
+            handleContentChange();
             toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
@@ -323,7 +288,7 @@ export default function PublishArticlePage() {
         if (contentRef.current) {
             const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
-            contentHtml.current = newContent;
+            handleContentChange();
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
         }
     };
@@ -339,6 +304,11 @@ export default function PublishArticlePage() {
                 title: "Missing Information",
                 description: "To publish, please fill in all fields and generate a featured image.",
             });
+            return { slug: null, success: false };
+        }
+        
+        if (!title) {
+            toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to save a draft." });
             return { slug: null, success: false };
         }
 
@@ -362,13 +332,13 @@ export default function PublishArticlePage() {
             });
             toast({
                 title: `Article ${status === 'published' ? 'Published' : 'Draft Saved'}!`,
-                description: `Your article has been successfully saved.`,
+                description: `Your article has been successfully saved to GitHub.`,
             });
             
             if (status === 'published') {
-                 localStorage.removeItem(DRAFT_STORAGE_KEY);
-                 router.push(`/admin/edit/${newSlug}`);
+                 resetArticle();
             }
+            router.push(`/admin/edit/${newSlug}`);
 
             return { slug: newSlug, success: true };
 
@@ -388,6 +358,12 @@ export default function PublishArticlePage() {
     }
 
     const handlePreview = async () => {
+        const { title } = editorState;
+        if (!title) {
+            toast({ variant: "destructive", title: "Title required", description: "Please enter a title before previewing." });
+            return;
+        }
+
         const { slug, success } = await handleSave('draft');
         if (success && slug) {
              window.open(`/api/draft?slug=${slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
@@ -448,11 +424,10 @@ export default function PublishArticlePage() {
                             ref={summaryRef}
                             id="summary-editor"
                             contentEditable
-                            onInput={() => handleContentChange('summary')}
+                            onInput={handleContentChange}
                             onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: summaryHtml.current }}
                              className={cn(
-                                'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                                 '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg'
                             )}
                         />
@@ -488,11 +463,10 @@ export default function PublishArticlePage() {
                             ref={contentRef}
                             id="content-editor"
                             contentEditable
-                            onInput={() => handleContentChange('content')}
+                            onInput={handleContentChange}
                             onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: contentHtml.current }}
                             className={cn(
-                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                                'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                                 '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl'
                             )}
                         />

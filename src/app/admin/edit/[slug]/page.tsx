@@ -153,22 +153,19 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     }, [title, isGenerating, toast]);
 
-    const handleContentChange = useCallback((editor: 'summary' | 'content') => {
-        const element = editor === 'content' ? contentRef.current : summaryRef.current;
-        if (element) {
-            const newHtml = element.innerHTML;
-            if (editor === 'content') {
-                contentHtml.current = newHtml;
-            } else {
-                summaryHtml.current = newHtml;
-            }
+    const handleContentChange = useCallback(() => {
+        if (contentRef.current) {
+            contentHtml.current = contentRef.current.innerHTML;
+        }
+        if(summaryRef.current) {
+            summaryHtml.current = summaryRef.current.innerHTML;
         }
     }, []);
 
+
     const handleExecCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
-        handleContentChange('content');
-        handleContentChange('summary');
+        handleContentChange();
     };
     
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
@@ -183,6 +180,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
           .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
           .replace(/\n/g, '<br />');
         document.execCommand('insertHTML', false, html);
+        handleContentChange();
     };
 
     const handleKeyTakeawayChange = (index: number, value: string) => {
@@ -219,7 +217,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 } else {
                     const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
-                    if (contentRef.current) handleContentChange('content');
+                    handleContentChange();
                     toast({ title: "Image inserted into content." });
                 }
             };
@@ -235,14 +233,31 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     }, []);
 
-    useEffect(() => {
-        calculateWordCount();
+    const setupContentObserver = useCallback(() => {
         const editor = contentRef.current;
-        if(editor) {
-            editor.addEventListener('input', calculateWordCount);
-            return () => editor.removeEventListener('input', calculateWordCount);
+        if (!editor) return;
+
+        const observer = new MutationObserver(() => {
+            handleContentChange();
+            calculateWordCount();
+        });
+
+        observer.observe(editor, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+
+        return observer;
+    }, [handleContentChange, calculateWordCount]);
+
+    useEffect(() => {
+        if (!isLoading) {
+             const observer = setupContentObserver();
+             return () => observer?.disconnect();
         }
-    }, [calculateWordCount, isLoading]);
+    }, [isLoading, setupContentObserver]);
+
 
     const analyzeContentForImages = () => {
         const words = wordCount;
@@ -296,6 +311,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             const newContent = doc.body.innerHTML;
             contentHtml.current = newContent;
             if (contentRef.current) contentRef.current.innerHTML = newContent;
+            handleContentChange();
             toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
@@ -311,7 +327,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         if (contentRef.current) {
             const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
-            contentHtml.current = newContent;
+            handleContentChange();
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
         }
     };
@@ -420,7 +436,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             ref={summaryRef}
                             id="summary-editor"
                             contentEditable
-                            onInput={() => handleContentChange('summary')}
+                            onInput={handleContentChange}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: summaryHtml.current }}
                              className={cn(
@@ -459,7 +475,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             ref={contentRef}
                             id="content-editor"
                             contentEditable
-                            onInput={() => handleContentChange('content')}
+                            onInput={handleContentChange}
                             onPaste={handlePaste}
                             dangerouslySetInnerHTML={{ __html: contentHtml.current }}
                             className={cn(
