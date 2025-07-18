@@ -7,16 +7,17 @@ import fs from 'fs/promises';
 import path from 'path';
 
 // --- GitHub API Configuration ---
+// Corrected to match the environment variables provided by the user.
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_OWNER = process.env.NEXT_PUBLIC_GITHUB_OWNER;
-const GITHUB_REPO = process.env.NEXT_PUBLIC_GITHUB_REPO;
+const GITHUB_OWNER = process.env.GITHUB_REPO_OWNER;
+const GITHUB_REPO = process.env.GITHUB_REPO_NAME;
 const GITHUB_BRANCH = process.env.NEXT_PUBLIC_GITHUB_BRANCH || 'main';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-// --- Local File Handlers (for Vercel's ephemeral filesystem) ---
+// --- Local File Handlers ---
 
 async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<T> {
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(process.cwd(), 'src/data', path.basename(filePath));
     try {
         await fs.access(fullPath);
         const fileContent = await fs.readFile(fullPath, 'utf-8');
@@ -28,7 +29,7 @@ async function readJsonFromLocal<T>(filePath: string, defaultValue: T): Promise<
 
 async function writeJsonToLocal<T>(filePath: string, data: T): Promise<void> {
     const content = JSON.stringify(data, null, 2) + '\n';
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(process.cwd(), 'src/data', path.basename(filePath));
     try {
         await fs.mkdir(path.dirname(fullPath), { recursive: true });
         await fs.writeFile(fullPath, content, 'utf-8');
@@ -50,7 +51,7 @@ async function getFileFromGithub(filePath: string): Promise<{ content?: string; 
         });
         if (!response.ok) {
             if (response.status === 404) return {}; // File doesn't exist, which is a valid case
-            throw new Error(`GitHub API error: ${response.statusText}`);
+            throw new Error(`GitHub API error getting file: ${response.statusText}`);
         }
         const data = await response.json();
         const content = Buffer.from(data.content, 'base64').toString('utf-8');
@@ -64,6 +65,7 @@ async function getFileFromGithub(filePath: string): Promise<{ content?: string; 
 
 async function commitFileToGithub(filePath: string, content: string, commitMessage: string, sha?: string): Promise<void> {
     if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) {
+        // This check ensures we don't proceed if credentials are not found.
         throw new Error("GitHub repository details are not configured in environment variables.");
     }
 
@@ -78,7 +80,11 @@ async function commitFileToGithub(filePath: string, content: string, commitMessa
 
     const response = await fetch(`${GITHUB_API_URL}/contents/${filePath}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        headers: { 
+            Authorization: `Bearer ${GITHUB_TOKEN}`, 
+            Accept: 'application/vnd.github.v3+json', 
+            'Content-Type': 'application/json' 
+        },
         body: body,
     });
 
@@ -89,35 +95,27 @@ async function commitFileToGithub(filePath: string, content: string, commitMessa
     }
 }
 
-// Unified Read Function (reads from local first, falls back to GitHub)
+// Unified Read Function
 async function readJson<T>(filePath: string, defaultValue: T): Promise<T> {
-    const localData = await readJsonFromLocal<T>(filePath, defaultValue);
-    // This check is simplistic. A better check might be if it's an empty array/object.
-    if (localData && (Array.isArray(localData) ? localData.length > 0 : Object.keys(localData).length > 0)) {
-        return localData;
-    }
-    
-    const { content } = await getFileFromGithub(filePath);
-    if (content) {
-        try {
-            const githubData = JSON.parse(content) as T;
-            await writeJsonToLocal(filePath, githubData); // Sync to local
-            return githubData;
-        } catch {
-            return defaultValue;
-        }
-    }
-    
-    return defaultValue;
+    return await readJsonFromLocal<T>(filePath, defaultValue);
 }
 
 // Unified Write Function (writes to local AND GitHub)
 async function writeJson<T>(filePath: string, data: T, commitMessage: string): Promise<void> {
+    // Write to local file system first for speed and reliability of the live app
     await writeJsonToLocal(filePath, data);
 
-    const { sha } = await getFileFromGithub(filePath); // Get latest SHA before committing
-    const content = JSON.stringify(data, null, 2) + '\n';
-    await commitFileToGithub(filePath, content, commitMessage, sha);
+    // Then, write to GitHub for permanent backup
+    try {
+        const githubFilePath = `src/data/${path.basename(filePath)}`;
+        const { sha } = await getFileFromGithub(githubFilePath); // Get latest SHA before committing
+        const content = JSON.stringify(data, null, 2) + '\n';
+        await commitFileToGithub(githubFilePath, content, commitMessage, sha);
+    } catch (error) {
+        // Log the error but don't block the user operation.
+        // The primary action (saving to local) has already succeeded.
+        console.error("Failed to commit backup to GitHub, but local save succeeded:", error);
+    }
 }
 
 
@@ -162,8 +160,12 @@ export async function getArticlesByCategory(categoryName: string): Promise<Artic
   const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
   const filePath = `src/data/${categorySlug}.json`;
   const articles = await readJson<Article[]>(filePath, []);
-  const publishedArticles = articles.filter(a => a.status === 'published');
-  return publishedArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  
+  // Always sort before filtering
+  const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  const publishedArticles = sortedArticles.filter(a => a.status === 'published');
+  
+  return publishedArticles;
 }
 
 export async function getArticleBySlug(slug: string, options: { includeDrafts?: boolean } = {}): Promise<Article | undefined> {
@@ -200,25 +202,31 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
     }
 
     if (articleData.category && articleData.category !== originalArticle.category) {
+        // Move article: Remove from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
         const oldFilePath = `src/data/${oldCategorySlug}.json`;
         const oldArticles = await readJson<Article[]>(oldFilePath, []);
         const filteredArticles = oldArticles.filter(a => a.slug !== slug);
         await writeJson(oldFilePath, filteredArticles, `refactor: move article '${slug}' from ${originalArticle.category}`);
 
+        // Add to new category file
         const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const newFilePath = `src/data/${newCategorySlug}.json`;
         const newArticles = await readJson<Article[]>(newFilePath, []);
         newArticles.unshift(updatedArticle);
         await writeJson(newFilePath, newArticles, `refactor: move article '${slug}' to ${updatedArticle.category}`);
     } else {
+        // Update article in the same category
         const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const filePath = `src/data/${categorySlug}.json`;
         const articles = await readJson<Article[]>(filePath, []);
         const articleIndex = articles.findIndex(a => a.slug === slug);
 
-        if (articleIndex === -1) articles.unshift(updatedArticle);
-        else articles[articleIndex] = updatedArticle;
+        if (articleIndex === -1) {
+            articles.unshift(updatedArticle);
+        } else {
+            articles[articleIndex] = updatedArticle;
+        }
 
         await writeJson(filePath, articles, `docs: update article '${slug}'`);
     }
