@@ -7,7 +7,7 @@ import { Footer } from "@/components/common/footer";
 import { Hero } from "@/components/home/hero";
 import { RecentArticles } from "@/components/home/recent-articles";
 import { QuestionSubmission } from "@/components/home/question-submission";
-import { getArticlesByCategory } from "@/lib/data";
+import { getArticles, getArticlesByCategory } from "@/lib/data";
 import type { Article } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Testimonials } from "@/components/home/testimonials";
@@ -65,7 +65,13 @@ export default function Home() {
   const loadArticles = useCallback(async () => {
     setIsLoading(true);
     try {
-      const fetchedArticles = await getArticlesByCategory("Homepage");
+      let fetchedArticles = await getArticlesByCategory("Homepage");
+      
+      // If no articles are specifically for the homepage, fetch all articles and show the most recent.
+      if (fetchedArticles.length === 0) {
+        fetchedArticles = await getArticles();
+      }
+      
       setArticles(fetchedArticles);
       setDisplayedArticles(fetchedArticles.slice(0, ARTICLES_PER_PAGE));
       setHasMore(fetchedArticles.length > ARTICLES_PER_PAGE);
@@ -101,7 +107,7 @@ export default function Home() {
           <section id="articles" className="py-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold tracking-tight font-headline">
-                Homepage Articles
+                Recently Added Articles
               </h2>
               <p className="text-muted-foreground mt-2">
                 Our library grows every day with new, in-depth articles. Here are the latest additions.
@@ -112,8 +118,9 @@ export default function Home() {
                 {displayedArticles.length > 0 ? (
                     <RecentArticles articles={displayedArticles} />
                 ) : (
-                    <div className="text-center text-muted-foreground py-16">
-                        <p>No articles have been added to the homepage yet.</p>
+                    <div className="text-center text-muted-foreground py-16 bg-muted rounded-lg">
+                        <p className="text-lg font-medium">No articles have been published yet.</p>
+                        <p>Check back soon for new content!</p>
                     </div>
                 )}
                 {hasMore && (
