@@ -485,6 +485,10 @@ export default function PublishArticlePage() {
                                         </>
                                     )}
                                 </div>
+                                <Button onClick={() => handleGenerateFeaturedImage('pollinations')} disabled={!!isGenerating || !editorState.title} className="w-full">
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Generate with Pollinations
+                                </Button>
                                 <div className="flex gap-2">
                                     <Button asChild variant="outline" className="flex-1">
                                         <label htmlFor="featured-image-upload">
@@ -493,15 +497,11 @@ export default function PublishArticlePage() {
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button onClick={() => handleGenerateFeaturedImage('pollinations')} disabled={!!isGenerating || !editorState.title} className="flex-1">
+                                    <Button onClick={() => handleGenerateFeaturedImage('gemini')} disabled={!!isGenerating || !editorState.title} variant="outline" className="flex-1">
                                         <Sparkles className="mr-2 h-4 w-4" />
-                                        Pollinations
+                                        Gemini
                                     </Button>
                                 </div>
-                                <Button onClick={() => handleGenerateFeaturedImage('gemini')} disabled={!!isGenerating || !editorState.title} className="w-full">
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate with Gemini
-                                </Button>
                                 <div className="space-y-2">
                                     <Label htmlFor="alt-text">Alt Text (for SEO)</Label>
                                     <Input
@@ -515,7 +515,7 @@ export default function PublishArticlePage() {
                             </div>
 
                              <div className="space-y-4 pt-4 border-t">
-                                <Label>Generate Body Images (with Pollinations)</Label>
+                                <Label>Generate Body Images (with Pollinations)</ILabel>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Select
@@ -566,3 +566,5 @@ export default function PublishArticlePage() {
         </div>
     );
 }
+
+    

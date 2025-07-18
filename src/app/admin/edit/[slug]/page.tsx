@@ -475,23 +475,23 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                                         </>
                                     )}
                                 </div>
+                                <Button onClick={() => handleGenerateFeaturedImage('pollinations')} disabled={!!isGenerating || !title} className="w-full">
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Generate with Pollinations
+                                </Button>
                                 <div className="flex gap-2">
-                                    <Button asChild variant="outline" className="flex-1">
+                                     <Button asChild variant="outline" className="flex-1">
                                         <label htmlFor="featured-image-upload">
                                             <Upload className="mr-2 h-4 w-4" />
                                             Upload
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button onClick={() => handleGenerateFeaturedImage('pollinations')} disabled={!!isGenerating || !title} className="flex-1">
+                                    <Button onClick={() => handleGenerateFeaturedImage('gemini')} disabled={!!isGenerating || !title} variant="outline" className="flex-1">
                                         <Sparkles className="mr-2 h-4 w-4" />
-                                        Pollinations
+                                        Gemini
                                     </Button>
                                 </div>
-                                <Button onClick={() => handleGenerateFeaturedImage('gemini')} disabled={!!isGenerating || !title} className="w-full">
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate with Gemini
-                                </Button>
                                 <div className="space-y-2">
                                     <Label htmlFor="alt-text">Alt Text (for SEO)</Label>
                                     <Input
@@ -552,3 +552,5 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         </div>
     );
 }
+
+    
