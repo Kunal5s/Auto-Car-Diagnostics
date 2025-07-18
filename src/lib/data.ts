@@ -61,10 +61,6 @@ async function commitData(filePath: string, content: string, commitMessage: stri
 async function readJsonFromGithub<T>(filePath: string, defaultValue: T): Promise<T> {
     const file = await getFileFromGithub(filePath);
     if (!file) {
-        // If the file doesn't exist, let's create it with the default value to ensure stability.
-        if(filePath.startsWith('src/data/') && filePath.endsWith('.json')) {
-            await commitData(filePath, JSON.stringify(defaultValue, null, 2), `feat(content): create initial data file for ${filePath.split('/').pop()}`);
-        }
         return defaultValue;
     }
     try {
@@ -74,6 +70,12 @@ async function readJsonFromGithub<T>(filePath: string, defaultValue: T): Promise
         return defaultValue;
     }
 }
+
+async function writeJsonToGithub<T>(filePath: string, data: T, commitMessage: string): Promise<void> {
+    const content = JSON.stringify(data, null, 2);
+    await commitData(filePath, content, commitMessage);
+}
+
 
 // --- Author Data Functions ---
 
@@ -85,8 +87,7 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     const filePath = 'src/data/author.json';
-    const content = JSON.stringify(authorData, null, 2);
-    await commitData(filePath, content, 'docs(content): update author information');
+    await writeJsonToGithub(filePath, authorData, 'docs(content): update author information');
     return authorData;
 }
 
@@ -156,9 +157,9 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
 
     articles.unshift(newArticle);
 
-    await commitData(
+    await writeJsonToGithub(
         filePath,
-        JSON.stringify(articles, null, 2),
+        articles,
         `feat(content): add article '${newArticle.title}'`
     );
 
@@ -180,9 +181,9 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const oldFilePath = `src/data/${oldCategorySlug}.json`;
         const oldArticles = await readJsonFromGithub<Article[]>(oldFilePath, []);
         const filteredArticles = oldArticles.filter(a => a.slug !== slug);
-        await commitData(
+        await writeJsonToGithub(
             oldFilePath,
-            JSON.stringify(filteredArticles, null, 2),
+            filteredArticles,
             `refactor(content): move article '${slug}' from ${originalArticle.category}`
         );
 
@@ -191,9 +192,9 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const newFilePath = `src/data/${newCategorySlug}.json`;
         const newArticles = await readJsonFromGithub<Article[]>(newFilePath, []);
         newArticles.unshift(updatedArticle);
-        await commitData(
+        await writeJsonToGithub(
             newFilePath,
-            JSON.stringify(newArticles, null, 2),
+            newArticles,
             `refactor(content): move article '${slug}' to ${updatedArticle.category}`
         );
     } else {
@@ -209,9 +210,9 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
             articles[articleIndex] = updatedArticle;
         }
 
-        await commitData(
+        await writeJsonToGithub(
             filePath,
-            JSON.stringify(articles, null, 2),
+            articles,
             `docs(content): update article '${slug}'`
         );
     }
@@ -237,9 +238,9 @@ export async function deleteArticle(slug: string): Promise<void> {
         return; // Exit if there's nothing to delete from this file.
     }
 
-    await commitData(
+    await writeJsonToGithub(
         filePath,
-        JSON.stringify(updatedArticles, null, 2),
+        updatedArticles,
         `feat(content): delete article '${slug}'`
     );
 }
