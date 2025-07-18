@@ -37,7 +37,7 @@ export function Header() {
           <Button asChild variant="ghost">
             <Link href="/admin">
               <ShieldCheck className="mr-2 h-4 w-4" />
-              Admin
+              Admin Panel
             </Link>
           </Button>
         </div>

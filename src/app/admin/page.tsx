@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FilePenLine, LogOut, PlusCircle, User, GalleryVertical, NotebookPen } from 'lucide-react';
+import { FilePenLine, PlusCircle, User, GalleryVertical, NotebookPen } from 'lucide-react';
 
 const AdminCard = ({ icon: Icon, title, description, buttonText, href, disabled = false }: { icon: React.ElementType, title: string, description: string, buttonText: string, href: string, disabled?: boolean }) => {
   return (
@@ -31,13 +31,6 @@ const AdminCard = ({ icon: Icon, title, description, buttonText, href, disabled 
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const adminEmail = process.env.ADMIN_EMAIL || 'Admin';
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
-    router.refresh();
-  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -45,12 +38,8 @@ export default function AdminDashboardPage() {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {adminEmail}!</p>
+            <p className="text-muted-foreground">Welcome! Manage your content from here.</p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
