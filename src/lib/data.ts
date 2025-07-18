@@ -22,6 +22,10 @@ async function getFileFromGithub(filePath: string): Promise<{ content: string; s
             path: filePath,
             ref: branch,
         });
+        // This check is crucial to ensure we're dealing with a file and not a directory.
+        if (Array.isArray(response.data)) {
+            return null;
+        }
         const data = response.data as { content: string; encoding: "base64", sha: string };
         const decodedContent = Buffer.from(data.content, data.encoding).toString('utf-8');
         return { content: decodedContent, sha: data.sha };
@@ -139,6 +143,13 @@ export async function addArticle(article: Omit<Article, 'publishedAt'>): Promise
     const filePath = `src/data/${categorySlug}.json`;
     
     const articles = await readJsonFromGithub<Article[]>(filePath, []);
+    
+    // Check if article with same slug already exists to prevent duplicates
+    const existingIndex = articles.findIndex(a => a.slug === newArticle.slug);
+    if (existingIndex !== -1) {
+        throw new Error(`Article with slug "${newArticle.slug}" already exists in category "${newArticle.category}".`);
+    }
+
     articles.unshift(newArticle);
 
     await commitData(
@@ -189,7 +200,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const articleIndex = articles.findIndex(a => a.slug === slug);
 
         if (articleIndex === -1) {
-             articles.unshift(updatedArticle);
+             articles.unshift(updatedArticle); // Add it if it's not found (e.g., recovering a draft into a category)
         } else {
             articles[articleIndex] = updatedArticle;
         }
@@ -219,6 +230,7 @@ export async function deleteArticle(slug: string): Promise<void> {
         // This can happen if the article is found via getArticleBySlug but not in its supposed file.
         // This indicates a data consistency issue, but we'll proceed with just logging it for now.
         console.warn(`Article with slug "${slug}" not found in its category file for deletion.`);
+        return; // Exit if there's nothing to delete from this file.
     }
 
     await commitData(
