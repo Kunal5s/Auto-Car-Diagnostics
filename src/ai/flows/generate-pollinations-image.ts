@@ -1,10 +1,10 @@
 
 'use server';
 /**
- * @fileOverview A flow for generating a stable placeholder image.
- * This replaces the previous, unreliable Pollinations.ai implementation.
+ * @fileOverview A flow for generating an image using the Pollinations.ai service.
+ * This implementation uses a direct URL construction method for reliability.
  *
- * - generatePollinationsImage - A function that returns a URL for a placeholder image.
+ * - generatePollinationsImage - A function that returns a URL for a generated image.
  * - GeneratePollinationsImageInput - The input type for the function.
  * - GeneratePollinationsImageOutput - The return type for the function.
  */
@@ -13,12 +13,12 @@ import { z } from 'zod';
 import { ai } from '@/ai/genkit';
 
 const GeneratePollinationsImageInputSchema = z.object({
-  prompt: z.string().describe('The text prompt to generate an image from. This is used for context but the output is a placeholder.'),
+  prompt: z.string().describe('The text prompt to generate an image from.'),
 });
 export type GeneratePollinationsImageInput = z.infer<typeof GeneratePollinationsImageInputSchema>;
 
 const GeneratePollinationsImageOutputSchema = z.object({
-  imageUrl: z.string().url().describe('The URL of the generated placeholder image.'),
+  imageUrl: z.string().url().describe('The URL of the generated image from pollinations.ai.'),
 });
 export type GeneratePollinationsImageOutput = z.infer<typeof GeneratePollinationsImageOutputSchema>;
 
@@ -34,9 +34,11 @@ const generatePollinationsImageFlow = ai.defineFlow(
     outputSchema: GeneratePollinationsImageOutputSchema,
   },
   async ({ prompt }) => {
-    // Return a reliable, high-quality placeholder image.
-    // This removes the dependency on the unstable external service.
-    const imageUrl = `https://placehold.co/600x400.png`;
+    // Sanitize the prompt for the URL
+    const sanitizedPrompt = encodeURIComponent(prompt.trim().replace(/\s+/g, " "));
+    
+    // Construct the URL with size parameters for a 600x400 image
+    const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400`;
     
     return { imageUrl };
   }

@@ -2,8 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A flow for generating multiple, contextually relevant images for an article and determining their optimal placement.
- * This version uses reliable placeholder images.
+ * @fileOverview A flow for generating multiple, contextually relevant images for an article using Pollinations.ai.
  *
  * - generateArticleImages - A function that analyzes article content and generates images with placement instructions.
  * - GenerateArticleImagesInput - The input type for the function.
@@ -22,7 +21,7 @@ const GenerateArticleImagesInputSchema = z.object({
 export type GenerateArticleImagesInput = z.infer<typeof GenerateArticleImagesInputSchema>;
 
 const ImagePlacementInstructionSchema = z.object({
-  imageUrl: z.string().url().describe('The URL of the generated placeholder image.'),
+  imageUrl: z.string().url().describe('The URL of the generated image.'),
   subheading: z.string().describe("The exact text content of the H2 subheading the image should be placed under."),
 });
 
@@ -40,14 +39,18 @@ const placementPrompt = ai.definePrompt({
     name: 'generateImagePlacementsWithPrompts',
     input: { schema: GenerateArticleImagesInputSchema },
     output: { schema: z.object({ placements: z.array(z.object({
-        // The imagePrompt is no longer needed as we use placeholders, but we keep the structure for subheading targeting.
+        imagePrompt: z.string().describe('A descriptive, photorealistic image prompt based on the subheading and article context.'),
         subheading: z.string().describe("The exact text content of the H2 subheading the image should be placed under."),
     })) })},
-    prompt: `You are an expert content strategist. Your task is to analyze an HTML article and decide where to best place a specified number of images to break up the text and add visual interest.
+    prompt: `You are an expert content strategist and visual director. Your task is to analyze an HTML article and create compelling, photorealistic image prompts to be placed after key subheadings.
 
-You will be given the article's HTML content. First, identify all of the H2 subheadings in the text. From that list of H2s, select the best {{{imageCount}}} subheadings to have an image placed directly after them.
+You will be given the article's HTML content. First, identify all of the H2 subheadings. From that list, select the best {{{imageCount}}} subheadings to have an image placed after them.
 
-Return an array of placement objects, each containing the exact text of the H2 subheading.
+For each selected subheading, create a detailed, specific, and photorealistic image prompt that visually represents the content of that section. The prompt should be suitable for a text-to-image AI like Pollinations.ai.
+
+Return an array of objects, each containing:
+1. 'subheading': The exact text of the H2 subheading.
+2. 'imagePrompt': The generated photorealistic image prompt.
 
 Article Title: {{{articleTitle}}}
 Category: {{{category}}}
@@ -56,7 +59,7 @@ Article HTML Content:
 {{{articleContent}}}
 ---
 
-Generate exactly {{{imageCount}}} placement instructions.
+Generate exactly {{{imageCount}}} placement instructions with unique image prompts.
     `,
 });
 
@@ -67,19 +70,23 @@ const generateArticleImagesFlow = ai.defineFlow(
     outputSchema: GenerateArticleImagesOutputSchema,
   },
   async (input) => {
-    // 1. Generate the placement instructions (subheadings) using Gemini
+    // 1. Generate the placement instructions and image prompts using Gemini.
     const { output } = await placementPrompt(input);
     
     if (!output || !output.placements || output.placements.length === 0) {
-        // Return an empty array if no placements can be determined, preventing a crash.
-        return { placements: [] };
+        throw new Error("AI could not determine where to place images or create prompts from the article content.");
     }
     
-    // 2. For each placement, create a placeholder image URL
-    const placementsWithUrls = output.placements.map(placement => ({
-        imageUrl: `https://placehold.co/600x400.png`,
-        subheading: placement.subheading,
-    }));
+    // 2. For each placement, create an image URL using the generated prompt.
+    const placementsWithUrls = output.placements.map(placement => {
+        const sanitizedPrompt = encodeURIComponent(placement.imagePrompt.trim().replace(/\s+/g, " "));
+        const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400`;
+        
+        return {
+            imageUrl,
+            subheading: placement.subheading,
+        };
+    });
 
     return {
         placements: placementsWithUrls,
