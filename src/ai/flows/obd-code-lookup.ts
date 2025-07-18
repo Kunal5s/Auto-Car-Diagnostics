@@ -3,13 +3,13 @@
 
 /**
  * @fileOverview A flow for looking up OBD-II codes using the CarAPI.app service.
+ * This has been updated to remove the Genkit wrapper.
  *
  * - lookupObdCode - A function that takes an OBD code and returns its definition.
  * - ObdCodeInput - The input type for the lookupObdCode function.
  * - ObdCodeOutput - The return type for the lookupObdCode function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { fetchCarApiData } from '@/lib/carapi';
 
@@ -27,19 +27,8 @@ const ObdCodeOutputSchema = z.object({
 export type ObdCodeOutput = z.infer<typeof ObdCodeOutputSchema>;
 
 
-// Wrapper Function for the UI to call
-export async function lookupObdCode(input: ObdCodeInput): Promise<ObdCodeOutput> {
-  return obdCodeLookupFlow(input);
-}
-
-// Define the Genkit Flow
-const obdCodeLookupFlow = ai.defineFlow(
-  {
-    name: 'obdCodeLookupFlow',
-    inputSchema: ObdCodeInputSchema,
-    outputSchema: ObdCodeOutputSchema,
-  },
-  async ({ code }) => {
+// This is now a standard server function, no Genkit flow needed.
+export async function lookupObdCode({ code }: ObdCodeInput): Promise<ObdCodeOutput> {
     try {
         const codeData = await fetchCarApiData(`obd-codes/${code.toUpperCase()}`);
 
@@ -57,5 +46,4 @@ const obdCodeLookupFlow = ai.defineFlow(
         }
         throw error;
     }
-  }
-);
+}

@@ -1,10 +1,6 @@
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
 
-// Initialize Genkit with the Google AI plugin and telemetry disabled.
-// Disabling telemetry is crucial to prevent Vercel build errors
-// related to optional OpenTelemetry dependencies like '@opentelemetry/exporter-jaeger'.
-export const ai = genkit({
-  plugins: [googleAI()],
-  enableTelemetry: false,
-});
+// This file is intentionally blank.
+// All Google AI and Genkit initialization has been removed to ensure
+// the application does not rely on external, non-free AI services.
+// The `ai.defineFlow` calls in the tool files will now fail,
+// which we will address by removing them.

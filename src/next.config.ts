@@ -17,9 +17,13 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'image.pollinations.ai',
+        port: '',
+        pathname: '/**',
+      }
     ],
-    // Allow data URIs for Gemini-generated images
-    unoptimized: true,
   },
 };
 

@@ -3,14 +3,13 @@
 
 /**
  * @fileOverview Provides an explanation for a selected car dashboard warning light using a static data map.
- * This removes the dependency on an external AI model.
+ * This has been updated to remove the Genkit wrapper.
  *
  * - getWarningLightExplanation - A function that returns details about a warning light.
  * - WarningLightInput - The input type for the function.
  * - WarningLightOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const WarningLightInputSchema = z.object({
@@ -68,22 +67,10 @@ const lightData: Record<string, WarningLightOutput> = {
     },
 };
 
-
-const warningLightGuideFlow = ai.defineFlow(
-  {
-    name: 'warningLightGuideFlow',
-    inputSchema: WarningLightInputSchema,
-    outputSchema: WarningLightOutputSchema,
-  },
-  async ({ lightName }) => {
+export async function getWarningLightExplanation({ lightName }: WarningLightInput): Promise<WarningLightOutput> {
     const output = lightData[lightName];
     if (!output) {
         throw new Error(`Could not find an explanation for the light: ${lightName}`);
     }
     return output;
-  }
-);
-
-export async function getWarningLightExplanation(input: WarningLightInput): Promise<WarningLightOutput> {
-  return warningLightGuideFlow(input);
 }

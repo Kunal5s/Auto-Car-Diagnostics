@@ -3,13 +3,13 @@
 
 /**
  * @fileOverview Provides a diagnosis based on the color of exhaust smoke using a static data map.
+ * This has been updated to remove the Genkit wrapper.
  *
  * - getSmokeDiagnosis - A function that returns a diagnosis for a given smoke color.
  * - SmokeDiagnosisInput - The input type for the function.
  * - SmokeDiagnosisOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const SmokeDiagnosisInputSchema = z.object({
@@ -42,21 +42,10 @@ const smokeData: Record<SmokeDiagnosisInput['smokeColor'], SmokeDiagnosisOutput>
     }
 }
 
-const smokeDiagnosisFlow = ai.defineFlow(
-  {
-    name: 'smokeDiagnosisFlow',
-    inputSchema: SmokeDiagnosisInputSchema,
-    outputSchema: SmokeDiagnosisOutputSchema,
-  },
-  async ({ smokeColor }) => {
-    const output = smokeData[smokeColor];
-    if (!output) {
-        throw new Error("Could not generate a diagnosis for the selected smoke color.");
-    }
-    return output;
+export async function getSmokeDiagnosis({ smokeColor }: SmokeDiagnosisInput): Promise<SmokeDiagnosisOutput> {
+  const output = smokeData[smokeColor];
+  if (!output) {
+      throw new Error("Could not generate a diagnosis for the selected smoke color.");
   }
-);
-
-export async function getSmokeDiagnosis(input: SmokeDiagnosisInput): Promise<SmokeDiagnosisOutput> {
-  return smokeDiagnosisFlow(input);
+  return output;
 }

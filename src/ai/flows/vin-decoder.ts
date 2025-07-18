@@ -3,13 +3,13 @@
 
 /**
  * @fileOverview A flow for decoding a VIN and checking for recalls using the CarAPI.app service.
+ * This has been updated to remove the Genkit wrapper.
  *
  * - decodeVin - A function that takes a VIN and returns detailed vehicle information and recalls.
  * - VinInput - The input type for the decodeVin function.
  * - VinOutput - The return type for the decodeVin function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { fetchCarApiData } from '@/lib/carapi';
 
@@ -55,19 +55,8 @@ const VinOutputSchema = z.object({
 });
 export type VinOutput = z.infer<typeof VinOutputSchema>;
 
-// Wrapper Function for the UI to call
-export async function decodeVin(input: VinInput): Promise<VinOutput> {
-  return vinDecoderFlow(input);
-}
-
-// Define the Genkit Flow
-const vinDecoderFlow = ai.defineFlow(
-  {
-    name: 'vinDecoderFlow',
-    inputSchema: VinInputSchema,
-    outputSchema: VinOutputSchema,
-  },
-  async ({ vin }) => {
+// This is now a standard server function, no Genkit flow needed.
+export async function decodeVin({ vin }: VinInput): Promise<VinOutput> {
     // Using Promise.all to fetch VIN details and recalls concurrently for better performance
     const [vinDetails, recallData] = await Promise.all([
         fetchCarApiData(`vin/${vin}`),
@@ -85,5 +74,4 @@ const vinDecoderFlow = ai.defineFlow(
       vehicleInfo: vinDetails,
       recalls: recalls,
     };
-  }
-);
+}

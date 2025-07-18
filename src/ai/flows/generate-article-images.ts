@@ -2,16 +2,17 @@
 'use server';
 
 /**
- * @fileOverview A flow for generating multiple, contextually relevant images for an article using Gemini.
+ * @fileOverview A flow for generating multiple, contextually relevant placeholder images for an article.
+ * This removes the dependency on any external AI image generation service.
  *
- * - generateArticleImages - A function that analyzes article content and generates images with placement instructions.
+ * - generateArticleImages - A function that analyzes article content and returns placeholder images with placement instructions.
  * - GenerateArticleImagesInput - The input type for the function.
  * - GenerateArticleImagesOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { generateMultipleGeminiImages } from './generate-multiple-gemini-images';
+import fs from 'fs/promises';
+import path from 'path';
 
 const GenerateArticleImagesInputSchema = z.object({
   articleContent: z.string().describe('The full HTML content of the article.'),
@@ -32,70 +33,35 @@ const GenerateArticleImagesOutputSchema = z.object({
 export type GenerateArticleImagesOutput = z.infer<typeof GenerateArticleImagesOutputSchema>;
 
 
+// This function now works offline by parsing HTML directly without AI.
 export async function generateArticleImages(input: GenerateArticleImagesInput): Promise<GenerateArticleImagesOutput> {
-  return generateArticleImagesFlow(input);
+    const { articleContent, imageCount } = input;
+    
+    // A simple regex to find all <h2> tags.
+    // This is a basic implementation and might not handle all edge cases of HTML,
+    // but it's effective for this purpose and avoids heavy dependencies.
+    const headingRegex = /<h2[^>]*>(.*?)<\/h2>/gi;
+    let match;
+    const subheadings = [];
+    while ((match = headingRegex.exec(articleContent)) !== null) {
+        // Strip any inner HTML tags from the subheading for clean text.
+        const cleanText = match[1].replace(/<[^>]+>/g, '').trim();
+        if(cleanText) {
+            subheadings.push(cleanText);
+        }
+    }
+
+    if (subheadings.length === 0) {
+        throw new Error("No H2 subheadings were found in the article content to place images under.");
+    }
+    
+    // Select the subheadings to use, up to the requested image count.
+    const selectedSubheadings = subheadings.slice(0, imageCount);
+
+    const placements = selectedSubheadings.map(subheading => ({
+        imageUrl: `https://placehold.co/600x400.png`,
+        subheading: subheading,
+    }));
+
+    return { placements };
 }
-
-const placementPrompt = ai.definePrompt({
-    name: 'generateImagePlacementsWithPrompts',
-    input: { schema: GenerateArticleImagesInputSchema },
-    output: { schema: z.object({ placements: z.array(z.object({
-        imagePrompt: z.string().describe('A descriptive, photorealistic image prompt based on the subheading and article context.'),
-        subheading: z.string().describe("The exact text content of the H2 subheading the image should be placed under."),
-    })) })},
-    prompt: `You are an expert content strategist and visual director. Your task is to analyze an HTML article and create compelling, photorealistic image prompts to be placed after key subheadings.
-
-You will be given the article's HTML content. First, identify all of the H2 subheadings. From that list, select the best {{{imageCount}}} subheadings to have an image placed after them.
-
-For each selected subheading, create a detailed, specific, and photorealistic image prompt that visually represents the content of that section. The prompt should be suitable for a modern text-to-image AI.
-
-Return an array of objects, each containing:
-1. 'subheading': The exact text of the H2 subheading.
-2. 'imagePrompt': The generated photorealistic image prompt.
-
-Article Title: {{{articleTitle}}}
-Category: {{{category}}}
-Article HTML Content:
----
-{{{articleContent}}}
----
-
-Generate exactly {{{imageCount}}} placement instructions with unique image prompts.
-    `,
-});
-
-const generateArticleImagesFlow = ai.defineFlow(
-  {
-    name: 'generateArticleImagesFlow',
-    inputSchema: GenerateArticleImagesInputSchema,
-    outputSchema: GenerateArticleImagesOutputSchema,
-  },
-  async (input) => {
-    // 1. Generate the placement instructions and image prompts using Gemini.
-    const { output } = await placementPrompt(input);
-    
-    if (!output || !output.placements || output.placements.length === 0) {
-        throw new Error("AI could not determine where to place images or create prompts from the article content.");
-    }
-    
-    // 2. Generate all images in parallel using the new Gemini batch flow.
-    const prompts = output.placements.map(p => p.imagePrompt);
-    const { images } = await generateMultipleGeminiImages({ prompts });
-
-    if (images.length !== output.placements.length) {
-        throw new Error("The number of generated images does not match the number of requested placements.");
-    }
-
-    // 3. Combine the generated image URLs with their subheadings.
-    const placementsWithUrls = output.placements.map((placement, index) => {
-        return {
-            imageUrl: images[index].url,
-            subheading: placement.subheading,
-        };
-    });
-
-    return {
-        placements: placementsWithUrls,
-    };
-  }
-);
