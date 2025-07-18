@@ -16,6 +16,7 @@ import { categories } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
+import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { cn } from '@/lib/utils';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
@@ -32,16 +33,12 @@ import {
 
 type EditorState = {
     title: string;
-    summary: string;
-    content: string;
     category: string;
     keyTakeaways: string[];
 }
 
 const initialEditorState: EditorState = {
     title: '',
-    summary: '',
-    content: '',
     category: '',
     keyTakeaways: [''],
 };
@@ -68,6 +65,8 @@ export default function PublishArticlePage() {
 
     const contentRef = useRef<HTMLDivElement>(null);
     const summaryRef = useRef<HTMLDivElement>(null);
+    const contentHtml = useRef('');
+    const summaryHtml = useRef('');
 
     const resetArticle = () => {
         setEditorState(initialEditorState);
@@ -78,6 +77,8 @@ export default function PublishArticlePage() {
         setImageSuggestion('');
         if (summaryRef.current) summaryRef.current.innerHTML = '';
         if (contentRef.current) contentRef.current.innerHTML = '';
+        summaryHtml.current = '';
+        contentHtml.current = '';
         localStorage.removeItem(DRAFT_STORAGE_KEY);
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
@@ -92,9 +93,11 @@ export default function PublishArticlePage() {
                 setImageUrl(draft.imageUrl || '');
                 setAltText(draft.altText || '');
                 setImageHint(draft.imageHint || '');
+                summaryHtml.current = draft.summaryHtml || '';
+                contentHtml.current = draft.contentHtml || '';
 
-                if (summaryRef.current) summaryRef.current.innerHTML = draft.editorState.summary;
-                if (contentRef.current) contentRef.current.innerHTML = draft.editorState.content;
+                if (summaryRef.current) summaryRef.current.innerHTML = summaryHtml.current;
+                if (contentRef.current) contentRef.current.innerHTML = contentHtml.current;
 
                 toast({ title: "Draft Restored", description: "Your previously saved draft has been loaded." });
             } catch (error) {
@@ -111,8 +114,14 @@ export default function PublishArticlePage() {
             imageUrl,
             altText,
             imageHint,
+            summaryHtml: summaryHtml.current,
+            contentHtml: contentHtml.current,
         };
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        const timer = setTimeout(() => {
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        }, 1000); // Save every second
+
+        return () => clearTimeout(timer);
     }, [editorState, imageUrl, altText, imageHint]);
 
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
@@ -125,10 +134,13 @@ export default function PublishArticlePage() {
         
         setIsGenerating(true);
         try {
-            const result = await generateAltText({ articleTitle: title });
+            const [altResult, imgResult] = await Promise.all([
+                generateAltText({ articleTitle: title }),
+                generatePollinationsImage({ prompt: `Photorealistic image for an article titled: ${title}` }),
+            ]);
             
-            setImageUrl(`https://placehold.co/600x400.png`);
-            setAltText(result.altText);
+            setImageUrl(imgResult.imageUrl);
+            setAltText(altResult.altText);
             setImageHint(title.split(' ').slice(0, 2).join(' '));
 
         } catch (err) {
@@ -148,9 +160,9 @@ export default function PublishArticlePage() {
         if (element) {
             const newHtml = element.innerHTML;
             if (editor === 'content') {
-                handleStateChange('content', newHtml);
+                contentHtml.current = newHtml;
             } else {
-                handleStateChange('summary', newHtml);
+                summaryHtml.current = newHtml;
             }
         }
     }, []);
@@ -245,7 +257,8 @@ export default function PublishArticlePage() {
     };
 
     const handleGenerateBodyImages = async () => {
-        const { content, title, category } = editorState;
+        const { title, category } = editorState;
+        const content = contentHtml.current;
         if (!content || !title) {
             toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
             return;
@@ -269,7 +282,7 @@ export default function PublishArticlePage() {
             let imagesInserted = 0;
 
             for (const placement of result.placements) {
-                const { imageUrl, imageHint, subheading } = placement;
+                const { imageUrl, subheading } = placement;
                 const h2s = Array.from(doc.querySelectorAll('h2'));
                 const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
 
@@ -277,7 +290,7 @@ export default function PublishArticlePage() {
                     const imageAlt = `${title} - ${subheading}`;
                     const imageDiv = doc.createElement('div');
                     imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${imageHint}" />`;
+                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" />`;
                     
                     targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
                     imagesInserted++;
@@ -286,7 +299,7 @@ export default function PublishArticlePage() {
             
             const newContent = doc.body.innerHTML;
             if(contentRef.current) contentRef.current.innerHTML = newContent;
-            handleStateChange('content', newContent);
+            contentHtml.current = newContent;
             toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
 
         } catch (error) {
@@ -300,15 +313,18 @@ export default function PublishArticlePage() {
 
     const handleResetBodyImages = () => {
         if (contentRef.current) {
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/placehold\.co\/600x400\.png"[^>]*><\/div>/g, '');
+            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="https:\/\/image\.pollinations\.ai[^>]*><\/div>/g, '');
             contentRef.current.innerHTML = newContent;
-            handleStateChange('content', newContent);
+            contentHtml.current = newContent;
             toast({ title: "Images Reset", description: "All AI-generated body images have been removed from the content." });
         }
     };
 
     const handleSave = async (status: 'published' | 'draft'): Promise<string | null> => {
-        const { title, summary, content, category, keyTakeaways } = editorState;
+        const { title, category, keyTakeaways } = editorState;
+        const summary = summaryHtml.current;
+        const content = contentHtml.current;
+
         if (!title || !summary || !content || !category || !imageUrl) {
             toast({
                 variant: "destructive",
@@ -427,7 +443,7 @@ export default function PublishArticlePage() {
                             contentEditable
                             onInput={() => handleContentChange('summary')}
                             onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: editorState.summary }}
+                            dangerouslySetInnerHTML={{ __html: summaryHtml.current }}
                              className={cn(
                                 'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
                                 '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg'
@@ -467,7 +483,7 @@ export default function PublishArticlePage() {
                             contentEditable
                             onInput={() => handleContentChange('content')}
                             onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: editorState.content }}
+                            dangerouslySetInnerHTML={{ __html: contentHtml.current }}
                             className={cn(
                                 'prose prose-lg max-w-none min-h-96 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
                                 '[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl'
@@ -518,7 +534,7 @@ export default function PublishArticlePage() {
                                 </div>
                                 <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !editorState.title} className="w-full">
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate Placeholder Image
+                                    Generate with Pollinations
                                 </Button>
                                 <div className="flex gap-2">
                                     <Button asChild variant="outline" className="flex-1">
@@ -527,6 +543,10 @@ export default function PublishArticlePage() {
                                             Upload
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
+                                    </Button>
+                                    <Button variant="outline" className="flex-1" onClick={() => setImageUrl('')}>
+                                        <RefreshCcw className="mr-2 h-4 w-4" />
+                                        Reset
                                     </Button>
                                 </div>
                                 <div className="space-y-2">
@@ -563,12 +583,12 @@ export default function PublishArticlePage() {
                                                 <SelectValue placeholder="Count" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                                                {Array.from({ length: 30 }, (_, i) => i + 1).map((num) => (
                                                     <SelectItem key={num} value={String(num)}>{num}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content || !editorState.title}>
+                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !contentHtml.current || !editorState.title}>
                                             {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                             Generate &amp; Insert
                                         </Button>
@@ -602,5 +622,3 @@ export default function PublishArticlePage() {
         </div>
     );
 }
-
-    
