@@ -16,6 +16,7 @@ import { ArticleCategories } from "@/components/home/article-categories";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Wrench, Loader2 } from "lucide-react";
+import { ImageGenerator } from "@/components/home/image-generator";
 
 const ARTICLES_PER_PAGE = 15;
 
@@ -104,6 +105,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <ArticleCategories />
           <ToolsCta />
+          <ImageGenerator />
           <section id="articles" className="py-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold tracking-tight font-headline">
