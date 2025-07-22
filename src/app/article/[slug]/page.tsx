@@ -13,31 +13,14 @@ import { ArrowLeft } from "lucide-react";
 import type { Author } from "@/lib/types";
 import { draftMode } from 'next/headers'
 import { cn } from "@/lib/utils";
-
-// This is a dummy component for header as we can't pass state to it from here
-function StaticHeader() {
-  return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center">
-        <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Car className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline sm:inline-block">
-              Car Diagnostics BrainAi
-            </span>
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
+import { Header } from "@/components/common/header";
 
 function AuthorInfo({ author }: { author: Author }) {
   return (
     <div className="mt-16 pt-8 border-t">
        <div className="flex items-center gap-4">
           <div className="relative h-20 w-20 rounded-full overflow-hidden">
-            <Image src={author.imageUrl || '/placeholder-user.jpg'} alt={author.name} layout="fill" objectFit="cover" data-ai-hint="author photo" />
+            <Image src={author.imageUrl || 'https://placehold.co/100x100.png'} alt={author.name} layout="fill" objectFit="cover" data-ai-hint="author photo" />
           </div>
           <div>
               <p className="text-sm text-muted-foreground">Written by</p>
@@ -72,7 +55,7 @@ export default async function ArticlePage({
 
   return (
     <div className="flex flex-col min-h-screen">
-      <StaticHeader />
+      <Header />
       <main className="flex-grow">
         <article className="container py-10">
           <div className="max-w-4xl mx-auto">

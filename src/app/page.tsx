@@ -16,7 +16,6 @@ import { ArticleCategories } from "@/components/home/article-categories";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Wrench, Loader2 } from "lucide-react";
-import { ImageGenerator } from "@/components/home/image-generator";
 
 const ARTICLES_PER_PAGE = 15;
 
@@ -45,7 +44,7 @@ function ToolsCta() {
                     Explore Our Diagnostic Tools
                 </h2>
                 <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-                    Use our free interactive tools to quickly diagnose common car problems, from reading OBD2 codes to checking battery health.
+                    Use our free interactive tools to quickly diagnose common car problems, from reading OBD2 codes to checking for recalls.
                 </p>
                 <Button asChild size="lg" className="mt-6">
                     <Link href="/tools">View Diagnostic Tools</Link>
@@ -101,7 +100,6 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <ArticleCategories />
           <ToolsCta />
-          <ImageGenerator />
           <section id="articles" className="py-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold tracking-tight font-headline">

@@ -4,21 +4,18 @@
 import React, { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Eye, Sparkles, Image as ImageIcon, Send, Loader2, Save, Trash2, Upload, RefreshCcw, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Send, Loader2, Save, Trash2, Upload, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { addArticle } from '@/lib/data';
 import { categories } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
-import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { cn } from '@/lib/utils';
-import { generateArticleImages } from '@/ai/flows/generate-article-images';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,14 +47,9 @@ export default function PublishArticlePage() {
     const router = useRouter();
     const [editorState, setEditorState] = useState<EditorState>(initialEditorState);
     
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
     
-    const [bodyImageCount, setBodyImageCount] = useState(3);
-    const [wordCount, setWordCount] = useState(0);
-    const [imageSuggestion, setImageSuggestion] = useState('');
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     
     const { toast } = useToast();
@@ -81,40 +73,6 @@ export default function PublishArticlePage() {
             return newState;
         });
     };
-
-    const handleGenerateFeaturedImage = useCallback(async () => {
-        const { title } = editorState;
-        if (!title) {
-             toast({ variant: "destructive", title: "Title is required", description: "Please enter an article title before generating an image." });
-             return;
-        }
-        if (isGenerating) return;
-        
-        setIsGenerating(true);
-        try {
-            const uniqueString = Date.now().toString(36);
-            const imageUrl = `https://placehold.co/600x400.png?text=${uniqueString}`;
-            const { altText } = await generateAltText({ articleTitle: title });
-            
-            setEditorState(prev => ({
-                ...prev,
-                imageUrl: imageUrl,
-                altText: altText,
-                imageHint: title.split(' ').slice(0, 2).join(' ')
-            }));
-
-        } catch (err) {
-            console.error(`Image Generation Failed:`, err);
-            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-            toast({
-                variant: "destructive",
-                title: "Image Generation Failed",
-                description: `${errorMessage}. Please try again.`,
-            });
-        } finally {
-            setIsGenerating(false);
-        }
-    }, [editorState.title, isGenerating, toast]);
     
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
@@ -176,6 +134,7 @@ export default function PublishArticlePage() {
                 const dataUrl = reader.result as string;
                 if (isFeatured) {
                     handleStateChange('imageUrl', dataUrl);
+                    handleStateChange('altText', `Image for article: ${editorState.title}`);
                 } else {
                      const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
@@ -187,112 +146,6 @@ export default function PublishArticlePage() {
         }
     };
 
-    const calculateWordCount = useCallback(() => {
-        if (contentRef.current) {
-            const text = contentRef.current.innerText || "";
-            const count = text.trim().split(/\s+/).filter(Boolean).length;
-            setWordCount(count);
-        }
-    }, []);
-
-    const setupContentObserver = useCallback(() => {
-        const editor = contentRef.current;
-        if (!editor) return;
-
-        const observer = new MutationObserver(() => {
-            handleContentChange();
-            calculateWordCount();
-        });
-
-        observer.observe(editor, {
-            childList: true,
-            subtree: true,
-            characterData: true,
-        });
-
-        return observer;
-    }, [handleContentChange, calculateWordCount]);
-
-    React.useEffect(() => {
-        const observer = setupContentObserver();
-        return () => observer?.disconnect();
-    }, [setupContentObserver]);
-
-
-    const analyzeContentForImages = () => {
-        const words = wordCount;
-        let suggestion = "No suggestion available.";
-        if (words > 0) {
-            const suggestedCount = Math.max(1, Math.round(words / 250));
-            suggestion = `For a ${words}-word article, we suggest ${suggestedCount}-${suggestedCount + 1} images for better engagement.`;
-        }
-        setImageSuggestion(suggestion);
-    };
-
-    const handleGenerateBodyImages = async () => {
-        const { title, category, content } = editorState;
-        if (!content || !title) {
-            toast({ variant: "destructive", title: "Content and Title are required", description: "Please write the article content and title before generating images." });
-            return;
-        }
-        setIsGeneratingBodyImages(true);
-        
-        try {
-            const result = await generateArticleImages({ 
-                articleContent: content, 
-                articleTitle: title,
-                category: category,
-                imageCount: bodyImageCount 
-            });
-
-            if (!result.placements || result.placements.length === 0) {
-                throw new Error("Could not determine where to place images based on subheadings.");
-            }
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(content, 'text/html');
-            let imagesInserted = 0;
-
-            for (const placement of result.placements) {
-                const { imageUrl, subheading } = placement;
-                const h2s = Array.from(doc.querySelectorAll('h2'));
-                const targetH2 = h2s.find(h => h.textContent?.trim() === subheading.trim());
-
-                if (targetH2) {
-                    const imageAlt = `${title} - ${subheading}`;
-                    const imageDiv = doc.createElement('div');
-                    imageDiv.setAttribute('style', 'display: flex; justify-content: center; margin: 1rem 0;');
-                    imageDiv.innerHTML = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; border-radius: 0.5rem;" data-ai-hint="${subheading.split(' ').slice(0, 2).join(' ')}" />`;
-                    
-                    targetH2.parentNode?.insertBefore(imageDiv, targetH2.nextSibling);
-                    imagesInserted++;
-                }
-            }
-            
-            const newContent = doc.body.innerHTML;
-            if(contentRef.current) contentRef.current.innerHTML = newContent;
-            handleContentChange();
-            toast({ title: "Images Inserted!", description: `${imagesInserted} images have been generated and placed in the article.` });
-
-        } catch (error) {
-            console.error("Failed to generate body images:", error);
-            const errorMessage = error instanceof Error ? error.message : "Could not generate or insert body images.";
-            toast({ variant: "destructive", title: "Image Generation Failed", description: errorMessage });
-        } finally {
-            setIsGeneratingBodyImages(false);
-        }
-    }
-
-    const handleResetBodyImages = () => {
-        if (contentRef.current) {
-            // This regex is now more generic to catch any image inside a centered div
-            const newContent = contentRef.current.innerHTML.replace(/<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="[^"]+"[^>]*><\/div>/gi, '');
-            contentRef.current.innerHTML = newContent;
-            handleStateChange('content', newContent);
-            toast({ title: "Images Reset", description: "All inserted body images have been removed from the content." });
-        }
-    };
-
     const handleSave = async (status: 'published' | 'draft'): Promise<{slug: string | null, success: boolean}> => {
         const { title, category, summary, content, imageUrl } = editorState;
 
@@ -300,7 +153,7 @@ export default function PublishArticlePage() {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "To publish, please fill in all fields (Title, Summary, Content, Category) and generate a featured image.",
+                description: "To publish, please fill in all fields (Title, Summary, Content, Category) and upload a featured image.",
             });
             return { slug: null, success: false };
         }
@@ -489,30 +342,22 @@ export default function PublishArticlePage() {
                             
                             <div className="space-y-4">
                                 <Label>Featured Image</Label>
-                                <div className="aspect-video rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 overflow-hidden">
-                                    {isGenerating ? (
-                                        <div className="flex flex-col items-center text-center p-4">
-                                            <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-                                            <p className="text-sm text-muted-foreground mt-2">Generating...</p>
-                                        </div>
-                                    ) : editorState.imageUrl ? (
-                                        <Image src={editorState.imageUrl} alt={editorState.altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" data-ai-hint={editorState.imageHint || ''} />
+                                <div className="aspect-video rounded-lg border border-dashed flex items-center justify-center bg-muted/50 overflow-hidden">
+                                    {editorState.imageUrl ? (
+                                        <Image src={editorState.imageUrl} alt={editorState.altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" />
                                     ) : (
-                                        <>
-                                            <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground mt-2 text-center px-4">Generate an image or upload one.</p>
-                                        </>
+                                        <div className="text-center text-muted-foreground p-4">
+                                            <Upload className="mx-auto h-8 w-8 mb-2" />
+                                            <p className="text-sm">Upload a featured image.</p>
+                                        </div>
                                     )}
                                 </div>
-                                <Button onClick={handleGenerateFeaturedImage} disabled={!!isGenerating || !editorState.title} className="w-full">
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate Image
-                                </Button>
+                                
                                 <div className="flex gap-2">
-                                    <Button asChild variant="outline" className="flex-1">
+                                     <Button asChild variant="outline" className="flex-1">
                                         <label htmlFor="featured-image-upload">
                                             <Upload className="mr-2 h-4 w-4" />
-                                            Upload
+                                            Upload Image
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
@@ -521,64 +366,15 @@ export default function PublishArticlePage() {
                                         Reset
                                     </Button>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="alt-text">Alt Text (for SEO)</Label>
-                                    <Input
-                                        id="alt-text"
-                                        placeholder="Descriptive alt text for the image..."
-                                        value={editorState.altText}
-                                        onChange={(e) => handleStateChange('altText', e.target.value)}
-                                        disabled={!!isGenerating}
-                                    />
-                                </div>
-                            </div>
-
-                             <div className="space-y-4 pt-4 border-t">
-                                <div className="flex justify-between items-center">
-                                    <Label>Body Images &amp; Word Count</Label>
-                                    <Badge variant="outline">{wordCount} words</Badge>
-                                </div>
-                                <div className="p-2 bg-muted rounded-md text-sm text-muted-foreground">
-                                    {imageSuggestion || 'Click "Analyze" for an image recommendation.'}
-                                </div>
-                                <Button variant="secondary" size="sm" className="w-full" onClick={analyzeContentForImages}>
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Analyze Content
-                                </Button>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Select
-                                            onValueChange={(value) => setBodyImageCount(Number(value))}
-                                            defaultValue={String(bodyImageCount)}
-                                        >
-                                            <SelectTrigger className="w-24">
-                                                <SelectValue placeholder="Count" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => (
-                                                    <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button variant="outline" className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content || !editorState.title}>
-                                            {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                            Generate &amp; Insert
-                                        </Button>
-                                    </div>
-                                    <Button variant="destructive" size="sm" className="w-full" onClick={handleResetBodyImages}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Reset Body Images
-                                    </Button>
-                                </div>
                             </div>
 
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft || !!isGenerating || isGeneratingBodyImages}>
+                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft}>
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
                                 </Button>
-                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft || !!isGenerating || isGeneratingBodyImages}>
+                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft}>
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>

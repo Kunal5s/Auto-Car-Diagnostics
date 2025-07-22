@@ -5,7 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FilePenLine, PlusCircle, User, GalleryVertical, NotebookPen } from 'lucide-react';
+import { FilePenLine, User, NotebookPen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const AdminCard = ({ icon: Icon, title, description, buttonText, href, disabled = false }: { icon: React.ElementType, title: string, description: string, buttonText: string, href: string, disabled?: boolean }) => {
@@ -44,26 +44,11 @@ export default function AdminDashboardPage() {
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AdminCard
-            icon={PlusCircle}
-            title="Create with AI"
-            description="Generate a new SEO-friendly article with AI assistance."
-            buttonText="Generate Article"
-            href="/admin/publish"
-          />
-          <AdminCard
             icon={FilePenLine}
-            title="Manual Publish"
+            title="Publish Article"
             description="Write, format, and publish your own articles from scratch."
-            buttonText="Write Manually"
+            buttonText="Create Article"
             href="/admin/publish"
-          />
-          <AdminCard
-            icon={GalleryVertical}
-            title="Create Web Story"
-            description="Build and publish engaging, tappable Web Stories for Google."
-            buttonText="Build Story"
-            href="#"
-            disabled={true}
           />
           <AdminCard
             icon={NotebookPen}
