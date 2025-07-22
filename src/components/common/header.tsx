@@ -2,46 +2,27 @@
 "use client";
 
 import Link from "next/link";
-import { Car, ShieldCheck } from "lucide-react";
+import { Car, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/config";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { usePathname } from 'next/navigation';
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export function Header() {
   const pathname = usePathname();
 
-  // Don't render header on auth pages like sign-in, sign-up
   if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
-      return null;
-  }
-  
-  // A simplified header for the admin section
-  if (pathname.startsWith('/admin')) {
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background">
+       <header className="sticky top-0 z-40 w-full border-b bg-background">
             <div className="container flex h-16 max-w-screen-2xl items-center">
                  <div className="mr-4 flex">
                     <Link href="/" className="mr-6 flex items-center space-x-2">
                         <Car className="h-6 w-6 text-primary" />
                         <span className="font-bold font-headline">
-                        <span className="hidden sm:inline-block">Car Diagnostics BrainAi</span>
+                          <span className="hidden sm:inline-block">Car Diagnostics BrainAi</span>
                         </span>
                     </Link>
-                    <nav className="flex items-center gap-6 text-sm">
-                        <Link
-                            href="/admin"
-                            className="font-bold text-foreground transition-colors hover:text-foreground/80"
-                        >
-                           Dashboard
-                        </Link>
-                    </nav>
-                </div>
-                <div className="flex flex-1 items-center justify-end space-x-2">
-                    <SignedIn>
-                        <UserButton afterSignOutUrl="/" />
-                    </SignedIn>
                 </div>
             </div>
         </header>
@@ -50,7 +31,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Car className="h-6 w-6 text-primary" />
@@ -60,20 +41,23 @@ export function Header() {
             </span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex items-center gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
-                <Button variant="ghost">
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Admin Login
+                <Button asChild>
+                    <Link href="/admin">
+                        <LogIn className="mr-2 h-4 w-4"/>
+                        Login
+                    </Link>
                 </Button>
-              </SignInButton>
             </SignedOut>
             <SignedIn>
-              <Button asChild variant="ghost">
-                <Link href="/admin">Admin Dashboard</Link>
-              </Button>
-              <UserButton afterSignOutUrl="/" />
+                 <Link
+                    href="/admin"
+                    className="text-sm font-medium text-foreground transition-colors hover:text-foreground/80"
+                >
+                    Dashboard
+                </Link>
+                <UserButton afterSignOutUrl="/" />
             </SignedIn>
         </div>
       </div>
