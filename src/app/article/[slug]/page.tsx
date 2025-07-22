@@ -33,9 +33,7 @@ function AuthorInfo({ author }: { author: Author }) {
 }
 
 interface ArticlePageProps {
-  params: {
-    slug: string;
-  };
+  params: { slug: string };
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {

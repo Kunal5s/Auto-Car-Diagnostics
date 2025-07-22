@@ -58,9 +58,7 @@ function EditArticleSkeleton() {
 }
 
 interface EditArticlePageProps {
-  params: {
-    slug: string;
-  };
+  params: { slug: string };
 }
 
 export default function EditArticlePage({ params }: EditArticlePageProps) {
