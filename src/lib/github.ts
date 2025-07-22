@@ -21,7 +21,7 @@ export async function commitFilesToGitHub(files: FileChange[], commitMessage: st
             !REPO_NAME && "GITHUB_REPO_NAME"
         ].filter(Boolean).join(", ");
         
-        const errorMessage = `GitHub repository details not configured. Missing: ${missingVars}. Cannot save changes.`;
+        const errorMessage = `GitHub repository details not configured on the server. Missing environment variables: ${missingVars}. Cannot save changes.`;
         console.error(errorMessage);
         throw new Error(errorMessage);
     }
