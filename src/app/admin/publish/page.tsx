@@ -33,10 +33,8 @@ type EditorState = Omit<Article, 'id' | 'publishedAt'>
 const initialEditorState: EditorState = {
     slug: '',
     title: '',
-    summary: '',
     content: '',
     category: '',
-    keyTakeaways: [],
     imageUrl: '',
     altText: '',
     imageHint: '',
@@ -75,9 +73,6 @@ export default function PublishArticlePage() {
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
             handleStateChange('content', contentRef.current.innerHTML);
-            // Auto-generate summary from the first 150 characters of content
-            const summaryText = contentRef.current.innerText.substring(0, 150) + '...';
-            handleStateChange('summary', summaryText);
         }
     }, []);
 
@@ -150,13 +145,8 @@ export default function PublishArticlePage() {
         else setIsSavingDraft(true);
         
         try {
-            const finalState = {
-                ...editorState,
-                summary: editorState.content.substring(0, 150).replace(/<[^>]+>/g, '') + '...',
-                keyTakeaways: [],
-            }
             const newArticle = await addArticle({
-                ...finalState,
+                ...editorState,
                 status,
             });
             toast({

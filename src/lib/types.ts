@@ -4,9 +4,7 @@ export interface Article {
   id: string; // Unique identifier
   slug: string;
   title: string;
-  summary: string;
   content: string;
-  keyTakeaways: string[];
   imageUrl: string;
   altText: string;
   imageHint: string;

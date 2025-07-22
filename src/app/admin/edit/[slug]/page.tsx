@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Eye, Send, Loader2, Plus, Trash2, Upload, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Eye, Send, Loader2, Upload, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -201,8 +201,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                 content,
                 category,
                 imageUrl,
-                summary: content.substring(0, 150).replace(/<[^>]+>/g, '') + '...', // Auto-generate summary
-                keyTakeaways: [], // Clear key takeaways
                 altText: article.altText,
                 imageHint: article.imageHint,
             });
