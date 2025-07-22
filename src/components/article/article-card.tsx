@@ -12,7 +12,7 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
-  const snippet = article.summary.replace(/<[^>]+>/g, '').substring(0, 150) + (article.summary.length > 150 ? "..." : "");
+  const snippet = article.content.replace(/<[^>]+>/g, '').substring(0, 150) + (article.content.length > 150 ? "..." : "");
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-primary hover:shadow-lg hover:shadow-primary/10">
