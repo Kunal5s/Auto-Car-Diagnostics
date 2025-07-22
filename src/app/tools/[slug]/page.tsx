@@ -22,6 +22,7 @@ import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker"
 import { VinDecoder } from "@/components/tools/vin-decoder";
 import { WarningLightGuide } from "@/components/tools/warning-light-guide";
 import { SmokeDiagnosis } from "@/components/tools/smoke-diagnosis";
+import type { NextPage } from "next";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
   "vin-decoder": VinDecoder,
@@ -40,7 +41,7 @@ const toolComponents: { [key: string]: React.ComponentType } = {
 };
 
 // No props needed for this client component as it gets params from a hook
-export default function ToolPage() {
+const ToolPage: NextPage = () => {
   const params = useParams();
   const slug = params.slug as string;
 
@@ -80,3 +81,7 @@ export default function ToolPage() {
     </div>
   );
 }
+
+export default ToolPage;
+
+    

@@ -16,6 +16,7 @@ import { Header } from "@/components/common/header";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableOfContents, type TocEntry } from "@/components/article/table-of-contents";
+import type { NextPage } from "next";
 
 function AuthorInfo({ author }: { author: Author }) {
   if (!author) return null;
@@ -59,7 +60,7 @@ interface ArticlePageProps {
   params: { slug: string };
 }
 
-export default function ArticlePage({ params }: ArticlePageProps) {
+const ArticlePage: NextPage<ArticlePageProps> = ({ params }) => {
   const [article, setArticle] = useState<Article | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [toc, setToc] = useState<TocEntry[]>([]);
@@ -217,3 +218,7 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     </div>
   );
 }
+
+export default ArticlePage;
+
+    

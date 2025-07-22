@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { cn } from '@/lib/utils';
+import type { NextPage } from 'next';
 
 function EditArticleSkeleton() {
     return (
@@ -61,7 +62,7 @@ interface EditArticlePageProps {
   params: { slug: string };
 }
 
-export default function EditArticlePage({ params }: EditArticlePageProps) {
+const EditArticlePage: NextPage<EditArticlePageProps> = ({ params }: EditArticlePageProps) => {
     const router = useRouter();
     const { toast } = useToast();
     const { slug } = params;
@@ -363,3 +364,7 @@ export default function EditArticlePage({ params }: EditArticlePageProps) {
         </div>
     );
 }
+
+export default EditArticlePage;
+
+    
