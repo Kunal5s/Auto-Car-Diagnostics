@@ -2,12 +2,12 @@
 "use client";
 
 import Link from "next/link";
-import { Car, ShieldCheck, Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp } from "lucide-react";
+import { Car, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/config";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
 import { usePathname } from 'next/navigation';
+import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export function Header() {
   const pathname = usePathname();
@@ -30,12 +30,17 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-            <Button asChild variant="ghost">
-              <Link href="/admin">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Admin Login
-              </Link>
-            </Button>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="ghost">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
         </div>
       </div>
       <div className="w-full border-t">
