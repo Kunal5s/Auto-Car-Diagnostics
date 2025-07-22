@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart } from "lucide-react";
+import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram } from "lucide-react";
 
 function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -48,6 +48,8 @@ export function Footer() {
                 </p>
                 <div className="flex space-x-4">
                     <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter /></Link>
+                    <Link href="#" className="text-muted-foreground hover:text-primary"><Facebook /></Link>
+                    <Link href="#" className="text-muted-foreground hover:text-primary"><Instagram /></Link>
                     <Link href="#" className="text-muted-foreground hover:text-primary"><PinterestIcon /></Link>
                     <Link href="#" className="text-muted-foreground hover:text-primary"><Linkedin /></Link>
                 </div>
