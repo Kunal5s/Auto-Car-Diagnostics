@@ -2,7 +2,8 @@
 "use client";
 
 import Link from "next/link";
-import { User, Car, ShieldCheck, Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp } from "lucide-react";
+import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { Car, ShieldCheck, Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/config";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -34,12 +35,17 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <Button asChild variant="ghost">
-            <Link href="/admin">
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              Login
-            </Link>
-          </Button>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+          <SignedOut>
+            <Button asChild variant="ghost">
+              <Link href="/sign-in">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+          </SignedOut>
         </div>
       </div>
       <div className="w-full border-t">
