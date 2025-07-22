@@ -7,12 +7,11 @@ import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/config";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { usePathname } from 'next/navigation';
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export function Header() {
   const pathname = usePathname();
 
-  if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
+  if (pathname.startsWith('/admin')) {
     return (
        <header className="sticky top-0 z-40 w-full border-b bg-background">
             <div className="container flex h-16 max-w-screen-2xl items-center">
@@ -42,23 +41,12 @@ export function Header() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-            <SignedOut>
-                <Button asChild>
-                    <Link href="/admin">
-                        <LogIn className="mr-2 h-4 w-4"/>
-                        Login
-                    </Link>
-                </Button>
-            </SignedOut>
-            <SignedIn>
-                 <Link
-                    href="/admin"
-                    className="text-sm font-medium text-foreground transition-colors hover:text-foreground/80"
-                >
-                    Dashboard
+            <Button asChild>
+                <Link href="/admin">
+                    <LogIn className="mr-2 h-4 w-4"/>
+                    Admin
                 </Link>
-                <UserButton afterSignOutUrl="/" />
-            </SignedIn>
+            </Button>
         </div>
       </div>
       <div className="w-full border-t">
