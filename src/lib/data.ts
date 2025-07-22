@@ -8,65 +8,41 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { commitFilesToGitHub } from '@/lib/github';
 
-// The canonical path to the data directory.
 const dataDir = path.join(process.cwd(), 'src/data');
 
-/**
- * Ensures a file exists, creating it with default content if it doesn't.
- * This prevents read/write errors on non-existent files.
- * @param filePath - The relative path within the data directory.
- * @param defaultContent - The default content to write if the file is created.
- */
 async function ensureFileExists(filePath: string, defaultContent: string = '[]\n'): Promise<void> {
     const fullPath = path.join(dataDir, filePath);
     try {
         await fs.access(fullPath);
     } catch (error) {
-        // File does not exist, create it.
         await fs.mkdir(path.dirname(fullPath), { recursive: true });
         await fs.writeFile(fullPath, defaultContent, 'utf-8');
     }
 }
 
-/**
- * Reads a JSON file from the local data directory.
- * @param filePath - The name of the file (e.g., "engine.json").
- */
 async function readJsonFile<T>(filePath: string): Promise<T> {
-    await ensureFileExists(filePath); // Ensure the file exists before reading
+    await ensureFileExists(filePath);
     const fullPath = path.join(dataDir, filePath);
     const fileContent = await fs.readFile(fullPath, 'utf-8');
-    // Handle empty file case, which is valid JSON for an empty array
     if (fileContent.trim() === '') {
         return [] as T;
     }
     return JSON.parse(fileContent) as T;
 }
 
-/**
- * Writes data to a JSON file in the local data directory.
- * This is now an internal function, not exported.
- * @param filePath - The name of the file (e.g., "engine.json").
- * @param data - The data to write to the file.
- * @returns The stringified content of the file.
- */
 async function writeJsonFile<T>(filePath: string, data: T): Promise<string> {
-    await ensureFileExists(filePath); // Ensure the directory exists before writing
+    await ensureFileExists(filePath);
     const fullPath = path.join(dataDir, filePath);
     const content = JSON.stringify(data, null, 2) + '\n';
     await fs.writeFile(fullPath, content, 'utf-8');
     return content;
 }
 
-
-// --- Author Data Functions ---
-
 export async function getAuthor(): Promise<Author> {
     const defaultAuthor: Author = { name: 'Author', role: 'Writer', bio: '', imageUrl: '' };
     try {
         await ensureFileExists('author.json', JSON.stringify(defaultAuthor, null, 2) + '\n');
-        const author = await readJsonFile<Author>('author.json');
-        return author;
+        return await readJsonFile<Author>('author.json');
     } catch (error) {
         return defaultAuthor;
     }
@@ -78,78 +54,57 @@ export async function updateAuthor(authorData: Author): Promise<Author> {
     return authorData;
 }
 
-
-// --- Article Data Functions ---
-
 export async function getArticles(options: { includeDrafts?: boolean } = {}): Promise<Article[]> {
-  const allCategorySlugs = categories.map(c => c.name.toLowerCase().replace(/ /g, '-'));
-  let allArticles: Article[] = [];
+    const allCategorySlugs = categories.map(c => c.name.toLowerCase().replace(/ /g, '-'));
+    let allArticles: Article[] = [];
 
-  for (const categorySlug of allCategorySlugs) {
-    try {
-        await ensureFileExists(`${categorySlug}.json`);
-        const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
-        allArticles.push(...categoryArticles);
-    } catch(e) {
-        console.warn(`Could not read articles for category: ${categorySlug}.json`);
-        // file probably doesn't exist, which is fine
+    for (const categorySlug of allCategorySlugs) {
+        try {
+            const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
+            allArticles.push(...categoryArticles);
+        } catch (e) {
+            console.warn(`Could not read articles for category: ${categorySlug}.json`);
+        }
     }
-  }
 
-  // Deduplicate articles based on ID, important if an article was somehow in multiple files
-  const uniqueArticles = Array.from(new Map(allArticles.map(article => [article.id, article])).values());
+    const uniqueArticles = Array.from(new Map(allArticles.map(article => [article.id, article])).values());
+    const sortedArticles = uniqueArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-  const sortedArticles = uniqueArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-  if (options.includeDrafts) {
-    return sortedArticles;
-  }
-
-  return sortedArticles.filter(a => a.status === 'published');
+    return options.includeDrafts ? sortedArticles : sortedArticles.filter(a => a.status === 'published');
 }
 
 export async function getArticlesByCategory(categoryName: string): Promise<Article[]> {
-  const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
-  await ensureFileExists(`${categorySlug}.json`);
-  const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
-  
-  const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-  
-  return sortedArticles.filter(a => a.status === 'published');
+    const categorySlug = categoryName.toLowerCase().replace(/ /g, '-');
+    const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
+    const sortedArticles = articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    return sortedArticles.filter(a => a.status === 'published');
 }
 
 export async function getArticleBySlug(slug: string, options: { includeDrafts?: boolean } = {}): Promise<Article | undefined> {
-  const allArticles = await getArticles({ includeDrafts: true });
-  const article = allArticles.find(article => article.slug === slug);
-  
-  if (!article) return undefined;
-  
-  if (!options.includeDrafts && article.status !== 'published') return undefined;
-  
-  return article;
+    const allArticles = await getArticles({ includeDrafts: true });
+    const article = allArticles.find(article => article.slug === slug);
+    if (!article || (!options.includeDrafts && article.status !== 'published')) {
+        return undefined;
+    }
+    return article;
 }
 
 export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): Promise<Article> {
+    const existingArticle = await getArticleBySlug(article.slug, { includeDrafts: true });
+    if (existingArticle) {
+        return updateArticle(existingArticle.slug, article);
+    }
+    
     const newArticle: Article = { 
         ...article, 
         id: uuidv4(),
         publishedAt: new Date().toISOString() 
     };
 
-    if (!newArticle.category) {
-        throw new Error('Article category must be selected before saving.');
-    }
-    
     const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
     const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
     
-    // Check if another article in the same category already has this slug.
-    const existingArticle = articles.find(a => a.slug === newArticle.slug);
-    if (existingArticle) {
-        throw new Error(`An article with the slug "${newArticle.slug}" already exists in the "${newArticle.category}" category. Please use a unique title.`);
-    }
-
-    articles.unshift(newArticle); // Add to the beginning of the list
+    articles.unshift(newArticle);
     const content = await writeJsonFile(`${categorySlug}.json`, articles);
 
     await commitFilesToGitHub(
@@ -160,39 +115,33 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     return newArticle;
 }
 
-export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'slug' | 'id'>>): Promise<Article> {
+export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'id'>>): Promise<Article> {
     const originalArticle = await getArticleBySlug(slug, { includeDrafts: true });
     if (!originalArticle) throw new Error(`Article with slug "${slug}" not found.`);
 
     const updatedArticle = { ...originalArticle, ...articleData };
     const hasCategoryChanged = articleData.category && articleData.category !== originalArticle.category;
     
-    // If changing status from draft to published, update the published date
     if (articleData.status === 'published' && originalArticle.status === 'draft') {
         updatedArticle.publishedAt = new Date().toISOString();
     }
 
     const filesToCommit: { path: string, content: string }[] = [];
 
-    // If category has changed, we need to update two files.
     if (hasCategoryChanged) {
-        // 1. Remove from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
         const oldArticles = await readJsonFile<Article[]>(`${oldCategorySlug}.json`);
         const filteredOldArticles = oldArticles.filter(a => a.id !== originalArticle.id);
         const oldFileContent = await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
         filesToCommit.push({ path: `src/data/${oldCategorySlug}.json`, content: oldFileContent });
 
-        // 2. Add to new category file
         const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`);
         newArticles.unshift(updatedArticle);
         newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
         const newFileContent = await writeJsonFile(`${newCategorySlug}.json`, newArticles);
         filesToCommit.push({ path: `src/data/${newCategorySlug}.json`, content: newFileContent });
-
     } else {
-        // Category is the same, just update the single file.
         const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
         const articleIndex = articles.findIndex(a => a.id === updatedArticle.id);
@@ -200,9 +149,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         if (articleIndex !== -1) {
             articles[articleIndex] = updatedArticle;
         } else {
-            // This case handles if we are updating a new article (e.g. saving a draft)
-            // that doesn't exist in the file yet.
-            articles.unshift(updatedArticle); 
+            articles.unshift(updatedArticle);
         }
         
         articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
