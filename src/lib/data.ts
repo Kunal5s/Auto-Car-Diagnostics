@@ -143,9 +143,10 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
     const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
     
-    const existingIndex = articles.findIndex(a => a.slug === newArticle.slug);
-    if (existingIndex !== -1) {
-        throw new Error(`Article with slug "${newArticle.slug}" already exists in category "${newArticle.category}". Please use a unique title.`);
+    // Check if another article in the same category already has this slug.
+    const existingArticle = articles.find(a => a.slug === newArticle.slug);
+    if (existingArticle) {
+        throw new Error(`An article with the slug "${newArticle.slug}" already exists in the "${newArticle.category}" category. Please use a unique title.`);
     }
 
     articles.unshift(newArticle); // Add to the beginning of the list
@@ -182,7 +183,7 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         const oldFileContent = await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
         filesToCommit.push({ path: `src/data/${oldCategorySlug}.json`, content: oldFileContent });
 
-        // 2. Add to new category file (logic continues below)
+        // 2. Add to new category file
         const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`);
         newArticles.unshift(updatedArticle);
@@ -199,7 +200,9 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         if (articleIndex !== -1) {
             articles[articleIndex] = updatedArticle;
         } else {
-            articles.unshift(updatedArticle); // Should not happen in update, but safe fallback
+            // This case handles if we are updating a new article (e.g. saving a draft)
+            // that doesn't exist in the file yet.
+            articles.unshift(updatedArticle); 
         }
         
         articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());

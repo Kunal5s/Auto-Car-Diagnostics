@@ -75,7 +75,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             const fetchedArticle = await getArticleBySlug(slug, { includeDrafts: true });
             if (fetchedArticle) {
                 setArticle(fetchedArticle);
-                if (contentRef.current) contentRef.current.innerHTML = fetchedArticle.content;
+                if (contentRef.current) {
+                  // This is a failsafe. dangerouslySetInnerHTML should handle the initial render.
+                  // This ensures that if the ref is ready after state update, content is still set.
+                  contentRef.current.innerHTML = fetchedArticle.content;
+                }
             } else {
                 toast({ variant: "destructive", title: "Error", description: "Article not found." });
                 router.push('/admin');
@@ -89,22 +93,18 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     }, [slug, router, toast]);
 
     useEffect(() => {
-        if (slug) {
-            loadArticle();
-        }
-    }, [slug, loadArticle]);
+        loadArticle();
+    }, [loadArticle]);
     
     const handleStateChange = <K extends keyof Article>(key: K, value: Article[K]) => {
-        if (!article) return;
         setArticle(prev => prev ? ({ ...prev, [key]: value }) : null);
     };
 
     const handleContentChange = useCallback(() => {
-        if (!article) return;
         if (contentRef.current) {
             handleStateChange('content', contentRef.current.innerHTML);
         }
-    }, [article]);
+    }, [handleStateChange]);
 
 
     const handleExecCommand = (command: string, value?: string) => {
@@ -156,10 +156,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         }
     };
 
-    const setupContentObserver = useCallback(() => {
+    useEffect(() => {
         const editor = contentRef.current;
         if (!editor) return;
 
+        // Use a MutationObserver to reliably track changes from execCommand
         const observer = new MutationObserver(() => {
             handleContentChange();
         });
@@ -170,22 +171,18 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             characterData: true,
         });
 
-        return observer;
+        return () => observer.disconnect();
     }, [handleContentChange]);
-
-    useEffect(() => {
-        if (!isLoading) {
-             const observer = setupContentObserver();
-             return () => observer?.disconnect();
-        }
-    }, [isLoading, setupContentObserver]);
 
     const handleUpdate = async () => {
         if (!article) return false;
         
-        const { title, content, category, imageUrl } = article;
+        // Ensure content from the editor is correctly captured before update
+        const currentContent = contentRef.current?.innerHTML || article.content;
+        
+        const { title, category, imageUrl } = article;
 
-        if (!title || !content || !category || !imageUrl) {
+        if (!title || !currentContent || !category || !imageUrl) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
@@ -198,7 +195,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         try {
             await updateArticle(slug, {
                 title,
-                content,
+                content: currentContent,
                 category,
                 imageUrl,
                 altText: article.altText,

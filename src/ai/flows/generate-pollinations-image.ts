@@ -31,7 +31,7 @@ export async function generatePollinationsImage(input: GeneratePollinationsImage
     const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
     
     // Add a strong negative prompt to avoid text, watermarks, etc.
-    const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed');
+    const negativePrompt = encodeURIComponent('text, logo, watermark, signature, brand, branding, deformed, ugly, malformed');
     
     let imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?negative_prompt=${negativePrompt}&`;
     

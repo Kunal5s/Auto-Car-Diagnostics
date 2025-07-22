@@ -16,7 +16,7 @@ const GenerateArticleImagesInputSchema = z.object({
   articleContent: z.string().describe('The full HTML content of the article.'),
   articleTitle: z.string().describe('The title of the article.'),
   category: z.string().describe('The category of the article.'),
-  imageCount: z.number().int().min(1).max(5).describe('The number of images to generate for the article body.'),
+  imageCount: z.number().int().min(1).max(20).describe('The number of images to generate for the article body.'),
 });
 export type GenerateArticleImagesInput = z.infer<typeof GenerateArticleImagesInputSchema>;
 
@@ -59,7 +59,7 @@ export async function generateArticleImages(input: GenerateArticleImagesInput): 
     const placements = selectedSubheadings.map(subheading => {
         const enhancedPrompt = `photograph of ${subheading}, related to the article '${articleTitle}', 4k, photorealistic, high quality`;
         const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
-        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed, blurry');
+        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, brand, branding, deformed, ugly, malformed, blurry');
         const seed = Math.floor(Math.random() * 1000000); // Add random seed for unique images
         const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&negative_prompt=${negativePrompt}&seed=${seed}`;
 

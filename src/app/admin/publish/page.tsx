@@ -69,7 +69,7 @@ export default function PublishArticlePage() {
     const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
         setEditorState(prev => {
             const newState = { ...prev, [key]: value };
-            if (key === 'title') {
+            if (key === 'title' && !prev.slug) { // Only set slug automatically if it's not already set
                 newState.slug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             }
             return newState;
@@ -80,7 +80,7 @@ export default function PublishArticlePage() {
         if (contentRef.current) {
             handleStateChange('content', contentRef.current.innerHTML);
         }
-    }, []);
+    }, [handleStateChange]);
 
     const handleExecCommand = (command: string, value?: string) => {
         document.execCommand(command, false, value);
@@ -244,6 +244,8 @@ export default function PublishArticlePage() {
                  resetArticle();
                  router.push(`/admin/manage`);
             } else {
+                 // On saving draft, we stay on the page but it becomes an 'edit' page
+                 // The router push will reload the page as the edit page for the new slug.
                  router.push(`/admin/edit/${newArticle.slug}`);
             }
 
@@ -265,13 +267,7 @@ export default function PublishArticlePage() {
     }
 
     const handlePreview = async () => {
-        const { title } = editorState;
-        if (!title) {
-            toast({ variant: "destructive", title: "Title required", description: "Please enter a title before previewing." });
-            return;
-        }
-
-        const { slug, success } = await handleSave('draft');
+        const { success, slug } = await handleSave('draft');
         if (success && slug) {
              window.open(`/api/draft?slug=${slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         }
@@ -391,7 +387,7 @@ export default function PublishArticlePage() {
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button className="flex-1" onClick={handleGenerateFeaturedImage} disabled={isGeneratingImage}>
+                                    <Button className="flex-1" onClick={handleGenerateFeaturedImage} disabled={isGeneratingImage || !editorState.title}>
                                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                                         Generate
                                     </Button>
@@ -412,10 +408,10 @@ export default function PublishArticlePage() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {[1,2,3,4,5].map(i => <SelectItem key={i} value={i.toString()}>{i}</SelectItem>)}
+                                            {Array.from({ length: 20 }, (_, i) => i + 1).map(i => <SelectItem key={i} value={i.toString()}>{i}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
-                                    <Button className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages}>
+                                    <Button className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content}>
                                         {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
                                         Generate & Insert
                                     </Button>
@@ -426,15 +422,15 @@ export default function PublishArticlePage() {
                             {/* Actions Section */}
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft}>
+                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft || !editorState.title || !editorState.content || !editorState.category || !editorState.imageUrl}>
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
                                 </Button>
-                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft}>
+                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft || !editorState.title}>
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isSavingDraft || isPublishing}>
+                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isSavingDraft || isPublishing || !editorState.title}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Preview Article
                                 </Button>
