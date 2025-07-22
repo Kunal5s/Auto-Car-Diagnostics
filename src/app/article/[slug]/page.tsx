@@ -3,9 +3,8 @@ import { getArticleBySlug, getAuthor } from "@/lib/data";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/common/footer";
-import { KeyTakeaways } from "@/components/article/key-takeaways";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Car } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -84,8 +83,6 @@ export default async function ArticlePage({
               </div>
             </div>
             
-            <div className="prose prose-lg max-w-none text-muted-foreground mt-4" dangerouslySetInnerHTML={{ __html: article.summary }} />
-
             <div className="aspect-[16/9] relative overflow-hidden rounded-lg my-8">
               <Image
                 src={article.imageUrl}
@@ -96,10 +93,6 @@ export default async function ArticlePage({
                 priority
               />
             </div>
-
-            {article.keyTakeaways && article.keyTakeaways.length > 0 && (
-              <KeyTakeaways takeaways={article.keyTakeaways} />
-            )}
 
             <div className={cn(
               "prose prose-lg max-w-none prose-headings:font-headline prose-headings:font-semibold prose-headings:text-foreground prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline",

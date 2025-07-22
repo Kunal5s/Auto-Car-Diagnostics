@@ -30,10 +30,6 @@ function EditArticleSkeleton() {
                 </div>
                 <div className="space-y-2">
                     <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-32 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-24" />
                     <Skeleton className="h-96 w-full" />
                 </div>
             </div>
@@ -72,7 +68,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const [isUpdating, setIsUpdating] = useState(false);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const summaryRef = useRef<HTMLDivElement>(null);
 
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
@@ -80,7 +75,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
             const fetchedArticle = await getArticleBySlug(slug, { includeDrafts: true });
             if (fetchedArticle) {
                 setArticle(fetchedArticle);
-                if (summaryRef.current) summaryRef.current.innerHTML = fetchedArticle.summary;
                 if (contentRef.current) contentRef.current.innerHTML = fetchedArticle.content;
             } else {
                 toast({ variant: "destructive", title: "Error", description: "Article not found." });
@@ -110,9 +104,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         if (contentRef.current) {
             handleStateChange('content', contentRef.current.innerHTML);
         }
-        if(summaryRef.current) {
-            handleStateChange('summary', summaryRef.current.innerHTML);
-        }
     }, [article]);
 
 
@@ -134,24 +125,6 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
           .replace(/\n/g, '<br />');
         document.execCommand('insertHTML', false, html);
         handleContentChange();
-    };
-
-    const handleKeyTakeawayChange = (index: number, value: string) => {
-        if (!article) return;
-        const newTakeaways = [...article.keyTakeaways];
-        newTakeaways[index] = value;
-        handleStateChange('keyTakeaways', newTakeaways);
-    };
-
-    const addKeyTakeaway = () => {
-        if (!article) return;
-        handleStateChange('keyTakeaways', [...article.keyTakeaways, '']);
-    };
-
-    const removeKeyTakeaway = (index: number) => {
-        if (!article) return;
-        const newTakeaways = article.keyTakeaways.filter((_, i) => i !== index);
-        handleStateChange('keyTakeaways', newTakeaways);
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
@@ -210,9 +183,9 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
     const handleUpdate = async () => {
         if (!article) return false;
         
-        const { title, summary, content, category, imageUrl, keyTakeaways } = article;
+        const { title, content, category, imageUrl } = article;
 
-        if (!title || !summary || !content || !category || !imageUrl) {
+        if (!title || !content || !category || !imageUrl) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
@@ -225,11 +198,11 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         try {
             await updateArticle(slug, {
                 title,
-                summary,
                 content,
                 category,
-                keyTakeaways: keyTakeaways.filter(t => t.trim() !== ''),
                 imageUrl,
+                summary: content.substring(0, 150).replace(/<[^>]+>/g, '') + '...', // Auto-generate summary
+                keyTakeaways: [], // Clear key takeaways
                 altText: article.altText,
                 imageHint: article.imageHint,
             });
@@ -304,46 +277,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
                             onChange={(e) => handleStateChange('title', e.target.value)}
                         />
                     </div>
-
-                    <div className="space-y-2">
-                        <Label>Summary</Label>
-                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
-                        <div
-                            ref={summaryRef}
-                            id="summary-editor"
-                            contentEditable
-                            onInput={handleContentChange}
-                            onPaste={handlePaste}
-                            dangerouslySetInnerHTML={{ __html: article.summary }}
-                             className={cn(
-                                'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg'
-                            )}
-                        />
-                    </div>
                     
-                    <div className="space-y-4">
-                        <Label>Key Takeaways</Label>
-                        <div className="space-y-2">
-                            {article.keyTakeaways.map((takeaway, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <Input
-                                        placeholder={`Takeaway #${index + 1}`}
-                                        value={takeaway}
-                                        onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
-                                    />
-                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button variant="outline" size="sm" onClick={addKeyTakeaway}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Takeaway
-                        </Button>
-                    </div>
-
                     <div className="space-y-2">
                         <Label>Content</Label>
                         <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />

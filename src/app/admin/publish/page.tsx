@@ -36,7 +36,7 @@ const initialEditorState: EditorState = {
     summary: '',
     content: '',
     category: '',
-    keyTakeaways: [''],
+    keyTakeaways: [],
     imageUrl: '',
     altText: '',
     imageHint: '',
@@ -55,11 +55,9 @@ export default function PublishArticlePage() {
     const { toast } = useToast();
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const summaryRef = useRef<HTMLDivElement>(null);
 
     const resetArticle = () => {
         setEditorState(initialEditorState);
-        if (summaryRef.current) summaryRef.current.innerHTML = '';
         if (contentRef.current) contentRef.current.innerHTML = '';
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
@@ -77,9 +75,9 @@ export default function PublishArticlePage() {
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
             handleStateChange('content', contentRef.current.innerHTML);
-        }
-        if(summaryRef.current) {
-            handleStateChange('summary', summaryRef.current.innerHTML);
+            // Auto-generate summary from the first 150 characters of content
+            const summaryText = contentRef.current.innerText.substring(0, 150) + '...';
+            handleStateChange('summary', summaryText);
         }
     }, []);
 
@@ -101,21 +99,6 @@ export default function PublishArticlePage() {
           .replace(/\n/g, '<br />');
         document.execCommand('insertHTML', false, html);
         handleContentChange();
-    };
-
-    const handleKeyTakeawayChange = (index: number, value: string) => {
-        const newTakeaways = [...editorState.keyTakeaways];
-        newTakeaways[index] = value;
-        handleStateChange('keyTakeaways', newTakeaways);
-    };
-
-    const addKeyTakeaway = () => {
-        handleStateChange('keyTakeaways', [...editorState.keyTakeaways, '']);
-    };
-
-     const removeKeyTakeaway = (index: number) => {
-        const newTakeaways = editorState.keyTakeaways.filter((_, i) => i !== index);
-        handleStateChange('keyTakeaways', newTakeaways);
     };
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
@@ -147,13 +130,13 @@ export default function PublishArticlePage() {
     };
 
     const handleSave = async (status: 'published' | 'draft'): Promise<{slug: string | null, success: boolean}> => {
-        const { title, category, summary, content, imageUrl } = editorState;
+        const { title, category, content, imageUrl } = editorState;
 
-        if (status === 'published' && (!title || !summary || !content || !category || !imageUrl)) {
+        if (status === 'published' && (!title || !content || !category || !imageUrl)) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "To publish, please fill in all fields (Title, Summary, Content, Category) and upload a featured image.",
+                description: "To publish, please fill in all fields (Title, Content, Category) and upload a featured image.",
             });
             return { slug: null, success: false };
         }
@@ -167,9 +150,13 @@ export default function PublishArticlePage() {
         else setIsSavingDraft(true);
         
         try {
-            const newArticle = await addArticle({
+            const finalState = {
                 ...editorState,
-                keyTakeaways: editorState.keyTakeaways.filter(t => t.trim() !== ''),
+                summary: editorState.content.substring(0, 150).replace(/<[^>]+>/g, '') + '...',
+                keyTakeaways: [],
+            }
+            const newArticle = await addArticle({
+                ...finalState,
                 status,
             });
             toast({
@@ -260,46 +247,7 @@ export default function PublishArticlePage() {
                             onChange={(e) => handleStateChange('title', e.target.value)}
                         />
                     </div>
-
-                    <div className="space-y-2">
-                        <Label>Summary</Label>
-                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
-                        <div
-                            ref={summaryRef}
-                            id="summary-editor"
-                            contentEditable
-                            onInput={handleContentChange}
-                            onPaste={handlePaste}
-                             className={cn(
-                                'prose max-w-none min-h-32 w-full rounded-md rounded-t-none border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-                                '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg'
-                            )}
-                        />
-                    </div>
                     
-                    <div className="space-y-4">
-                        <Label>Key Takeaways</Label>
-                        <div className="space-y-2">
-                            {editorState.keyTakeaways.map((takeaway, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <Input
-                                        placeholder={`Takeaway #${index + 1}`}
-                                        value={takeaway}
-                                        onChange={(e) => handleKeyTakeawayChange(index, e.target.value)}
-                                    />
-                                    <Button variant="ghost" size="icon" onClick={() => removeKeyTakeaway(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button variant="outline" size="sm" onClick={addKeyTakeaway}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Takeaway
-                        </Button>
-                    </div>
-
-
                     <div className="space-y-2">
                         <Label>Content</Label>
                         <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
