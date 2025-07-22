@@ -58,10 +58,18 @@ export async function generateArticleImages(input: GenerateArticleImagesInput): 
     // Select the subheadings to use, up to the requested image count.
     const selectedSubheadings = subheadings.slice(0, imageCount);
 
-    const placements = selectedSubheadings.map(subheading => ({
-        imageUrl: `https://placehold.co/600x400.png`,
-        subheading: subheading,
-    }));
+    const placements = selectedSubheadings.map(subheading => {
+        const enhancedPrompt = `photograph of ${subheading}, related to the article '${input.articleTitle}', 4k, photorealistic, high quality`;
+        const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
+        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed, blurry');
+        const seed = Math.floor(Math.random() * 1000000); // Add random seed for unique images
+        const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&negative_prompt=${negativePrompt}&seed=${seed}`;
+
+        return {
+            imageUrl: imageUrl,
+            subheading: subheading,
+        };
+    });
 
     return { placements };
 }
