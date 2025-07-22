@@ -32,12 +32,13 @@ function AuthorInfo({ author }: { author: Author }) {
   )
 }
 
+interface ArticlePageProps {
+  params: {
+    slug: string;
+  };
+}
 
-export default async function ArticlePage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default async function ArticlePage({ params }: ArticlePageProps) {
   const { isEnabled } = draftMode()
   const article = await getArticleBySlug(params.slug, { includeDrafts: isEnabled });
   const author = await getAuthor();

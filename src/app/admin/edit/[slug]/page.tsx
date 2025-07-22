@@ -57,8 +57,13 @@ function EditArticleSkeleton() {
     )
 }
 
+interface EditArticlePageProps {
+  params: {
+    slug: string;
+  };
+}
 
-export default function EditArticlePage({ params }: { params: { slug: string }}) {
+export default function EditArticlePage({ params }: EditArticlePageProps) {
     const router = useRouter();
     const { toast } = useToast();
     const { slug } = params;
@@ -104,7 +109,7 @@ export default function EditArticlePage({ params }: { params: { slug: string }})
         if (contentRef.current) {
             handleStateChange('content', contentRef.current.innerHTML);
         }
-    }, [handleStateChange]);
+    }, []);
 
 
     const handleExecCommand = (command: string, value?: string) => {
