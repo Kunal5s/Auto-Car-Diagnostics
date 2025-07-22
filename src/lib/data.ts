@@ -135,6 +135,10 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
         id: uuidv4(),
         publishedAt: new Date().toISOString() 
     };
+
+    if (!newArticle.category) {
+        throw new Error('Article category must be selected before saving.');
+    }
     
     const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
     const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);

@@ -162,6 +162,10 @@ export default function PublishArticlePage() {
             toast({ variant: "destructive", title: "Content is required", description: "Please write some content with H2 subheadings to insert images." });
             return;
         }
+         if (!editorState.title) {
+            toast({ variant: "destructive", title: "Title is required", description: "An article title is needed to generate relevant images." });
+            return;
+        }
         setIsGeneratingBodyImages(true);
         try {
             const { placements } = await generateArticleImages({
@@ -215,6 +219,11 @@ export default function PublishArticlePage() {
         
         if (!title) {
             toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to save a draft." });
+            return { slug: null, success: false };
+        }
+        
+        if (!category) {
+            toast({ variant: "destructive", title: "Category is required", description: "Please select a category to save or publish." });
             return { slug: null, success: false };
         }
 
