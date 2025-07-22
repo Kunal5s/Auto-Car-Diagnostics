@@ -6,7 +6,7 @@
  * It now throws an error to indicate it is non-functional.
  */
 
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const SummarizeArticleInputSchema = z.object({
   articleText: z.string().describe('The text content of the car repair article to summarize.'),
