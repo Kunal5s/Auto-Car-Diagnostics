@@ -11,8 +11,6 @@
  */
 
 import { z } from 'zod';
-import fs from 'fs/promises';
-import path from 'path';
 
 const GenerateArticleImagesInputSchema = z.object({
   articleContent: z.string().describe('The full HTML content of the article.'),

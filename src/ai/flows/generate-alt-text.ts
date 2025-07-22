@@ -6,7 +6,7 @@
  * It now returns a simple alt text based on the title.
  */
 
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const GenerateAltTextInputSchema = z.object({
   articleTitle: z.string().describe('The title of the article the image is for.'),
