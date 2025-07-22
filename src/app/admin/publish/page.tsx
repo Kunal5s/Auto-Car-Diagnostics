@@ -173,6 +173,7 @@ export default function PublishArticlePage() {
 
             if (placements.length === 0) {
                  toast({ title: "No Subheadings Found", description: "Couldn't find any H2 subheadings to insert images after." });
+                 setIsGeneratingBodyImages(false);
                  return;
             }
             
