@@ -2,26 +2,21 @@
 "use client";
 
 import Link from "next/link";
-import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Car, ShieldCheck, Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/config";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-
-const categoryIcons = {
-  Engine: Cog,
-  Sensors: Signal,
-  OBD2: 'Obd2Icon', // Special case handled in JSX
-  Alerts: AlertTriangle,
-  Apps: AppWindow,
-  Maintenance: Wrench,
-  Fuel: Fuel,
-  EVs: BatteryCharging,
-  Trends: TrendingUp,
-};
+import { usePathname } from 'next/navigation';
 
 export function Header() {
+  const pathname = usePathname();
+
+  // Don't render header on admin pages for now
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
@@ -35,17 +30,12 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-          <SignedOut>
             <Button asChild variant="ghost">
-              <Link href="/sign-in">
+              <Link href="/admin">
                 <ShieldCheck className="mr-2 h-4 w-4" />
-                Login
+                Admin Login
               </Link>
             </Button>
-          </SignedOut>
         </div>
       </div>
       <div className="w-full border-t">
