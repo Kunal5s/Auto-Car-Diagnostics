@@ -2,12 +2,11 @@
 'use server';
 
 /**
- * @fileOverview Generates SEO-friendly alt text for an image based on an article's topic.
- * This flow is deprecated in favor of a simpler, more reliable alt text generation method.
- * It now returns a simple alt text based on the title to avoid AI model calls.
+ * @fileOverview This flow is deprecated as text generation features have been removed.
+ * It now returns a simple alt text based on the title.
  */
 
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const GenerateAltTextInputSchema = z.object({
   articleTitle: z.string().describe('The title of the article the image is for.'),
@@ -20,6 +19,6 @@ const GenerateAltTextOutputSchema = z.object({
 export type GenerateAltTextOutput = z.infer<typeof GenerateAltTextOutputSchema>;
 
 export async function generateAltText(input: GenerateAltTextInput): Promise<GenerateAltTextOutput> {
-  // Return a simple, descriptive alt text without calling an AI model to ensure stability.
-  return Promise.resolve({ altText: `Featured image for article titled: ${input.articleTitle}` });
+  // Return a simple, descriptive alt text without calling an AI model.
+  return Promise.resolve({ altText: `Featured image for article: ${input.articleTitle}` });
 }

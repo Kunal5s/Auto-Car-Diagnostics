@@ -2,8 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow for generating an image using the Pollinations.ai service.
- * This implementation uses a direct URL construction method for reliability
- * and includes a strong negative prompt to prevent watermarks.
+ * This has been updated to remove any Genkit or external AI dependency.
  *
  * - generatePollinationsImage - A function that returns a URL for a generated image.
  * - GeneratePollinationsImageInput - The input type for the function.
@@ -11,7 +10,6 @@
  */
 
 import { z } from 'zod';
-import { ai } from '@/ai/genkit';
 
 const GeneratePollinationsImageInputSchema = z.object({
   prompt: z.string().describe('The text prompt to generate an image from.'),
@@ -24,32 +22,23 @@ const GeneratePollinationsImageOutputSchema = z.object({
 });
 export type GeneratePollinationsImageOutput = z.infer<typeof GeneratePollinationsImageOutputSchema>;
 
+// This is now a standard server function, no external AI model needed.
 export async function generatePollinationsImage(input: GeneratePollinationsImageInput): Promise<GeneratePollinationsImageOutput> {
-    return generatePollinationsImageFlow(input);
-}
-
-
-const generatePollinationsImageFlow = ai.defineFlow(
-  {
-    name: 'generatePollinationsImageFlow',
-    inputSchema: GeneratePollinationsImageInputSchema,
-    outputSchema: GeneratePollinationsImageOutputSchema,
-  },
-  async ({ prompt, seed }) => {
+    const { prompt, seed } = input;
+    
     // Sanitize the prompt for the URL
     const enhancedPrompt = `${prompt}, 4k, photorealistic, high quality, sharp focus`;
     const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
     
-    // We add a strong negative prompt to the URL to avoid text, watermarks, logos, and malformed features.
+    // Add a strong negative prompt to avoid text, watermarks, etc.
     const negativePrompt = encodeURIComponent('text, logo, watermark, signature, deformed, ugly, malformed');
+    
     let imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?negative_prompt=${negativePrompt}&`;
     
-    // Append the seed if provided
     if (seed) {
         imageUrl += `seed=${seed}&`;
     }
 
-    // Return the URL without width/height, as they will be added on the client-side
+    // The final URL will be constructed on the client, this just provides the base.
     return { imageUrl };
-  }
-);
+}
