@@ -1,7 +1,8 @@
 
+"use client";
+
 import { getArticleBySlug, getAuthor } from "@/lib/data";
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import { Footer } from "@/components/common/footer";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock } from "lucide-react";
@@ -9,12 +10,15 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import type { Author } from "@/lib/types";
-import { draftMode } from 'next/headers'
+import type { Article, Author } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/common/header";
+import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableOfContents, type TocEntry } from "@/components/article/table-of-contents";
 
 function AuthorInfo({ author }: { author: Author }) {
+  if (!author) return null;
   return (
     <div className="mt-16 pt-8 border-t">
        <div className="flex items-center gap-4">
@@ -32,21 +36,126 @@ function AuthorInfo({ author }: { author: Author }) {
   )
 }
 
+function ArticlePageSkeleton() {
+    return (
+        <div className="max-w-4xl mx-auto">
+            <Skeleton className="h-10 w-48 mb-8" />
+            <div className="space-y-4">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-10 w-1/2" />
+            </div>
+            <Skeleton className="aspect-video w-full rounded-lg my-8" />
+            <div className="space-y-4">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-3/4" />
+            </div>
+        </div>
+    )
+}
+
 interface ArticlePageProps {
   params: { slug: string };
 }
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { isEnabled } = draftMode()
-  const article = await getArticleBySlug(params.slug, { includeDrafts: isEnabled });
-  const author = await getAuthor();
+export default function ArticlePage({ params }: ArticlePageProps) {
+  const [article, setArticle] = useState<Article | null>(null);
+  const [author, setAuthor] = useState<Author | null>(null);
+  const [toc, setToc] = useState<TocEntry[]>([]);
+  const [contentWithIds, setContentWithIds] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        // We fetch with drafts enabled in case we are viewing a draft preview
+        const articleData = await getArticleBySlug(params.slug, { includeDrafts: true });
+        
+        if (!articleData) {
+            // Let the notFound page handle it if it truly doesn't exist
+            setArticle(null);
+            return;
+        }
+
+        const authorData = await getAuthor();
+        setAuthor(authorData);
+
+        // Process content for TOC
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = articleData.content;
+        const headings = tempDiv.querySelectorAll('h2, h3');
+        const tocEntries: TocEntry[] = [];
+        let h2Counter = 0;
+        let h3Counter = 0;
+
+        headings.forEach(heading => {
+            const level = parseInt(heading.tagName.substring(1), 10);
+            let number;
+
+            if (level === 2) {
+                h2Counter++;
+                h3Counter = 0;
+                number = `${h2Counter}`;
+            } else { // level === 3
+                if (h2Counter === 0) h2Counter = 1; // Handle case where h3 appears before h2
+                h3Counter++;
+                number = `${h2Counter}.${h3Counter}`;
+            }
+            
+            const title = heading.textContent || '';
+            const id = `${number}-${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+            
+            heading.id = id;
+            tocEntries.push({ id, title, level, number });
+        });
+
+        setToc(tocEntries);
+        setContentWithIds(tempDiv.innerHTML);
+        setArticle(articleData);
+      } catch (error) {
+        console.error("Failed to fetch article data:", error);
+        setArticle(null); // Set to null to show not found
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [params.slug]);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">
+          <article className="container py-10">
+            <ArticlePageSkeleton />
+          </article>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!article) {
-    notFound();
-  }
-  
-  if (!isEnabled && article.status !== 'published') {
-    notFound();
+    // We can use a proper notFound() call here if needed,
+    // but for now, a simple message or redirect might suffice.
+    return (
+        <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow container py-10 text-center">
+                <h1 className="text-2xl font-bold">Article Not Found</h1>
+                <p className="text-muted-foreground">The article you are looking for does not exist.</p>
+                <Button asChild className="mt-4">
+                    <Link href="/">Return to Homepage</Link>
+                </Button>
+            </main>
+            <Footer />
+        </div>
+    );
   }
   
   const readingTime = Math.ceil((article.content || '').split(/\s+/).length / 200);
@@ -92,13 +201,15 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 priority
               />
             </div>
+            
+            {toc.length > 0 && <TableOfContents toc={toc} />}
 
             <div className={cn(
               "prose prose-lg max-w-none prose-headings:font-headline prose-headings:font-semibold prose-headings:text-foreground prose-p:font-body prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
               "[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl"
-            )} dangerouslySetInnerHTML={{ __html: article.content }} />
+            )} dangerouslySetInnerHTML={{ __html: contentWithIds }} />
             
-            <AuthorInfo author={author} />
+            {author && <AuthorInfo author={author} />}
           </div>
         </article>
       </main>
