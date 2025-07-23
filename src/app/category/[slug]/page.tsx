@@ -33,7 +33,7 @@ function ArticlesSkeleton() {
   );
 }
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
+export default function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   
   const [articles, setArticles] = useState<Article[]>([]);
@@ -156,3 +156,5 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
+    

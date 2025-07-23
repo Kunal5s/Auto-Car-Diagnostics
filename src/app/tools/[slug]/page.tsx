@@ -40,7 +40,7 @@ const toolComponents: { [key: string]: React.ComponentType } = {
   "ac-performance-checker": AcPerformanceChecker,
 };
 
-export default function ToolPage({ params }: { params: { slug: string } }) {
+export default function ToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
 
   const tool = tools.find((t) => t.slug === slug);
@@ -79,3 +79,5 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
+    

@@ -55,7 +55,7 @@ function ArticlePageSkeleton() {
     )
 }
 
-export default function ArticlePage({ params }: { params: { slug: string } }) {
+export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const [article, setArticle] = useState<Article | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
@@ -214,3 +214,5 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
+    

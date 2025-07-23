@@ -57,7 +57,7 @@ function EditArticleSkeleton() {
     )
 }
 
-export default function EditArticlePage({ params }: { params: { slug: string } }) {
+export default function EditArticlePage({ params }: { params: Promise<{ slug: string }> }) {
     const router = useRouter();
     const { toast } = useToast();
     const { slug } = use(params);
@@ -359,3 +359,5 @@ export default function EditArticlePage({ params }: { params: { slug: string } }
         </div>
     );
 }
+
+    
