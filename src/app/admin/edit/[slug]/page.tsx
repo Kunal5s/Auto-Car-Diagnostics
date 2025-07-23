@@ -75,8 +75,6 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
             if (fetchedArticle) {
                 setArticle(fetchedArticle);
                 if (contentRef.current) {
-                  // This is a failsafe. dangerouslySetInnerHTML should handle the initial render.
-                  // This ensures that if the ref is ready after state update, content is still set.
                   contentRef.current.innerHTML = fetchedArticle.content;
                 }
             } else {
@@ -100,10 +98,10 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
     };
 
     const handleContentChange = useCallback(() => {
-        if (contentRef.current) {
+        if (contentRef.current && article) {
             handleStateChange('content', contentRef.current.innerHTML);
         }
-    }, []);
+    }, [article]);
 
 
     const handleExecCommand = (command: string, value?: string) => {
@@ -159,7 +157,6 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         const editor = contentRef.current;
         if (!editor) return;
 
-        // Use a MutationObserver to reliably track changes from execCommand
         const observer = new MutationObserver(() => {
             handleContentChange();
         });
@@ -190,14 +187,16 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
 
         setIsUpdating(true);
         try {
-            const updatedArticle = await updateArticle(slug, {
+            const articleToUpdate: Partial<Omit<Article, 'id' | 'slug'>> = {
                 title,
                 content: currentContent,
                 category,
                 imageUrl,
                 altText: article.altText,
                 imageHint: article.imageHint,
-            });
+            };
+
+            const updatedArticle = await updateArticle(slug, articleToUpdate);
             toast({
                 title: "Article Updated!",
                 description: "Your changes have been saved.",

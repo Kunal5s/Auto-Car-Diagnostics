@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Eye, Send, Loader2, Save, Upload, RefreshCcw, ImagePlus, Wand2 } from 'lucide-react';
@@ -31,22 +31,20 @@ import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-imag
 import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 
-type EditorState = Omit<Article, 'id' | 'publishedAt'>
-
-const initialEditorState: EditorState = {
-    slug: '',
-    title: '',
-    content: '',
-    category: '',
-    imageUrl: '',
-    altText: '',
-    imageHint: '',
-    status: 'draft',
-};
+type ArticleStatus = 'published' | 'draft';
 
 export default function PublishArticlePage() {
     const router = useRouter();
-    const [editorState, setEditorState] = useState<EditorState>(initialEditorState);
+    const { toast } = useToast();
+
+    // State management based on user's recommendation for clarity and correctness
+    const [title, setTitle] = useState('');
+    const [slug, setSlug] = useState('');
+    const [content, setContent] = useState('');
+    const [category, setCategory] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [altText, setAltText] = useState('');
+    const [imageHint, setImageHint] = useState('');
     
     const [isPublishing, setIsPublishing] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -56,29 +54,29 @@ export default function PublishArticlePage() {
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     const [bodyImageCount, setBodyImageCount] = useState<number>(3);
     
-    const { toast } = useToast();
-
     const contentRef = useRef<HTMLDivElement>(null);
 
+    const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newTitle = e.target.value;
+        setTitle(newTitle);
+        setSlug(newTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+    };
+    
     const resetArticle = () => {
-        setEditorState(initialEditorState);
+        setTitle('');
+        setSlug('');
+        setContent('');
+        setCategory('');
+        setImageUrl('');
+        setAltText('');
+        setImageHint('');
         if (contentRef.current) contentRef.current.innerHTML = '';
         toast({ title: "Form Cleared", description: "You can now start a new article." });
     }
 
-    const handleStateChange = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
-        setEditorState(prev => {
-            const newState = { ...prev, [key]: value };
-            if (key === 'title') {
-                newState.slug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            }
-            return newState;
-        });
-    };
-    
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
-            handleStateChange('content', contentRef.current.innerHTML);
+            setContent(contentRef.current.innerHTML);
         }
     }, []);
 
@@ -117,10 +115,10 @@ export default function PublishArticlePage() {
             reader.onloadend = () => {
                 const dataUrl = reader.result as string;
                 if (isFeatured) {
-                    handleStateChange('imageUrl', dataUrl);
-                    handleStateChange('altText', `Image for article: ${editorState.title}`);
+                    setImageUrl(dataUrl);
+                    setAltText(`Image for article: ${title}`);
                 } else {
-                     const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${editorState.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                     const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
                     document.execCommand('insertHTML', false, imgHtml);
                     handleContentChange();
                     toast({ title: "Image inserted into content." });
@@ -131,19 +129,19 @@ export default function PublishArticlePage() {
     };
 
     const handleGenerateFeaturedImage = async () => {
-        if (!editorState.title) {
+        if (!title) {
             toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to generate a relevant image."});
             return;
         }
         setIsGeneratingImage(true);
         try {
-            const promptText = `Photorealistic image for an article about: ${editorState.title}, category: ${editorState.category}.`;
-            const { imageUrl } = await generatePollinationsImage({ prompt: promptText, seed: Date.now() });
-            const finalImageUrl = `${imageUrl}width=600&height=400`;
-            handleStateChange('imageUrl', finalImageUrl);
+            const promptText = `Photorealistic image for an article about: ${title}, category: ${category}.`;
+            const { imageUrl: generatedUrl } = await generatePollinationsImage({ prompt: promptText, seed: Date.now() });
+            const finalImageUrl = `${generatedUrl}width=600&height=400`;
+            setImageUrl(finalImageUrl);
             
-            const { altText } = await generateAltText({ articleTitle: editorState.title });
-            handleStateChange('altText', altText);
+            const { altText: generatedAltText } = await generateAltText({ articleTitle: title });
+            setAltText(generatedAltText);
             
             toast({ title: "Featured Image Generated", description: "A new image and alt text have been created." });
 
@@ -157,20 +155,21 @@ export default function PublishArticlePage() {
     };
 
     const handleGenerateBodyImages = async () => {
-        if (!editorState.content) {
+        const currentContent = contentRef.current?.innerHTML || content;
+        if (!currentContent) {
             toast({ variant: "destructive", title: "Content is required", description: "Please write some content with H2 subheadings to insert images." });
             return;
         }
-         if (!editorState.title) {
+         if (!title) {
             toast({ variant: "destructive", title: "Title is required", description: "An article title is needed to generate relevant images." });
             return;
         }
         setIsGeneratingBodyImages(true);
         try {
             const { placements } = await generateArticleImages({
-                articleContent: editorState.content,
-                articleTitle: editorState.title,
-                category: editorState.category,
+                articleContent: currentContent,
+                articleTitle: title,
+                category: category,
                 imageCount: bodyImageCount,
             });
 
@@ -180,7 +179,7 @@ export default function PublishArticlePage() {
                  return;
             }
             
-            let newContent = editorState.content;
+            let newContent = currentContent;
             for (const placement of placements) {
                 const subheadingHtml = `<h2>${placement.subheading}</h2>`;
                 const imageHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${placement.imageUrl}" alt="${placement.subheading}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
@@ -190,7 +189,7 @@ export default function PublishArticlePage() {
             if (contentRef.current) {
                 contentRef.current.innerHTML = newContent;
             }
-            handleStateChange('content', newContent);
+            setContent(newContent);
             
             toast({ title: "Body Images Inserted", description: `${placements.length} images have been generated and added to your article.` });
 
@@ -203,10 +202,8 @@ export default function PublishArticlePage() {
         }
     };
 
-
-    const handleSave = async (status: 'published' | 'draft'): Promise<Article | null> => {
-        const { title, category, imageUrl } = editorState;
-        const currentContent = contentRef.current?.innerHTML || editorState.content;
+    const handleSave = async (status: ArticleStatus): Promise<Article | null> => {
+        const currentContent = contentRef.current?.innerHTML || content;
 
         if (status === 'published' && (!title || !currentContent || !category || !imageUrl)) {
             toast({
@@ -231,11 +228,15 @@ export default function PublishArticlePage() {
         else setIsSavingDraft(true);
         
         try {
-            const articleToSave = {
-                ...editorState,
+            const articleToSave: Omit<Article, 'id' | 'publishedAt'> = {
+                title,
+                slug,
                 content: currentContent,
+                category: category || categories[0].name,
+                imageUrl,
+                altText,
+                imageHint,
                 status,
-                category: editorState.category || categories[0].name, 
             };
             
             const newArticle = await addArticle(articleToSave);
@@ -263,34 +264,20 @@ export default function PublishArticlePage() {
     
     const handlePublish = async () => {
         const newArticle = await handleSave('published');
-        if (newArticle) {
+        if (newArticle?.slug) {
             router.push(`/admin/edit/${newArticle.slug}`);
         }
     }
 
     const handleSaveDraft = async () => {
         const newArticle = await handleSave('draft');
-        if (newArticle) {
+        if (newArticle?.slug) {
             router.push(`/admin/edit/${newArticle.slug}`);
         }
     }
 
     const handlePreview = async () => {
-        const currentContent = contentRef.current?.innerHTML || editorState.content;
-        const tempTitle = editorState.title || "preview-draft";
-        const tempSlug = tempTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-        const previewState = {
-            ...editorState,
-            title: tempTitle,
-            slug: tempSlug,
-            content: currentContent,
-            status: 'draft',
-            category: editorState.category || categories[0].name,
-        };
-
-        const newArticle = await addArticle(previewState);
-
+        const newArticle = await handleSave('draft'); // Save as a draft to get a slug
         if (newArticle?.slug) {
              window.open(`/api/draft?slug=${newArticle.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         } else {
@@ -344,8 +331,8 @@ export default function PublishArticlePage() {
                         <Input 
                             id="article-title" 
                             placeholder="Your engaging article title..." 
-                            value={editorState.title}
-                            onChange={(e) => handleStateChange('title', e.target.value)}
+                            value={title}
+                            onChange={handleTitleChange}
                         />
                     </div>
                     
@@ -375,7 +362,7 @@ export default function PublishArticlePage() {
                         <CardContent className="space-y-6">
                              <div className="space-y-2">
                                 <Label htmlFor="category">Category</Label>
-                                <Select onValueChange={(value) => handleStateChange('category', value)} value={editorState.category}>
+                                <Select onValueChange={setCategory} value={category}>
                                     <SelectTrigger id="category">
                                         <SelectValue placeholder="Select a category" />
                                     </SelectTrigger>
@@ -398,8 +385,8 @@ export default function PublishArticlePage() {
                                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                             <p className="text-muted-foreground text-sm">Generating...</p>
                                         </div>
-                                    ) : editorState.imageUrl ? (
-                                        <Image src={editorState.imageUrl} alt={editorState.altText || editorState.title} width={600} height={400} className="object-cover w-full h-full" />
+                                    ) : imageUrl ? (
+                                        <Image src={imageUrl} alt={altText || title} width={600} height={400} className="object-cover w-full h-full" />
                                     ) : (
                                         <div className="text-center text-muted-foreground p-4">
                                             <ImagePlus className="mx-auto h-8 w-8 mb-2" />
@@ -416,14 +403,14 @@ export default function PublishArticlePage() {
                                             <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
                                         </label>
                                     </Button>
-                                    <Button className="flex-1" onClick={handleGenerateFeaturedImage} disabled={isGeneratingImage || !editorState.title}>
+                                    <Button className="flex-1" onClick={handleGenerateFeaturedImage} disabled={isGeneratingImage || !title}>
                                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                                         Generate
                                     </Button>
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="alt-text" className="text-xs">Alt Text (for SEO)</Label>
-                                    <Input id="alt-text" value={editorState.altText} onChange={(e) => handleStateChange('altText', e.target.value)} placeholder="Descriptive alt text..."/>
+                                    <Input id="alt-text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Descriptive alt text..."/>
                                 </div>
                             </div>
                             
@@ -440,7 +427,7 @@ export default function PublishArticlePage() {
                                             {Array.from({ length: 20 }, (_, i) => i + 1).map(i => <SelectItem key={i} value={i.toString()}>{i}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
-                                    <Button className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !editorState.content}>
+                                    <Button className="flex-1" onClick={handleGenerateBodyImages} disabled={isGeneratingBodyImages || !content}>
                                         {isGeneratingBodyImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
                                         Generate & Insert
                                     </Button>
@@ -455,7 +442,7 @@ export default function PublishArticlePage() {
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
                                 </Button>
-                                <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={isPublishing || isSavingDraft || !editorState.title}>
+                                <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={isPublishing || isSavingDraft || !title}>
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
