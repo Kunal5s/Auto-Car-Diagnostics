@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { notFound, useParams } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getArticlesByCategory } from "@/lib/data";
 import type { Article } from "@/lib/types";
 import { categories } from "@/lib/config";

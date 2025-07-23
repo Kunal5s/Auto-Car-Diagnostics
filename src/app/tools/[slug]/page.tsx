@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useParams, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { tools } from "@/lib/config";
 import { Header } from "@/components/common/header";
 import { Footer } from "@/components/common/footer";
