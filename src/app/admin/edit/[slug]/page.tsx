@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Eye, Send, Loader2, Upload, RefreshCcw } from 'lucide-react';
@@ -60,7 +60,7 @@ function EditArticleSkeleton() {
 export default function EditArticlePage({ params }: { params: { slug: string } }) {
     const router = useRouter();
     const { toast } = useToast();
-    const { slug } = params;
+    const { slug } = use(params);
     
     const [article, setArticle] = useState<Article | null>(null);
     const [isLoading, setIsLoading] = useState(true);
