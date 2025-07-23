@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, use } from "react";
 import { notFound } from "next/navigation";
 import { getArticlesByCategory } from "@/lib/data";
 import type { Article } from "@/lib/types";
@@ -34,7 +34,7 @@ function ArticlesSkeleton() {
 }
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+  const { slug } = use(params);
   
   const [articles, setArticles] = useState<Article[]>([]);
   const [displayedArticles, setDisplayedArticles] = useState<Article[]>([]);

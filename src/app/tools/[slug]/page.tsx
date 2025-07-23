@@ -22,6 +22,7 @@ import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker"
 import { VinDecoder } from "@/components/tools/vin-decoder";
 import { WarningLightGuide } from "@/components/tools/warning-light-guide";
 import { SmokeDiagnosis } from "@/components/tools/smoke-diagnosis";
+import { use } from "react";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
   "vin-decoder": VinDecoder,
@@ -40,7 +41,7 @@ const toolComponents: { [key: string]: React.ComponentType } = {
 };
 
 export default function ToolPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+  const { slug } = use(params);
 
   const tool = tools.find((t) => t.slug === slug);
   const ToolComponent = toolComponents[slug];

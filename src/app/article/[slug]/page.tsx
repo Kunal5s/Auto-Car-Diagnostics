@@ -13,7 +13,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Article, Author } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/common/header";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableOfContents, type TocEntry } from "@/components/article/table-of-contents";
 
@@ -56,6 +56,7 @@ function ArticlePageSkeleton() {
 }
 
 export default function ArticlePage({ params }: { params: { slug: string } }) {
+  const { slug } = use(params);
   const [article, setArticle] = useState<Article | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [toc, setToc] = useState<TocEntry[]>([]);
@@ -67,7 +68,7 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
       try {
         setIsLoading(true);
         // We fetch with drafts enabled in case we are viewing a draft preview
-        const articleData = await getArticleBySlug(params.slug, { includeDrafts: true });
+        const articleData = await getArticleBySlug(slug, { includeDrafts: true });
         
         if (!articleData) {
             // Let the notFound page handle it if it truly doesn't exist
@@ -119,7 +120,7 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
     };
 
     fetchData();
-  }, [params.slug]);
+  }, [slug]);
 
 
   if (isLoading) {
