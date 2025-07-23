@@ -2,16 +2,15 @@
 'use server';
 
 /**
- * @fileOverview A flow for decoding a VIN and checking for recalls using the CarAPI.app service.
- * This has been updated to remove any Genkit or external AI dependency.
+ * @fileOverview A flow for decoding a VIN. THIS FEATURE IS DISABLED.
+ * The connection to the external CarAPI.app service has been removed.
  *
- * - decodeVin - A function that takes a VIN and returns detailed vehicle information and recalls.
+ * - decodeVin - This function will now throw an error.
  * - VinInput - The input type for the decodeVin function.
  * - VinOutput - The return type for the decodeVin function.
  */
 
 import { z } from 'zod';
-import { fetchCarApiData } from '@/lib/carapi';
 
 // Input Schema
 const VinInputSchema = z.object({
@@ -55,23 +54,7 @@ const VinOutputSchema = z.object({
 });
 export type VinOutput = z.infer<typeof VinOutputSchema>;
 
-// This is now a standard server function, no external AI model needed.
+// This function is now non-operational.
 export async function decodeVin({ vin }: VinInput): Promise<VinOutput> {
-    // Using Promise.all to fetch VIN details and recalls concurrently for better performance
-    const [vinDetails, recallData] = await Promise.all([
-        fetchCarApiData(`vin/${vin}`),
-        fetchCarApiData('recalls', { vin })
-    ]);
-
-    if (!vinDetails || !vinDetails.make) {
-        throw new Error('Invalid VIN or no data found. Please check the VIN and try again.');
-    }
-    
-    // The recalls might be nested in a 'data' property
-    const recalls = recallData?.data || recallData || [];
-
-    return {
-      vehicleInfo: vinDetails,
-      recalls: recalls,
-    };
+    throw new Error('The VIN Decoder service is currently unavailable.');
 }

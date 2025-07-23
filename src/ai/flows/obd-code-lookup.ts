@@ -2,16 +2,15 @@
 'use server';
 
 /**
- * @fileOverview A flow for looking up OBD-II codes using the CarAPI.app service.
- * This has been updated to remove any Genkit or external AI dependency.
+ * @fileOverview A flow for looking up OBD-II codes. THIS FEATURE IS DISABLED.
+ * The connection to the external CarAPI.app service has been removed.
  *
- * - lookupObdCode - A function that takes an OBD code and returns its definition.
+ * - lookupObdCode - This function will now throw an error.
  * - ObdCodeInput - The input type for the lookupObdCode function.
  * - ObdCodeOutput - The return type for the lookupObdCode function.
  */
 
 import { z } from 'zod';
-import { fetchCarApiData } from '@/lib/carapi';
 
 // Input Schema
 const ObdCodeInputSchema = z.object({
@@ -27,23 +26,7 @@ const ObdCodeOutputSchema = z.object({
 export type ObdCodeOutput = z.infer<typeof ObdCodeOutputSchema>;
 
 
-// This is now a standard server function, no external AI model needed.
+// This function is now non-operational.
 export async function lookupObdCode({ code }: ObdCodeInput): Promise<ObdCodeOutput> {
-    try {
-        const codeData = await fetchCarApiData(`obd-codes/${code.toUpperCase()}`);
-
-        if (!codeData || !codeData.definition) {
-            throw new Error(`Definition not found for code ${code}. Please check the code and try again.`);
-        }
-
-        return {
-            code: codeData.code,
-            definition: codeData.definition,
-        };
-    } catch (error) {
-        if (error instanceof Error && error.message.includes('404')) {
-             throw new Error(`The OBD code "${code}" was not found. Please verify the code is correct.`);
-        }
-        throw error;
-    }
+    throw new Error(`The OBD Code Lookup service is currently unavailable.`);
 }
