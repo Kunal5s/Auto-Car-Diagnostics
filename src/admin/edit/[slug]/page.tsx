@@ -127,6 +127,30 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         handleContentChange();
     };
 
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!article) return;
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                toast({ variant: "destructive", title: "File too large", description: "Please upload an image smaller than 2MB." });
+                return;
+            }
+            if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                toast({ variant: "destructive", title: "Invalid file type", description: "Please upload a PNG, JPG, or WEBP file." });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const dataUrl = reader.result as string;
+                const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${article.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                document.execCommand('insertHTML', false, imgHtml);
+                handleContentChange();
+                toast({ title: "Image inserted into content." });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleGenerateFeaturedImage = async () => {
         if (!article || !article.title) {
             toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to generate a relevant image."});
@@ -260,7 +284,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                     
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar onExecCommand={handleExecCommand} />
+                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={handleImageUpload} />
                         <div
                             ref={contentRef}
                             id="content-editor"
