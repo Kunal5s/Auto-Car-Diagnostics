@@ -1,3 +1,4 @@
+
 import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, ShieldAlert, Wind, Camera, Home } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import type { Category, Tool } from "./types";

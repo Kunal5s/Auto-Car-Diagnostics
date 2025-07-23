@@ -19,13 +19,11 @@ import { AirFilterChecker } from "@/components/tools/air-filter-checker";
 import { EngineNoiseAnalyzer } from "@/components/tools/engine-noise-analyzer";
 import { BeltConditionEstimator } from "@/components/tools/belt-condition-estimator";
 import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker";
-import { VinDecoder } from "@/components/tools/vin-decoder";
 import { WarningLightGuide } from "@/components/tools/warning-light-guide";
 import { SmokeDiagnosis } from "@/components/tools/smoke-diagnosis";
 import { use } from "react";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
-  "vin-decoder": VinDecoder,
   "warning-light-guide": WarningLightGuide,
   "smoke-color-diagnosis": SmokeDiagnosis,
   "spark-plug-checker": SparkPlugChecker,
