@@ -1,10 +1,10 @@
 
 "use client";
 
-import React, { useState, useCallback, useRef, use } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Send, Loader2, RefreshCcw, ImagePlus, Wand2 } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, RefreshCcw, ImagePlus, Wand2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -408,5 +408,3 @@ export default function PublishArticlePage() {
         </div>
     );
 }
-
-    
