@@ -4,7 +4,7 @@
 import React, { useState, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Eye, Send, Loader2, Save, Upload, RefreshCcw, ImagePlus, Wand2 } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, RefreshCcw, ImagePlus, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,13 +31,10 @@ import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-imag
 import { generateAltText } from '@/ai/flows/generate-alt-text';
 import { generateArticleImages } from '@/ai/flows/generate-article-images';
 
-type ArticleStatus = 'published' | 'draft';
-
 export default function PublishArticlePage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    // State management based on user's recommendation for clarity and correctness
     const [title, setTitle] = useState('');
     const [slug, setSlug] = useState('');
     const [content, setContent] = useState('');
@@ -47,7 +44,6 @@ export default function PublishArticlePage() {
     const [imageHint, setImageHint] = useState('');
     
     const [isPublishing, setIsPublishing] = useState(false);
-    const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isGeneratingBodyImages, setIsGeneratingBodyImages] = useState(false);
     
@@ -201,31 +197,20 @@ export default function PublishArticlePage() {
             setIsGeneratingBodyImages(false);
         }
     };
-
-    const handleSave = async (status: ArticleStatus): Promise<Article | null> => {
+    
+    const handlePublish = async () => {
         const currentContent = contentRef.current?.innerHTML || content;
 
-        if (status === 'published' && (!title || !currentContent || !category || !imageUrl)) {
+        if (!title || !currentContent || !category || !imageUrl) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
                 description: "To publish, please fill in all fields: Title, Content, Category, and Featured Image.",
             });
-            return null;
-        }
-        
-        if (!title) {
-            toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to save a draft." });
-            return null;
-        }
-        
-        if (status === 'published' && !category) {
-            toast({ variant: "destructive", title: "Category is required", description: "Please select a category to publish." });
-            return null;
+            return;
         }
 
-        if (status === 'published') setIsPublishing(true);
-        else setIsSavingDraft(true);
+        setIsPublishing(true);
         
         try {
             const articleToSave: Omit<Article, 'id' | 'publishedAt'> = {
@@ -236,16 +221,18 @@ export default function PublishArticlePage() {
                 imageUrl,
                 altText,
                 imageHint,
-                status,
+                status: 'published',
             };
             
             const newArticle = await addArticle(articleToSave);
             toast({
-                title: `Article ${status === 'published' ? 'Published' : 'Draft Saved'}!`,
+                title: `Article Published!`,
                 description: `Your article has been successfully saved.`,
             });
             
-            return newArticle;
+            if (newArticle?.slug) {
+                router.push(`/admin/edit/${newArticle.slug}`);
+            }
 
         } catch(error) {
             console.error("Failed to save article", error);
@@ -255,37 +242,8 @@ export default function PublishArticlePage() {
                 title: "Saving Failed",
                 description: errorMessage,
             });
-            return null;
         } finally {
-            if (status === 'published') setIsPublishing(false);
-            else setIsSavingDraft(false);
-        }
-    }
-    
-    const handlePublish = async () => {
-        const newArticle = await handleSave('published');
-        if (newArticle?.slug) {
-            router.push(`/admin/edit/${newArticle.slug}`);
-        }
-    }
-
-    const handleSaveDraft = async () => {
-        const newArticle = await handleSave('draft');
-        if (newArticle?.slug) {
-            router.push(`/admin/edit/${newArticle.slug}`);
-        }
-    }
-
-    const handlePreview = async () => {
-        const newArticle = await handleSave('draft'); // Save as a draft to get a slug
-        if (newArticle?.slug) {
-             window.open(`/api/draft?slug=${newArticle.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Preview Failed",
-                description: "Could not save a temporary draft to show a preview.",
-            });
+            setIsPublishing(false);
         }
     }
 
@@ -438,17 +396,9 @@ export default function PublishArticlePage() {
                             {/* Actions Section */}
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={handlePublish} disabled={isPublishing || isSavingDraft}>
+                                <Button className="w-full" onClick={handlePublish} disabled={isPublishing}>
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
-                                </Button>
-                                <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={isPublishing || isSavingDraft || !title}>
-                                     {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                    Save as Draft
-                                </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isSavingDraft || isPublishing}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Preview Article
                                 </Button>
                             </div>
                         </CardContent>
@@ -458,3 +408,5 @@ export default function PublishArticlePage() {
         </div>
     );
 }
+
+    

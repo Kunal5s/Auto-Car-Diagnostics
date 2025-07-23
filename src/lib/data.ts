@@ -96,6 +96,8 @@ export async function getArticleBySlug(slug: string, options: { includeDrafts?: 
 export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): Promise<Article> {
     const existingArticle = await getArticleBySlug(article.slug, { includeDrafts: true });
     if (existingArticle) {
+        // If an article with the same slug exists, update it instead of creating a new one.
+        // This prevents duplicates if the user navigates away and comes back.
         return updateArticle(existingArticle.slug, article);
     }
     
@@ -184,3 +186,5 @@ export async function deleteArticle(slug: string): Promise<void> {
         `feat(article): delete "${article.title}"`
     );
 }
+
+    

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Eye, Send, Loader2, Upload, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Upload, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -170,8 +170,8 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         return () => observer.disconnect();
     }, [handleContentChange]);
 
-    const handleUpdate = async (): Promise<Article | null> => {
-        if (!article) return null;
+    const handleUpdate = async (): Promise<void> => {
+        if (!article) return;
         
         const currentContent = contentRef.current?.innerHTML || article.content;
         const { title, category, imageUrl } = article;
@@ -182,7 +182,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                 title: "Missing Information",
                 description: "Please fill in all fields and ensure there is a featured image.",
             });
-            return null;
+            return;
         }
 
         setIsUpdating(true);
@@ -196,12 +196,11 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                 imageHint: article.imageHint,
             };
 
-            const updatedArticle = await updateArticle(slug, articleToUpdate);
+            await updateArticle(slug, articleToUpdate);
             toast({
                 title: "Article Updated!",
                 description: "Your changes have been saved.",
             });
-            return updatedArticle;
         } catch(error) {
             console.error("Failed to update article", error);
             const errorMessage = error instanceof Error ? error.message : "There was an error saving your changes.";
@@ -210,16 +209,8 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                 title: "Update Failed",
                 description: errorMessage,
             });
-            return null;
         } finally {
             setIsUpdating(false);
-        }
-    }
-    
-    const handlePreview = async () => {
-        const updatedArticle = await handleUpdate();
-        if (updatedArticle) {
-            window.open(`/api/draft?slug=${updatedArticle.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         }
     }
 
@@ -342,10 +333,6 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                                     {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Save Changes
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={handlePreview} disabled={isUpdating || !article}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Preview Changes
-                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -354,3 +341,5 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         </div>
     );
 }
+
+    
