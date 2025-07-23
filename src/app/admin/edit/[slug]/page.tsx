@@ -57,10 +57,10 @@ function EditArticleSkeleton() {
     )
 }
 
-export default function EditArticlePage({ params }: { params: { slug: string } }) {
+export default function EditArticlePage({ params }: { params: Promise<{ slug: string }> }) {
     const router = useRouter();
     const { toast } = useToast();
-    const { slug } = params;
+    const { slug } = use(params);
     
     const [article, setArticle] = useState<Article | null>(null);
     const [isLoading, setIsLoading] = useState(true);

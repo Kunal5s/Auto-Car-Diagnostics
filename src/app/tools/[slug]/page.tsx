@@ -79,5 +79,3 @@ export default function ToolPage({ params }: { params: Promise<{ slug: string }>
     </div>
   );
 }
-
-    
