@@ -18,15 +18,16 @@ export async function POST(request: NextRequest) {
   if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     const token = sign({ email }, JWT_SECRET, { expiresIn: '1d' });
 
-    cookies().set('auth_token', token, {
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24,
+      maxAge: 60 * 60 * 24, // 1 day
       path: '/',
       sameSite: 'lax',
     });
 
-    return NextResponse.json({ success: true });
+    return response;
   } else {
     return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
   }
