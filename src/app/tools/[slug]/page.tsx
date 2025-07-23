@@ -39,10 +39,8 @@ const toolComponents: { [key: string]: React.ComponentType } = {
   "ac-performance-checker": AcPerformanceChecker,
 };
 
-// No props needed for this client component as it gets params from a hook
-export default function ToolPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+export default function ToolPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
 
   const tool = tools.find((t) => t.slug === slug);
   const ToolComponent = toolComponents[slug];

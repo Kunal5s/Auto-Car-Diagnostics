@@ -57,11 +57,7 @@ function EditArticleSkeleton() {
     )
 }
 
-interface EditArticlePageProps {
-  params: { slug: string };
-}
-
-export default function EditArticlePage({ params }: EditArticlePageProps) {
+export default function EditArticlePage({ params }: { params: { slug: string } }) {
     const router = useRouter();
     const { toast } = useToast();
     const { slug } = params;

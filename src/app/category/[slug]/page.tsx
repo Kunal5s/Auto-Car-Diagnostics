@@ -33,9 +33,8 @@ function ArticlesSkeleton() {
   );
 }
 
-export default function CategoryPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+export default function CategoryPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   
   const [articles, setArticles] = useState<Article[]>([]);
   const [displayedArticles, setDisplayedArticles] = useState<Article[]>([]);

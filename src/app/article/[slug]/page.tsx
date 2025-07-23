@@ -55,11 +55,7 @@ function ArticlePageSkeleton() {
     )
 }
 
-interface ArticlePageProps {
-  params: { slug: string };
-}
-
-export default function ArticlePage({ params }: ArticlePageProps) {
+export default function ArticlePage({ params }: { params: { slug: string } }) {
   const [article, setArticle] = useState<Article | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [toc, setToc] = useState<TocEntry[]>([]);
