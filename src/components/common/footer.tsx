@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram } from "lucide-react";
+import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram, Fingerprint, ShieldAlert, ScanLine, Wind } from "lucide-react";
 
 function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -37,14 +37,14 @@ export function Footer() {
         </div>
       </div>
       <div className="container py-12 text-foreground">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            <div className="space-y-4 md:col-span-3 lg:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="space-y-4 lg:col-span-1">
                 <div className="flex items-center">
                     <Car className="h-8 w-8 mr-2 text-primary" />
                     <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
                 </div>
                 <p className="text-muted-foreground max-w-sm">
-                Your ultimate destination for AI-powered car diagnostics, maintenance tips, and automotive technology insights. Stay ahead with expert-curated content and cutting-edge diagnostic solutions.
+                Your ultimate destination for AI-powered car diagnostics, maintenance tips, and automotive technology insights.
                 </p>
                 <div className="flex space-x-4">
                     <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter /></Link>
@@ -59,9 +59,19 @@ export function Footer() {
                 <ul className="space-y-2">
                     <li><Link href="/about-us" className="text-muted-foreground hover:text-primary hover:underline">About Us</Link></li>
                     <li><Link href="/contact-us" className="text-muted-foreground hover:text-primary hover:underline">Contact Us</Link></li>
+                    <li><Link href="/tools" className="text-muted-foreground hover:text-primary hover:underline">All Tools</Link></li>
                     <li><Link href="/privacy-policy" className="text-muted-foreground hover:text-primary hover:underline">Privacy Policy</Link></li>
                     <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-primary hover:underline">Terms of Service</Link></li>
                     <li><Link href="/disclaimer" className="text-muted-foreground hover:text-primary hover:underline">Disclaimer</Link></li>
+                </ul>
+            </div>
+             <div>
+                <h4 className="font-bold tracking-wide text-muted-foreground mb-4">FEATURED TOOLS</h4>
+                <ul className="space-y-3">
+                    <li><Link href="/tools/vin-decoder" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><Fingerprint className="h-4 w-4 mr-2 text-primary/80" /><span>VIN Decoder</span></Link></li>
+                    <li><Link href="/tools/warning-light-guide" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><ShieldAlert className="h-4 w-4 mr-2 text-primary/80" /><span>Warning Light Guide</span></Link></li>
+                    <li><Link href="/tools/obd-code-scanner" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><ScanLine className="h-4 w-4 mr-2 text-primary/80" /><span>OBD2 Code Lookup</span></Link></li>
+                    <li><Link href="/tools/smoke-color-diagnosis" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><Wind className="h-4 w-4 mr-2 text-primary/80" /><span>Smoke Diagnosis</span></Link></li>
                 </ul>
             </div>
             <div>
