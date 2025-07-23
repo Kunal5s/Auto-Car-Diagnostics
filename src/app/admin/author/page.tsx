@@ -137,7 +137,7 @@ export default function AuthorProfilePage() {
                         <div className="flex items-center gap-6">
                             <div className="relative h-24 w-24 rounded-full overflow-hidden border-2 border-muted">
                                 {author.imageUrl ? (
-                                    <Image src={author.imageUrl} alt="Author Photo" layout="fill" objectFit="cover" />
+                                    <Image src={author.imageUrl} alt="Author Photo" layout="fill" objectFit="cover" data-ai-hint="author photo" />
                                 ) : (
                                     <div className="h-full w-full bg-secondary flex items-center justify-center">
                                         <User className="h-12 w-12 text-muted-foreground" />
