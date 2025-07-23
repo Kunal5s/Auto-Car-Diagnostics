@@ -5,7 +5,6 @@
  * We now use generate-alt-text and placeholder images.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const GenerateImageInputSchema = z.object({
