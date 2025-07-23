@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import Image from "next/image";
 import type { Article } from "@/lib/types";
@@ -12,7 +13,9 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
-  const snippet = article.content.replace(/<[^>]+>/g, '').substring(0, 150) + (article.content.length > 150 ? "..." : "");
+  // Strip HTML tags from the content to create a clean text snippet.
+  const plainTextContent = article.content.replace(/<[^>]+>/g, '');
+  const snippet = plainTextContent.substring(0, 150) + (plainTextContent.length > 150 ? "..." : "");
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-primary hover:shadow-lg hover:shadow-primary/10">

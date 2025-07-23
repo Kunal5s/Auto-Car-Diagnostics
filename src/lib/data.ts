@@ -60,10 +60,14 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
 
     for (const categorySlug of allCategorySlugs) {
         try {
+            // Check if file exists before trying to read it
+            const filePath = path.join(dataDir, `${categorySlug}.json`);
+            await fs.access(filePath);
             const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
             allArticles.push(...categoryArticles);
         } catch (e) {
-            console.warn(`Could not read articles for category: ${categorySlug}.json`);
+            // If file doesn't exist, it's not an error, just means no articles for this category yet.
+            console.warn(`No data file found for category: ${categorySlug}.json. Skipping.`);
         }
     }
 
