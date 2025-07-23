@@ -124,11 +124,11 @@ export default function AuthorProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="author-name">Author Name</Label>
-                            <Input id="author-name" name="name" value={author.name} onChange={handleInputChange} placeholder="e.g., Jane Doe" />
+                            <Input id="author-name" name="name" value={author.name || ''} onChange={handleInputChange} placeholder="e.g., Jane Doe" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="author-role">Author Title / Role</Label>
-                            <Input id="author-role" name="role" value={author.role} onChange={handleInputChange} placeholder="e.g., Lead Mechanic & Writer" />
+                            <Input id="author-role" name="role" value={author.role || ''} onChange={handleInputChange} placeholder="e.g., Lead Mechanic & Writer" />
                         </div>
                     </div>
 
@@ -162,7 +162,7 @@ export default function AuthorProfilePage() {
                         <Textarea 
                             id="author-bio" 
                             name="bio"
-                            value={author.bio} 
+                            value={author.bio || ''} 
                             onChange={handleInputChange} 
                             placeholder="Write a short bio about the author..."
                             className="min-h-48"
