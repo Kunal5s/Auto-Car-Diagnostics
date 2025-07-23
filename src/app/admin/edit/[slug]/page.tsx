@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Send, Loader2, Upload, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, ImagePlus, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RichTextToolbar } from '@/components/common/rich-text-toolbar';
 import { cn } from '@/lib/utils';
+import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
+import { generateAltText } from '@/ai/flows/generate-alt-text';
 
 function EditArticleSkeleton() {
     return (
@@ -65,6 +67,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
     const [article, setArticle] = useState<Article | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +127,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         handleContentChange();
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isFeatured: boolean = false) => {
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!article) return;
         const file = e.target.files?.[0];
         if (file) {
@@ -139,17 +142,38 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
             const reader = new FileReader();
             reader.onloadend = () => {
                 const dataUrl = reader.result as string;
-                if (isFeatured) {
-                    handleStateChange('imageUrl', dataUrl);
-                    handleStateChange('altText', `Image for article: ${article.title}`);
-                } else {
-                    const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${article.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
-                    document.execCommand('insertHTML', false, imgHtml);
-                    handleContentChange();
-                    toast({ title: "Image inserted into content." });
-                }
+                const imgHtml = `<div style="display: flex; justify-content: center; margin: 1rem 0;"><img src="${dataUrl}" alt="${article.title || 'Uploaded image'}" style="max-width: 100%; border-radius: 0.5rem;" /></div>`;
+                document.execCommand('insertHTML', false, imgHtml);
+                handleContentChange();
+                toast({ title: "Image inserted into content." });
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleGenerateFeaturedImage = async () => {
+        if (!article || !article.title) {
+            toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to generate a relevant image."});
+            return;
+        }
+        setIsGeneratingImage(true);
+        try {
+            const promptText = `Photorealistic image for an article about: ${article.title}, category: ${article.category}.`;
+            const { imageUrl: generatedUrl } = await generatePollinationsImage({ prompt: promptText, seed: Date.now() });
+            const finalImageUrl = `${generatedUrl}width=600&height=400`;
+            handleStateChange('imageUrl', finalImageUrl);
+            
+            const { altText: generatedAltText } = await generateAltText({ articleTitle: article.title });
+            handleStateChange('altText', generatedAltText);
+            
+            toast({ title: "Featured Image Generated", description: "A new image and alt text have been created." });
+
+        } catch (error) {
+            console.error("Failed to generate featured image:", error);
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+            toast({ variant: "destructive", title: "Image Generation Failed", description: errorMessage });
+        } finally {
+            setIsGeneratingImage(false);
         }
     };
 
@@ -260,7 +284,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                     
                     <div className="space-y-2">
                         <Label>Content</Label>
-                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={(e) => handleImageUpload(e, false)} />
+                        <RichTextToolbar onExecCommand={handleExecCommand} onImageUpload={handleImageUpload} />
                         <div
                             ref={contentRef}
                             id="content-editor"
@@ -302,27 +326,25 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                             <div className="space-y-4">
                                 <Label>Featured Image</Label>
                                 <div className="aspect-video rounded-lg border border-dashed flex items-center justify-center bg-muted/50 overflow-hidden">
-                                    {article.imageUrl ? (
+                                     {isGeneratingImage ? (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                            <p className="text-muted-foreground text-sm">Generating...</p>
+                                        </div>
+                                    ) : article.imageUrl ? (
                                         <Image src={article.imageUrl} alt={article.altText || article.title} width={600} height={400} className="object-cover w-full h-full" />
                                     ) : (
                                         <div className="text-center text-muted-foreground p-4">
-                                            <Upload className="mx-auto h-8 w-8 mb-2" />
-                                            <p className="text-sm">Upload a featured image.</p>
+                                            <ImagePlus className="mx-auto h-8 w-8 mb-2" />
+                                            <p className="text-sm">Generate an image.</p>
                                         </div>
                                     )}
                                 </div>
                                 
                                 <div className="flex gap-2">
-                                     <Button asChild variant="outline" className="flex-1">
-                                        <label htmlFor="featured-image-upload">
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            Upload
-                                            <input type="file" id="featured-image-upload" accept="image/png, image/jpeg, image/webp" className="sr-only" onChange={(e) => handleImageUpload(e, true)} />
-                                        </label>
-                                    </Button>
-                                    <Button variant="outline" className="flex-1" onClick={() => handleStateChange('imageUrl', '')}>
-                                        <RefreshCcw className="mr-2 h-4 w-4" />
-                                        Reset
+                                     <Button className="flex-1" onClick={handleGenerateFeaturedImage} disabled={isGeneratingImage || !article.title}>
+                                        {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                        Generate
                                     </Button>
                                 </div>
                             </div>

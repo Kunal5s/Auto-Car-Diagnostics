@@ -11,25 +11,6 @@ import { usePathname } from 'next/navigation';
 export function Header() {
   const pathname = usePathname();
 
-  // A simplified header for the admin section without navigation categories.
-  if (pathname.startsWith('/admin')) {
-    return (
-       <header className="sticky top-0 z-40 w-full border-b bg-background">
-            <div className="container flex h-16 max-w-screen-2xl items-center">
-                 <div className="mr-4 flex">
-                    <Link href="/" className="mr-6 flex items-center space-x-2">
-                        <Car className="h-6 w-6 text-primary" />
-                        <span className="font-bold font-headline">
-                          <span className="hidden sm:inline-block">Car Diagnostics BrainAi</span>
-                          <span className="sm:hidden">Admin</span>
-                        </span>
-                    </Link>
-                </div>
-            </div>
-        </header>
-    )
-  }
-
   // The main public-facing header
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
