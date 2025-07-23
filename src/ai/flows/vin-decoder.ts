@@ -1,60 +1,67 @@
+"use client";
+import React, { useRef } from 'react';
+import { Bold, Italic, Underline, Link, List, Heading1, Heading2, Heading3, Pilcrow, Type, Image as ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Separator } from '@/components/ui/separator';
 
-'use server';
+interface RichTextToolbarProps {
+    onExecCommand: (command: string, value?: string) => void;
+}
 
-/**
- * @fileOverview A flow for decoding a VIN. THIS FEATURE IS DISABLED.
- * The connection to the external CarAPI.app service has been removed.
- *
- * - decodeVin - This function will now throw an error.
- * - VinInput - The input type for the decodeVin function.
- * - VinOutput - The return type for the decodeVin function.
- */
+export function RichTextToolbar({ onExecCommand }: RichTextToolbarProps) {
+    
+    const applyFormat = (command: string, value?: string) => {
+        if (command === 'createLink') {
+            const url = prompt("Enter the URL:");
+            if (url) {
+                onExecCommand(command, url);
+            }
+        } else {
+            onExecCommand(command, value);
+        }
+    };
 
-import { z } from 'zod';
-
-// Input Schema
-const VinInputSchema = z.object({
-  vin: z.string().length(17, { message: 'VIN must be exactly 17 characters.' }).describe('The 17-character Vehicle Identification Number.'),
-});
-export type VinInput = z.infer<typeof VinInputSchema>;
-
-// Output Schema for Vehicle Details from CarAPI
-const VehicleInfoSchema = z.object({
-  make: z.string().optional(),
-  model: z.string().optional(),
-  year: z.number().optional(),
-  engine: z.string().optional(),
-  fuel_type: z.string().optional(),
-  transmission: z.string().optional(),
-  drivetrain: z.string().optional(),
-  body: z.string().optional(),
-  ext_color: z.string().optional(),
-  int_color: z.string().optional(),
-  mileage_city: z.number().nullable().optional(),
-  mileage_highway: z.number().nullable().optional(),
-});
-
-// Output Schema for Recalls from CarAPI
-const RecallInfoSchema = z.object({
-  component: z.string(),
-  consequence: z.string(),
-  description: z.string(),
-  remedy: z.string().nullable(),
-  notes: z.string().nullable(),
-  model_year: z.string(),
-  make: z.string(),
-  model: z.string(),
-  report_date: z.string(),
-  nhtsa_id: z.string(),
-});
-
-const VinOutputSchema = z.object({
-  vehicleInfo: VehicleInfoSchema.describe('Detailed information about the decoded vehicle.'),
-  recalls: z.array(RecallInfoSchema).describe('A list of safety recalls associated with the vehicle.'),
-});
-export type VinOutput = z.infer<typeof VinOutputSchema>;
-
-// This function is now non-operational.
-export async function decodeVin({ vin }: VinInput): Promise<VinOutput> {
-    throw new Error('The VIN Decoder service is currently unavailable.');
+    return (
+        <div className="flex items-center gap-1 p-1 bg-muted border border-b-0 rounded-t-md flex-wrap">
+             <ToggleGroup type="multiple">
+                <ToggleGroupItem value="bold" aria-label="Toggle bold" onMouseDown={(e) => {e.preventDefault(); applyFormat('bold')}}>
+                    <Bold className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="italic" aria-label="Toggle italic" onMouseDown={(e) => {e.preventDefault(); applyFormat('italic')}}>
+                    <Italic className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="underline" aria-label="Toggle underline" onMouseDown={(e) => {e.preventDefault(); applyFormat('underline')}}>
+                    <Underline className="h-4 w-4" />
+                </ToggleGroupItem>
+            </ToggleGroup>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => {e.preventDefault(); applyFormat('createLink')}}>
+                <Link className="h-4 w-4" />
+            </Button>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <ToggleGroup type="single" defaultValue="p">
+                <ToggleGroupItem value="p" aria-label="Paragraph" onMouseDown={(e) => {e.preventDefault(); applyFormat('formatBlock', 'p')}}>
+                     <Pilcrow className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="h1" aria-label="Heading 1" onMouseDown={(e) => {e.preventDefault(); applyFormat('formatBlock', 'h1')}}>
+                    <Heading1 className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="h2" aria-label="Heading 2" onMouseDown={(e) => {e.preventDefault(); applyFormat('formatBlock', 'h2')}}>
+                    <Heading2 className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="h3" aria-label="Heading 3" onMouseDown={(e) => {e.preventDefault(); applyFormat('formatBlock', 'h3')}}>
+                    <Heading3 className="h-4 w-4" />
+                </ToggleGroupItem>
+            </ToggleGroup>
+             <Separator orientation="vertical" className="h-6 mx-1" />
+             <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => {e.preventDefault(); applyFormat('insertUnorderedList')}}>
+                <List className="h-4 w-4" />
+            </Button>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => {e.preventDefault(); applyFormat('removeFormat')}} title="Clear Formatting">
+                <Type className="h-4 w-4" />
+            </Button>
+        </div>
+    );
 }

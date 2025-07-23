@@ -1,4 +1,4 @@
-import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, Fingerprint, ShieldAlert, Wind, Camera, Home } from "lucide-react";
+import { Cog, Signal, AlertTriangle, AppWindow, Wrench, Fuel, BatteryCharging, TrendingUp, ScanLine, Battery, Thermometer, GaugeCircle, Gauge, Filter, AudioWaveform, Replace, AirVent, ShieldAlert, Wind, Camera, Home } from "lucide-react";
 import { Obd2Icon } from "@/components/icons/obd2-icon";
 import type { Category, Tool } from "./types";
 
@@ -16,12 +16,6 @@ export const categories: Category[] = [
 ];
 
 export const tools: Tool[] = [
-    {
-        name: 'VIN Decoder & Recall Check',
-        slug: 'vin-decoder',
-        description: 'Decode your VIN to get detailed vehicle specs and check for open safety recalls.',
-        icon: Fingerprint,
-    },
     {
         name: 'Warning Light Guide',
         slug: 'warning-light-guide',
