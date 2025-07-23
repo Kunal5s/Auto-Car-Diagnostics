@@ -57,10 +57,10 @@ function EditArticleSkeleton() {
     )
 }
 
-export default function EditArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+export default function EditArticlePage({ params }: { params: { slug: string } }) {
     const router = useRouter();
     const { toast } = useToast();
-    const { slug } = use(params);
+    const { slug } = params;
     
     const [article, setArticle] = useState<Article | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -173,12 +173,10 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         return () => observer.disconnect();
     }, [handleContentChange]);
 
-    const handleUpdate = async () => {
-        if (!article) return false;
+    const handleUpdate = async (): Promise<Article | null> => {
+        if (!article) return null;
         
-        // Ensure content from the editor is correctly captured before update
         const currentContent = contentRef.current?.innerHTML || article.content;
-        
         const { title, category, imageUrl } = article;
 
         if (!title || !currentContent || !category || !imageUrl) {
@@ -187,12 +185,12 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                 title: "Missing Information",
                 description: "Please fill in all fields and ensure there is a featured image.",
             });
-            return false;
+            return null;
         }
 
         setIsUpdating(true);
         try {
-            await updateArticle(slug, {
+            const updatedArticle = await updateArticle(slug, {
                 title,
                 content: currentContent,
                 category,
@@ -204,7 +202,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                 title: "Article Updated!",
                 description: "Your changes have been saved.",
             });
-            return true;
+            return updatedArticle;
         } catch(error) {
             console.error("Failed to update article", error);
             const errorMessage = error instanceof Error ? error.message : "There was an error saving your changes.";
@@ -213,18 +211,16 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                 title: "Update Failed",
                 description: errorMessage,
             });
-            return false;
+            return null;
         } finally {
             setIsUpdating(false);
         }
     }
     
     const handlePreview = async () => {
-        if (article) {
-            const success = await handleUpdate();
-            if (success) {
-                window.open(`/api/draft?slug=${article.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
-            }
+        const updatedArticle = await handleUpdate();
+        if (updatedArticle) {
+            window.open(`/api/draft?slug=${updatedArticle.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         }
     }
 
@@ -359,5 +355,3 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         </div>
     );
 }
-
-    

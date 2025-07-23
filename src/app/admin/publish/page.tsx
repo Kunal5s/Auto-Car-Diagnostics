@@ -204,7 +204,7 @@ export default function PublishArticlePage() {
     };
 
 
-    const handleSave = async (status: 'published' | 'draft'): Promise<{slug: string | null, success: boolean}> => {
+    const handleSave = async (status: 'published' | 'draft'): Promise<Article | null> => {
         const { title, category, imageUrl } = editorState;
         const currentContent = contentRef.current?.innerHTML || editorState.content;
 
@@ -214,17 +214,17 @@ export default function PublishArticlePage() {
                 title: "Missing Information",
                 description: "To publish, please fill in all fields: Title, Content, Category, and Featured Image.",
             });
-            return { slug: null, success: false };
+            return null;
         }
         
         if (!title) {
             toast({ variant: "destructive", title: "Title is required", description: "Please enter a title to save a draft." });
-            return { slug: null, success: false };
+            return null;
         }
         
         if (status === 'published' && !category) {
             toast({ variant: "destructive", title: "Category is required", description: "Please select a category to publish." });
-            return { slug: null, success: false };
+            return null;
         }
 
         if (status === 'published') setIsPublishing(true);
@@ -235,7 +235,6 @@ export default function PublishArticlePage() {
                 ...editorState,
                 content: currentContent,
                 status,
-                // Assign a default category if saving a draft without one, to prevent errors
                 category: editorState.category || categories[0].name, 
             };
             
@@ -245,10 +244,7 @@ export default function PublishArticlePage() {
                 description: `Your article has been successfully saved.`,
             });
             
-            // Redirect to the edit page for the newly created article slug
-            router.push(`/admin/edit/${newArticle.slug}`);
-
-            return { slug: newArticle.slug, success: true };
+            return newArticle;
 
         } catch(error) {
             console.error("Failed to save article", error);
@@ -258,16 +254,29 @@ export default function PublishArticlePage() {
                 title: "Saving Failed",
                 description: errorMessage,
             });
-            return { slug: null, success: false };
+            return null;
         } finally {
             if (status === 'published') setIsPublishing(false);
             else setIsSavingDraft(false);
         }
     }
+    
+    const handlePublish = async () => {
+        const newArticle = await handleSave('published');
+        if (newArticle) {
+            router.push(`/admin/edit/${newArticle.slug}`);
+        }
+    }
+
+    const handleSaveDraft = async () => {
+        const newArticle = await handleSave('draft');
+        if (newArticle) {
+            router.push(`/admin/edit/${newArticle.slug}`);
+        }
+    }
 
     const handlePreview = async () => {
         const currentContent = contentRef.current?.innerHTML || editorState.content;
-        // Create a temporary draft for preview without a real title if needed
         const tempTitle = editorState.title || "preview-draft";
         const tempSlug = tempTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
@@ -280,10 +289,10 @@ export default function PublishArticlePage() {
             category: editorState.category || categories[0].name,
         };
 
-        const { success, slug } = await addArticle(previewState);
+        const newArticle = await addArticle(previewState);
 
-        if (success && slug) {
-             window.open(`/api/draft?slug=${slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
+        if (newArticle?.slug) {
+             window.open(`/api/draft?slug=${newArticle.slug}&secret=${process.env.NEXT_PUBLIC_DRAFT_MODE_SECRET || ''}`, '_blank');
         } else {
              toast({
                 variant: "destructive",
@@ -442,11 +451,11 @@ export default function PublishArticlePage() {
                             {/* Actions Section */}
                             <div className="space-y-2 pt-4 border-t">
                                 <Label>Actions</Label>
-                                <Button className="w-full" onClick={() => handleSave('published')} disabled={isPublishing || isSavingDraft}>
+                                <Button className="w-full" onClick={handlePublish} disabled={isPublishing || isSavingDraft}>
                                     {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Publish Article
                                 </Button>
-                                <Button variant="outline" className="w-full" onClick={() => handleSave('draft')} disabled={isPublishing || isSavingDraft || !editorState.title}>
+                                <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={isPublishing || isSavingDraft || !editorState.title}>
                                      {isSavingDraft ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save as Draft
                                 </Button>
