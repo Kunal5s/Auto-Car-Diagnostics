@@ -41,7 +41,7 @@ export function Footer() {
             <div className="space-y-4 lg:col-span-1">
                 <div className="flex items-center">
                     <Car className="h-8 w-8 mr-2 text-primary" />
-                    <h3 className="text-xl font-bold font-headline">Auto Insights</h3>
+                    <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
                 </div>
                 <p className="text-muted-foreground max-w-sm">
                 Your destination for car diagnostics, maintenance tips, and automotive technology insights.
@@ -94,7 +94,7 @@ export function Footer() {
       <div className="border-t">
         <div className="container flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-4 sm:py-0">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-             &copy; {new Date().getFullYear()} Auto Insights. All rights reserved.
+             &copy; {new Date().getFullYear()} Car Diagnostics BrainAi. All rights reserved.
           </p>
           <p className="flex items-center text-sm text-muted-foreground mt-2 sm:mt-0">
             Made with <Heart className="h-4 w-4 mx-1.5 text-red-500 fill-current" /> for automotive enthusiasts

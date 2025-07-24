@@ -1,101 +1,66 @@
-
-'use server';
-
-/**
- * @fileOverview A robust service for committing multiple file changes to a GitHub repository.
- * This implementation uses the lower-level Git Data API to bypass the 1MB file size limit
- * of the Contents API, allowing for large article files to be backed up reliably.
- */
-
-import { Octokit } from '@octokit/rest';
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO_OWNER = process.env.GITHUB_REPO_OWNER;
-const REPO_NAME = process.env.GITHUB_REPO_NAME;
-const BRANCH = 'main';
-
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
-
-interface FileChange {
-    path: string;
-    content: string;
-}
-
-/**
- * Commits multiple file changes to the GitHub repository using the Git Data API.
- * This method is more complex but supports large files and is more reliable.
- * @param files - An array of objects, each with a 'path' and 'content'.
- * @param commitMessage - The message for the git commit.
- */
-export async function commitFilesToGitHub(files: FileChange[], commitMessage: string): Promise<void> {
-    if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
-        console.error("GitHub repository details are not fully configured in environment variables. Backup will be skipped.");
-        // We throw an error here to make it clear in the UI that the save failed.
-        throw new Error("GitHub repository details are not configured, cannot save changes.");
-    }
-
-    try {
-        // 1. Get the latest commit SHA of the main branch
-        const { data: refData } = await octokit.git.getRef({
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            ref: `heads/${BRANCH}`,
-        });
-        const latestCommitSha = refData.object.sha;
-
-        // 2. Get the tree SHA from that commit
-        const { data: commitData } = await octokit.git.getCommit({
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            commit_sha: latestCommitSha,
-        });
-        const baseTreeSha = commitData.tree.sha;
-
-        // 3. Create new "blobs" (file contents) for each of our changes
-        const blobPromises = files.map(file =>
-            octokit.git.createBlob({
-                owner: REPO_OWNER,
-                repo: REPO_NAME,
-                content: file.content,
-                encoding: 'utf-8',
-            })
-        );
-        const blobs = await Promise.all(blobPromises);
-
-        // 4. Create a new "tree" (a representation of the repository's file structure)
-        const tree = files.map((file, index) => ({
-            path: file.path,
-            mode: '100644' as const, // This means it's a file
-            type: 'blob' as const,
-            sha: blobs[index].data.sha,
-        }));
-
-        const { data: newTree } = await octokit.git.createTree({
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            base_tree: baseTreeSha,
-            tree,
-        });
-
-        // 5. Create a new commit object pointing to our new tree
-        const { data: newCommit } = await octokit.git.createCommit({
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            message: commitMessage,
-            tree: newTree.sha,
-            parents: [latestCommitSha], // Link it to the previous commit
-        });
-
-        // 6. Update the main branch to point to our new commit
-        await octokit.git.updateRef({
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            ref: `heads/${BRANCH}`,
-            sha: newCommit.sha,
-        });
-
-    } catch (error) {
-        console.error('Failed to commit files to GitHub:', error);
-        throw new Error('Could not save changes to the GitHub repository.');
-    }
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/dev-init.ts && next dev --turbopack -p 9003",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^4.1.3",
+    "@radix-ui/react-accordion": "^1.2.3",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-collapsible": "^1.1.11",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-menubar": "^1.1.6",
+    "@radix-ui/react-popover": "^1.1.6",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-radio-group": "^1.2.3",
+    "@radix-ui/react-scroll-area": "^1.2.3",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slider": "^1.2.3",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.1.3",
+    "@radix-ui/react-tabs": "^1.1.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/react-toggle": "^1.1.0",
+    "@radix-ui/react-toggle-group": "^1.1.0",
+    "axios": "^1.7.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.5.0",
+    "embla-carousel-react": "^8.6.0",
+    "firebase": "^11.9.1",
+    "lucide-react": "^0.475.0",
+    "next": "15.3.3",
+    "patch-package": "^8.0.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^10.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5",
+    "tsx": "^4.16.2"
+  }
 }

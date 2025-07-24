@@ -6,7 +6,6 @@ import { categories } from '@/lib/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { commitFilesToGitHub } from '@/lib/github';
 
 // The canonical path to the data directory.
 const dataDir = path.join(process.cwd(), 'src/data');
@@ -72,8 +71,8 @@ export async function getAuthor(): Promise<Author> {
 }
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
-    const content = await writeJsonFile('author.json', authorData);
-    await commitFilesToGitHub([{ path: 'src/data/author.json', content }], `feat(author): update author profile`);
+    await writeJsonFile('author.json', authorData);
+    // Committing to GitHub is removed
     return authorData;
 }
 
@@ -144,12 +143,7 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     }
 
     articles.unshift(newArticle); // Add to the beginning of the list
-    const content = await writeJsonFile(`${categorySlug}.json`, articles);
-
-    await commitFilesToGitHub(
-        [{ path: `src/data/${categorySlug}.json`, content }],
-        `feat(article): add "${newArticle.title}"`
-    );
+    await writeJsonFile(`${categorySlug}.json`, articles);
 
     return newArticle;
 }
@@ -166,24 +160,20 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         updatedArticle.publishedAt = new Date().toISOString();
     }
 
-    const filesToCommit: { path: string, content: string }[] = [];
-
     // If category has changed, we need to update two files.
     if (hasCategoryChanged) {
         // 1. Remove from old category file
         const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
         const oldArticles = await readJsonFile<Article[]>(`${oldCategorySlug}.json`);
         const filteredOldArticles = oldArticles.filter(a => a.id !== originalArticle.id);
-        const oldFileContent = await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
-        filesToCommit.push({ path: `src/data/${oldCategorySlug}.json`, content: oldFileContent });
+        await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
 
         // 2. Add to new category file (logic continues below)
         const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
         const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`);
         newArticles.unshift(updatedArticle);
         newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        const newFileContent = await writeJsonFile(`${newCategorySlug}.json`, newArticles);
-        filesToCommit.push({ path: `src/data/${newCategorySlug}.json`, content: newFileContent });
+        await writeJsonFile(`${newCategorySlug}.json`, newArticles);
 
     } else {
         // Category is the same, just update the single file.
@@ -198,11 +188,8 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         }
         
         articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        const fileContent = await writeJsonFile(`${categorySlug}.json`, articles);
-        filesToCommit.push({ path: `src/data/${categorySlug}.json`, content: fileContent });
+        await writeJsonFile(`${categorySlug}.json`, articles);
     }
-    
-    await commitFilesToGitHub(filesToCommit, `feat(article): update "${updatedArticle.title}"`);
     
     return updatedArticle;
 }
@@ -218,10 +205,5 @@ export async function deleteArticle(slug: string): Promise<void> {
     const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
     const updatedArticles = articles.filter(a => a.id !== article.id);
     
-    const content = await writeJsonFile(`${categorySlug}.json`, updatedArticles);
-    
-    await commitFilesToGitHub(
-        [{ path: `src/data/${categorySlug}.json`, content }],
-        `feat(article): delete "${article.title}"`
-    );
+    await writeJsonFile(`${categorySlug}.json`, updatedArticles);
 }

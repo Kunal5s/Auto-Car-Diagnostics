@@ -49,6 +49,7 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     await writeJsonFile('author.json', authorData);
+    // Committing to GitHub is removed
     return authorData;
 }
 
