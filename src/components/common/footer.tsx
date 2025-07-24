@@ -94,7 +94,9 @@ export function Footer() {
       <div className="border-t">
         <div className="container flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-4 sm:py-0">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-             &copy; {new Date().getFullYear()} Car Diagnostics BrainAi. All rights reserved.
+            <Link href="/admin" title="Admin Dashboard">
+                <span className="hover:text-primary cursor-pointer">&copy; {new Date().getFullYear()}</span>
+            </Link> Car Diagnostics BrainAi. All rights reserved.
           </p>
           <p className="flex items-center text-sm text-muted-foreground mt-2 sm:mt-0">
             Made with <Heart className="h-4 w-4 mx-1.5 text-red-500 fill-current" /> for automotive enthusiasts

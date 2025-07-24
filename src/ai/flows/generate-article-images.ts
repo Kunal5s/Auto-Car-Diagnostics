@@ -33,7 +33,7 @@ export type GenerateArticleImagesOutput = z.infer<typeof GenerateArticleImagesOu
 
 // This function now works offline by parsing HTML directly without AI.
 export async function generateArticleImages(input: GenerateArticleImagesInput): Promise<GenerateArticleImagesOutput> {
-    const { articleContent, imageCount, articleTitle } = input;
+    const { articleContent, imageCount } = input;
     
     // A simple regex to find all <h2> tags.
     // This is a basic implementation and might not handle all edge cases of HTML,
@@ -57,14 +57,8 @@ export async function generateArticleImages(input: GenerateArticleImagesInput): 
     const selectedSubheadings = subheadings.slice(0, imageCount);
 
     const placements = selectedSubheadings.map(subheading => {
-        const enhancedPrompt = `photograph of ${subheading}, related to the article '${articleTitle}', 4k, photorealistic, high quality`;
-        const sanitizedPrompt = encodeURIComponent(enhancedPrompt.trim().replace(/\s+/g, " "));
-        const negativePrompt = encodeURIComponent('text, logo, watermark, signature, brand, branding, deformed, ugly, malformed, blurry');
-        const seed = Math.floor(Math.random() * 1000000); // Add random seed for unique images
-        const imageUrl = `https://image.pollinations.ai/prompt/${sanitizedPrompt}?width=600&height=400&negative_prompt=${negativePrompt}&seed=${seed}`;
-
         return {
-            imageUrl: imageUrl,
+            imageUrl: `https://placehold.co/600x400.png`,
             subheading: subheading,
         };
     });

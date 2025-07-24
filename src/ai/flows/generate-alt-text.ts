@@ -2,8 +2,8 @@
 'use server';
 
 /**
- * @fileOverview This flow is deprecated as text generation features have been removed.
- * It now returns a simple alt text based on the title.
+ * @fileOverview Generates SEO-friendly alt text for an image based on an article's topic.
+ * This version uses a simple, non-AI approach to avoid external dependencies.
  */
 
 import {z} from 'zod';
@@ -14,7 +14,7 @@ const GenerateAltTextInputSchema = z.object({
 export type GenerateAltTextInput = z.infer<typeof GenerateAltTextInputSchema>;
 
 const GenerateAltTextOutputSchema = z.object({
-  altText: z.string().describe('A simple alt text for the image.'),
+  altText: z.string().describe('The generated SEO-friendly alt text for the image.'),
 });
 export type GenerateAltTextOutput = z.infer<typeof GenerateAltTextOutputSchema>;
 
