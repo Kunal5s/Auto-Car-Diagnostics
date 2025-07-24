@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { 
     ArrowLeft, Send, Loader2, ImagePlus, Wand2, Upload, Bold, Italic, Underline, Strikethrough, 
-    List, ListOrdered, Quote, Link as LinkIcon, Pilcrow, AlignLeft, AlignCenter, AlignRight, Code, RemoveFormatting
+    List, ListOrdered, Quote, Link as LinkIcon, Pilcrow, RemoveFormatting
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -391,5 +391,3 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         </div>
     );
 }
-
-    
