@@ -4,7 +4,10 @@
 import React, { useState, useEffect, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Send, Loader2, ImagePlus, Wand2 } from 'lucide-react';
+import { 
+    ArrowLeft, Send, Loader2, ImagePlus, Wand2, Upload, Bold, Italic, Underline, Strikethrough, 
+    List, ListOrdered, Quote, Link as LinkIcon, Pilcrow, AlignLeft, AlignCenter, AlignRight, Code, RemoveFormatting
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,8 +20,45 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { generatePollinationsImage } from '@/ai/flows/generate-pollinations-image';
 import { generateAltText } from '@/ai/flows/generate-alt-text';
+import { Toggle } from '@/components/ui/toggle';
+import { Separator } from '@/components/ui/separator';
+
+function EditorToolbar({ editorRef }: { editorRef: React.RefObject<HTMLDivElement> }) {
+    const handleCommand = (command: string, value?: string) => {
+        if (editorRef.current) {
+            editorRef.current.focus();
+            document.execCommand(command, false, value);
+        }
+    };
+    
+    const handleLink = () => {
+        const url = prompt("Enter the URL:");
+        if (url) {
+            handleCommand('createLink', url);
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-1 p-1 border rounded-t-md bg-muted flex-wrap">
+            <Toggle size="sm" onPressedChange={() => handleCommand('bold')}><Bold className="h-4 w-4" /></Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('italic')}><Italic className="h-4 w-4" /></Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('underline')}><Underline className="h-4 w-4" /></Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('strikethrough')}><Strikethrough className="h-4 w-4" /></Toggle>
+            <Separator orientation="vertical" className="h-6" />
+            <Toggle size="sm" onPressedChange={() => handleCommand('insertUnorderedList')}><List className="h-4 w-4" /></Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('insertOrderedList')}><ListOrdered className="h-4 w-4" /></Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('formatBlock', 'blockquote')}><Quote className="h-4 w-4" /></Toggle>
+            <Button variant="ghost" size="sm" onClick={handleLink}><LinkIcon className="h-4 w-4" /></Button>
+            <Separator orientation="vertical" className="h-6" />
+            <Toggle size="sm" onPressedChange={() => handleCommand('formatBlock', 'h2')}>H2</Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('formatBlock', 'h3')}>H3</Toggle>
+            <Toggle size="sm" onPressedChange={() => handleCommand('formatBlock', 'p')}><Pilcrow className="h-4 w-4" /></Toggle>
+            <Separator orientation="vertical" className="h-6" />
+             <Button variant="ghost" size="sm" onClick={() => handleCommand('removeFormat')}><RemoveFormatting className="h-4 w-4" /></Button>
+        </div>
+    );
+}
 
 function EditArticleSkeleton() {
     return (
@@ -69,6 +109,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
     const contentRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const loadArticle = useCallback(async () => {
         setIsLoading(true);
@@ -104,24 +145,11 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
             handleStateChange('content', contentRef.current.innerHTML);
         }
     }, [article]);
-
-    const handleExecCommand = (command: string, value?: string) => {
-        document.execCommand(command, false, value);
-        handleContentChange();
-    };
     
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         event.preventDefault();
         const text = event.clipboardData.getData('text/plain');
-        const html = text
-          .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-          .replace(/\*(.*?)\*/g, '<i>$1</i>')
-          .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-          .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-          .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-          .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
-          .replace(/\n/g, '<br />');
-        document.execCommand('insertHTML', false, html);
+        document.execCommand('insertText', false, text);
         handleContentChange();
     };
 
@@ -132,15 +160,13 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         }
         setIsGeneratingImage(true);
         try {
-            const promptText = `Photorealistic image for an article about: ${article.title}, category: ${article.category}.`;
-            const { imageUrl: generatedUrl } = await generatePollinationsImage({ prompt: promptText, seed: Date.now() });
-            const finalImageUrl = `${generatedUrl}width=600&height=400`;
+            const finalImageUrl = `https://placehold.co/600x400.png`;
             handleStateChange('imageUrl', finalImageUrl);
             
             const { altText: generatedAltText } = await generateAltText({ articleTitle: article.title });
             handleStateChange('altText', generatedAltText);
             
-            toast({ title: "Featured Image Generated", description: "A new image and alt text have been created." });
+            toast({ title: "Featured Image Generated", description: "A new placeholder image and alt text have been created." });
 
         } catch (error) {
             console.error("Failed to generate featured image:", error);
@@ -148,6 +174,19 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
             toast({ variant: "destructive", title: "Image Generation Failed", description: errorMessage });
         } finally {
             setIsGeneratingImage(false);
+        }
+    };
+    
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                handleStateChange('imageUrl', base64String);
+                toast({ title: "Image Uploaded", description: "The image has been successfully uploaded." });
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -258,6 +297,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                     
                     <div className="space-y-2">
                         <Label>Content</Label>
+                         <EditorToolbar editorRef={contentRef} />
                         <div
                             ref={contentRef}
                             id="content-editor"
@@ -309,16 +349,31 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
                                     ) : (
                                         <div className="text-center text-muted-foreground p-4">
                                             <ImagePlus className="mx-auto h-8 w-8 mb-2" />
-                                            <p className="text-sm">Generate an image.</p>
+                                            <p className="text-sm">Generate or upload an image.</p>
                                         </div>
                                     )}
                                 </div>
                                 
                                 <div className="flex gap-2">
+                                    <Input 
+                                        type="file" 
+                                        ref={fileInputRef}
+                                        className="hidden" 
+                                        onChange={handleImageUpload}
+                                        accept="image/png, image/jpeg, image/gif"
+                                    />
+                                    <Button variant="outline" className="flex-1" onClick={() => fileInputRef.current?.click()}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Upload
+                                    </Button>
                                      <Button className="flex-1" onClick={handleGenerateFeaturedImage} disabled={isGeneratingImage || !article.title}>
                                         {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                                         Generate
                                     </Button>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="alt-text" className="text-xs">Alt Text (for SEO)</Label>
+                                    <Input id="alt-text" value={article.altText} onChange={(e) => handleStateChange('altText', e.target.value)} placeholder="Descriptive alt text..."/>
                                 </div>
                             </div>
                             
@@ -336,3 +391,5 @@ export default function EditArticlePage({ params }: { params: Promise<{ slug: st
         </div>
     );
 }
+
+    
