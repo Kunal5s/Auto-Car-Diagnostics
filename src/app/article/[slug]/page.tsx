@@ -67,11 +67,9 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // We fetch with drafts enabled in case we are viewing a draft preview
-        const articleData = await getArticleBySlug(slug, { includeDrafts: true });
+        const articleData = await getArticleBySlug(slug);
         
         if (!articleData) {
-            // Let the notFound page handle it if it truly doesn't exist
             setArticle(null);
             return;
         }
@@ -96,7 +94,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
                 h3Counter = 0;
                 number = `${h2Counter}`;
             } else { // level === 3
-                if (h2Counter === 0) h2Counter = 1; // Handle case where h3 appears before h2
+                if (h2Counter === 0) h2Counter = 1; 
                 h3Counter++;
                 number = `${h2Counter}.${h3Counter}`;
             }
@@ -113,7 +111,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         setArticle(articleData);
       } catch (error) {
         console.error("Failed to fetch article data:", error);
-        setArticle(null); // Set to null to show not found
+        setArticle(null); 
       } finally {
         setIsLoading(false);
       }
@@ -138,8 +136,6 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
   }
 
   if (!article) {
-    // We can use a proper notFound() call here if needed,
-    // but for now, a simple message or redirect might suffice.
     return (
         <div className="flex flex-col min-h-screen">
             <Header />

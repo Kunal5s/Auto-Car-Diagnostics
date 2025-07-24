@@ -49,7 +49,6 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     await writeJsonFile('author.json', authorData);
-    // GitHub commit functionality is removed to avoid dependency on @octokit/rest and env vars
     return authorData;
 }
 
@@ -59,13 +58,11 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
 
     for (const categorySlug of allCategorySlugs) {
         try {
-            // Check if file exists before trying to read it
             const filePath = path.join(dataDir, `${categorySlug}.json`);
             await fs.access(filePath);
             const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
             allArticles.push(...categoryArticles);
         } catch (e) {
-            // If file doesn't exist, it's not an error, just means no articles for this category yet.
             console.warn(`No data file found for category: ${categorySlug}.json. Skipping.`);
         }
     }
@@ -95,8 +92,6 @@ export async function getArticleBySlug(slug: string, options: { includeDrafts?: 
 export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): Promise<Article> {
     const existingArticle = await getArticleBySlug(article.slug, { includeDrafts: true });
     if (existingArticle) {
-        // If an article with the same slug exists, update it instead of creating a new one.
-        // This prevents duplicates if the user navigates away and comes back.
         return updateArticle(existingArticle.slug, article);
     }
     
@@ -112,7 +107,6 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     articles.unshift(newArticle);
     await writeJsonFile(`${categorySlug}.json`, articles);
 
-    // GitHub commit functionality is removed
     return newArticle;
 }
 
@@ -153,7 +147,6 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
         await writeJsonFile(`${categorySlug}.json`, articles);
     }
     
-    // GitHub commit functionality is removed
     return updatedArticle;
 }
 
@@ -169,6 +162,4 @@ export async function deleteArticle(slug: string): Promise<void> {
     const updatedArticles = articles.filter(a => a.id !== article.id);
     
     await writeJsonFile(`${categorySlug}.json`, updatedArticles);
-    
-    // GitHub commit functionality is removed
 }

@@ -17,13 +17,9 @@ import { AirFilterChecker } from "@/components/tools/air-filter-checker";
 import { EngineNoiseAnalyzer } from "@/components/tools/engine-noise-analyzer";
 import { BeltConditionEstimator } from "@/components/tools/belt-condition-estimator";
 import { AcPerformanceChecker } from "@/components/tools/ac-performance-checker";
-import { WarningLightGuide } from "@/components/tools/warning-light-guide";
-import { SmokeDiagnosis } from "@/components/tools/smoke-diagnosis";
 import { use } from "react";
 
 const toolComponents: { [key: string]: React.ComponentType } = {
-  "warning-light-guide": WarningLightGuide,
-  "smoke-color-diagnosis": SmokeDiagnosis,
   "battery-health-check": BatteryHealthCheck,
   "tire-pressure-guide": TirePressureGuide,
   "fuel-cost-calculator": FuelCostCalculator,

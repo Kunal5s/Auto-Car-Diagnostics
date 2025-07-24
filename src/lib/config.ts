@@ -18,18 +18,6 @@ export const categories: Category[] = [
 
 export const tools: Tool[] = [
     {
-        name: 'Warning Light Guide',
-        slug: 'warning-light-guide',
-        description: 'Understand what your dashboard warning lights mean and what to do about them.',
-        icon: ShieldAlert,
-    },
-    {
-        name: 'Smoke Color Diagnosis',
-        slug: 'smoke-color-diagnosis',
-        description: 'Diagnose potential engine issues based on the color of your exhaust smoke.',
-        icon: Wind,
-    },
-    {
         name: 'Battery Health Checker',
         slug: 'battery-health-check',
         description: 'Check the health and charge level of your car battery based on its voltage.',

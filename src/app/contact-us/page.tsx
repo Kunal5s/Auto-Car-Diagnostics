@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Header } from "@/components/common/header";
@@ -42,15 +43,15 @@ export default function ContactUsPage() {
             <div className="prose prose-lg max-w-none prose-headings:font-headline prose-p:font-body">
               <h2>Get in Touch</h2>
               <p>
-                Your feedback and questions are important to us. At Car Diagnostics BrainAi, we are constantly striving to improve our platform and provide the most accurate, helpful information possible. If you've encountered an issue, have a suggestion for a new feature, or need clarification on one of our articles, please don't hesitate to use the contact form. Our dedicated support team reviews every message and will do their best to respond in a timely manner.
+                Your feedback and questions are important to us. At Auto Insights, we are constantly striving to improve our platform and provide the most accurate, helpful information possible. If you've encountered an issue, have a suggestion for a new feature, or need clarification on one of our articles, please don't hesitate to use the contact form. Our dedicated support team reviews every message and will do their best to respond in a timely manner.
               </p>
               <p>
-                For partnership opportunities, media inquiries, or to learn more about how our AI-driven diagnostics can be integrated into your business, please contact us directly through the provided channels. We are open to collaborating with automotive businesses, educational institutions, and technology partners who share our vision of making car care more accessible and intelligent.
+                For partnership opportunities or media inquiries, please contact us directly through the provided channels. We are open to collaborating with automotive businesses and educational institutions who share our vision of making car care more accessible.
               </p>
               <div className="mt-8 space-y-4 not-prose">
                 <div className="flex items-center">
                   <Mail className="h-6 w-6 mr-4 text-primary" />
-                  <a href="mailto:info@cardiagnosticsai.com" className="text-muted-foreground hover:text-primary">info@cardiagnosticsai.com</a>
+                  <a href="mailto:info@autoinsights.com" className="text-muted-foreground hover:text-primary">info@autoinsights.com</a>
                 </div>
                 <div className="flex items-center">
                   <Phone className="h-6 w-6 mr-4 text-primary" />

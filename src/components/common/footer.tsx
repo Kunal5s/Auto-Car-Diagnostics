@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram, ShieldAlert, Wind } from "lucide-react";
+import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram } from "lucide-react";
 
 function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -41,10 +41,10 @@ export function Footer() {
             <div className="space-y-4 lg:col-span-1">
                 <div className="flex items-center">
                     <Car className="h-8 w-8 mr-2 text-primary" />
-                    <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
+                    <h3 className="text-xl font-bold font-headline">Auto Insights</h3>
                 </div>
                 <p className="text-muted-foreground max-w-sm">
-                Your ultimate destination for AI-powered car diagnostics, maintenance tips, and automotive technology insights.
+                Your destination for car diagnostics, maintenance tips, and automotive technology insights.
                 </p>
                 <div className="flex space-x-4">
                     <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter /></Link>
@@ -67,9 +67,9 @@ export function Footer() {
             </div>
              <div>
                 <h4 className="font-bold tracking-wide text-muted-foreground mb-4">FEATURED TOOLS</h4>
-                <ul className="space-y-3">
-                    <li><Link href="/tools/warning-light-guide" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><ShieldAlert className="h-4 w-4 mr-2 text-primary/80" /><span>Warning Light Guide</span></Link></li>
-                    <li><Link href="/tools/smoke-color-diagnosis" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><Wind className="h-4 w-4 mr-2 text-primary/80" /><span>Smoke Diagnosis</span></Link></li>
+                 <ul className="space-y-3">
+                    <li><Link href="/tools/battery-health-check" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><Heart className="h-4 w-4 mr-2 text-primary/80" /><span>Battery Health Check</span></Link></li>
+                    <li><Link href="/tools/fuel-cost-calculator" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><Heart className="h-4 w-4 mr-2 text-primary/80" /><span>Fuel Cost Calculator</span></Link></li>
                 </ul>
             </div>
             <div>
@@ -77,7 +77,7 @@ export function Footer() {
                 <ul className="space-y-3 text-muted-foreground">
                     <li className="flex items-center">
                         <Mail className="h-5 w-5 mr-3 text-primary" />
-                        <span>info@cardiagnosticsai.com</span>
+                        <span>info@autoinsights.com</span>
                     </li>
                     <li className="flex items-center">
                         <Phone className="h-5 w-5 mr-3 text-primary" />
@@ -94,7 +94,7 @@ export function Footer() {
       <div className="border-t">
         <div className="container flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-4 sm:py-0">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Car Diagnostics BrainAi. All rights reserved.
+             &copy; {new Date().getFullYear()} Auto Insights. All rights reserved.
           </p>
           <p className="flex items-center text-sm text-muted-foreground mt-2 sm:mt-0">
             Made with <Heart className="h-4 w-4 mx-1.5 text-red-500 fill-current" /> for automotive enthusiasts

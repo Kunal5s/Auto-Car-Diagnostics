@@ -11,7 +11,7 @@ const fontSans = FontSans({
 })
 
 export const metadata: Metadata = {
-  title: "Car Diagnostics BrainAi",
+  title: "Auto Insights",
   description: "AI-powered car diagnostics and repair guides",
 };
 

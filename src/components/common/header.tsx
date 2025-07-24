@@ -19,12 +19,11 @@ export function Header() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Car className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline">
-              <span className="sm:hidden">Car Diagnostics</span>
-              <span className="hidden sm:inline-block">Car Diagnostics BrainAi</span>
+              <span className="sm:hidden">Auto Insights</span>
+              <span className="hidden sm:inline-block">Auto Insights</span>
             </span>
           </Link>
         </div>
-        {/* The Login button has been removed from the public header. Access is now in the footer. */}
       </div>
       <div className="w-full border-t">
         <div className="container px-0">
