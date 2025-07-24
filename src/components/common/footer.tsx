@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram, Fingerprint, ShieldAlert, ScanLine, Wind } from "lucide-react";
+import { Car, Mail, Phone, MapPin, Twitter, Linkedin, Heart, Facebook, Instagram, ShieldAlert, Wind } from "lucide-react";
 
 function PinterestIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -69,7 +69,6 @@ export function Footer() {
                 <h4 className="font-bold tracking-wide text-muted-foreground mb-4">FEATURED TOOLS</h4>
                 <ul className="space-y-3">
                     <li><Link href="/tools/warning-light-guide" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><ShieldAlert className="h-4 w-4 mr-2 text-primary/80" /><span>Warning Light Guide</span></Link></li>
-                    <li><Link href="/tools/obd-code-scanner" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><ScanLine className="h-4 w-4 mr-2 text-primary/80" /><span>OBD2 Code Lookup</span></Link></li>
                     <li><Link href="/tools/smoke-color-diagnosis" className="flex items-center text-muted-foreground hover:text-primary hover:underline"><Wind className="h-4 w-4 mr-2 text-primary/80" /><span>Smoke Diagnosis</span></Link></li>
                 </ul>
             </div>

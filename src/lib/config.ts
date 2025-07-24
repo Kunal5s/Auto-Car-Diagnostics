@@ -30,18 +30,6 @@ export const tools: Tool[] = [
         icon: Wind,
     },
     {
-        name: 'Spark Plug Checker',
-        slug: 'spark-plug-checker',
-        description: 'Use your camera to get an AI-powered visual diagnosis of your spark plug.',
-        icon: Camera,
-    },
-    {
-        name: 'OBD Code Scanner',
-        slug: 'obd-code-scanner',
-        description: 'Lookup OBD2 trouble codes to understand what your check engine light means.',
-        icon: ScanLine,
-    },
-    {
         name: 'Battery Health Checker',
         slug: 'battery-health-check',
         description: 'Check the health and charge level of your car battery based on its voltage.',
