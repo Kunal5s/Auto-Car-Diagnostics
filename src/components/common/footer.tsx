@@ -44,7 +44,7 @@ export function Footer() {
                     <h3 className="text-xl font-bold font-headline">Car Diagnostics BrainAi</h3>
                 </div>
                 <p className="text-muted-foreground max-w-sm">
-                Your destination for car diagnostics, maintenance tips, and automotive technology insights.
+                Your ultimate destination for AI-powered car diagnostics, maintenance tips, and automotive technology insights.
                 </p>
                 <div className="flex space-x-4">
                     <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter /></Link>
@@ -94,9 +94,7 @@ export function Footer() {
       <div className="border-t">
         <div className="container flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-4 sm:py-0">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-            <Link href="/admin" title="Admin Dashboard">
-                <span className="hover:text-primary cursor-pointer">&copy; {new Date().getFullYear()}</span>
-            </Link> Car Diagnostics BrainAi. All rights reserved.
+            &copy; {new Date().getFullYear()} Car Diagnostics BrainAi. All rights reserved.
           </p>
           <p className="flex items-center text-sm text-muted-foreground mt-2 sm:mt-0">
             Made with <Heart className="h-4 w-4 mx-1.5 text-red-500 fill-current" /> for automotive enthusiasts

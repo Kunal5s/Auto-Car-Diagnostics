@@ -5,7 +5,6 @@ import type { Article, Author } from "@/lib/types";
 import { categories } from '@/lib/config';
 import fs from 'fs/promises';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 
 const dataDir = path.join(process.cwd(), 'src/data');
 
@@ -29,13 +28,6 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
     return JSON.parse(fileContent) as T;
 }
 
-async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
-    await ensureFileExists(filePath);
-    const fullPath = path.join(dataDir, filePath);
-    const content = JSON.stringify(data, null, 2) + '\n';
-    await fs.writeFile(fullPath, content, 'utf-8');
-}
-
 export async function getAuthor(): Promise<Author> {
     const defaultAuthor: Author = { name: 'Author', role: 'Writer', bio: '', imageUrl: '' };
     try {
@@ -44,11 +36,6 @@ export async function getAuthor(): Promise<Author> {
     } catch (error) {
         return defaultAuthor;
     }
-}
-
-export async function updateAuthor(authorData: Author): Promise<Author> {
-    await writeJsonFile('author.json', authorData);
-    return authorData;
 }
 
 export async function getArticles(options: { includeDrafts?: boolean } = {}): Promise<Article[]> {
@@ -86,73 +73,4 @@ export async function getArticleBySlug(slug: string, options: { includeDrafts?: 
         return undefined;
     }
     return article;
-}
-
-export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): Promise<Article> {
-    const newArticle: Article = { 
-        ...article, 
-        id: uuidv4(),
-        publishedAt: new Date().toISOString() 
-    };
-
-    const categorySlug = newArticle.category.toLowerCase().replace(/ /g, '-');
-    const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
-    
-    articles.unshift(newArticle);
-    await writeJsonFile(`${categorySlug}.json`, articles);
-
-    return newArticle;
-}
-
-export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'id' | 'slug'>>): Promise<Article> {
-    const originalArticle = await getArticleBySlug(slug, { includeDrafts: true });
-    if (!originalArticle) throw new Error(`Article with slug "${slug}" not found.`);
-
-    const updatedArticle = { ...originalArticle, ...articleData };
-    const hasCategoryChanged = articleData.category && articleData.category !== originalArticle.category;
-    
-    if (articleData.status === 'published' && originalArticle.status === 'draft') {
-        updatedArticle.publishedAt = new Date().toISOString();
-    }
-
-    if (hasCategoryChanged) {
-        const oldCategorySlug = originalArticle.category.toLowerCase().replace(/ /g, '-');
-        const oldArticles = await readJsonFile<Article[]>(`${oldCategorySlug}.json`);
-        const filteredOldArticles = oldArticles.filter(a => a.id !== originalArticle.id);
-        await writeJsonFile(`${oldCategorySlug}.json`, filteredOldArticles);
-
-        const newCategorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
-        const newArticles = await readJsonFile<Article[]>(`${newCategorySlug}.json`);
-        newArticles.unshift(updatedArticle);
-        newArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        await writeJsonFile(`${newCategorySlug}.json`, newArticles);
-    } else {
-        const categorySlug = updatedArticle.category.toLowerCase().replace(/ /g, '-');
-        const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
-        const articleIndex = articles.findIndex(a => a.id === updatedArticle.id);
-        
-        if (articleIndex !== -1) {
-            articles[articleIndex] = updatedArticle;
-        } else {
-            articles.unshift(updatedArticle);
-        }
-        
-        articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        await writeJsonFile(`${categorySlug}.json`, articles);
-    }
-    
-    return updatedArticle;
-}
-
-export async function deleteArticle(slug: string): Promise<void> {
-    const article = await getArticleBySlug(slug, { includeDrafts: true });
-    if (!article) {
-        return;
-    }
-
-    const categorySlug = article.category.toLowerCase().replace(/ /g, '-');
-    const articles = await readJsonFile<Article[]>(`${categorySlug}.json`);
-    const updatedArticles = articles.filter(a => a.id !== article.id);
-    
-    await writeJsonFile(`${categorySlug}.json`, updatedArticles);
 }
