@@ -29,12 +29,11 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
     return JSON.parse(fileContent) as T;
 }
 
-async function writeJsonFile<T>(filePath: string, data: T): Promise<string> {
+async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
     await ensureFileExists(filePath);
     const fullPath = path.join(dataDir, filePath);
     const content = JSON.stringify(data, null, 2) + '\n';
     await fs.writeFile(fullPath, content, 'utf-8');
-    return content;
 }
 
 export async function getAuthor(): Promise<Author> {
@@ -49,7 +48,6 @@ export async function getAuthor(): Promise<Author> {
 
 export async function updateAuthor(authorData: Author): Promise<Author> {
     await writeJsonFile('author.json', authorData);
-    // Committing to GitHub is removed
     return authorData;
 }
 
@@ -64,7 +62,7 @@ export async function getArticles(options: { includeDrafts?: boolean } = {}): Pr
             const categoryArticles = await readJsonFile<Article[]>(`${categorySlug}.json`);
             allArticles.push(...categoryArticles);
         } catch (e) {
-            console.warn(`No data file found for category: ${categorySlug}.json. Skipping.`);
+            // It's okay if a category file doesn't exist
         }
     }
 
@@ -91,11 +89,6 @@ export async function getArticleBySlug(slug: string, options: { includeDrafts?: 
 }
 
 export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): Promise<Article> {
-    const existingArticle = await getArticleBySlug(article.slug, { includeDrafts: true });
-    if (existingArticle) {
-        return updateArticle(existingArticle.slug, article);
-    }
-    
     const newArticle: Article = { 
         ...article, 
         id: uuidv4(),
@@ -111,7 +104,7 @@ export async function addArticle(article: Omit<Article, 'id' | 'publishedAt'>): 
     return newArticle;
 }
 
-export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'id'>>): Promise<Article> {
+export async function updateArticle(slug: string, articleData: Partial<Omit<Article, 'id' | 'slug'>>): Promise<Article> {
     const originalArticle = await getArticleBySlug(slug, { includeDrafts: true });
     if (!originalArticle) throw new Error(`Article with slug "${slug}" not found.`);
 
@@ -154,7 +147,6 @@ export async function updateArticle(slug: string, articleData: Partial<Omit<Arti
 export async function deleteArticle(slug: string): Promise<void> {
     const article = await getArticleBySlug(slug, { includeDrafts: true });
     if (!article) {
-        console.warn(`Article with slug "${slug}" not found for deletion, it might have been deleted already.`);
         return;
     }
 
